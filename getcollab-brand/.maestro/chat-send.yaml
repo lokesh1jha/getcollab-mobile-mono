@@ -1,0 +1,13 @@
+appId: in.getcollab.app
+---
+- launchApp
+- runFlow: auth-signin.yaml
+- tapOn: "Messages"
+- waitForAnimationToEnd
+- tapOn:
+    index: 0
+    text: ".*"
+    optional: true
+- inputText: "Hello from the smoke test 👋"
+- tapOn: "➤"
+- assertVisible: "Hello from the smoke test 👋"

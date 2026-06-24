@@ -1,0 +1,10 @@
+appId: in.getcollab.app
+---
+# Maestro Studio defaults. Run any flow with:
+#   maestro test .maestro/<flow>.yaml
+#
+# One-time setup (manual, ~2 min):
+#   curl -fsSL "https://get.maestro.mobile.dev" | bash
+#   maestro --version
+#
+# Then start a simulator/emulator with the app installed and run the flows.

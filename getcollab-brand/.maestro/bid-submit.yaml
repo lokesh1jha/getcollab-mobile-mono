@@ -1,0 +1,28 @@
+appId: in.getcollab.app
+---
+- launchApp
+# Sign in as influencer test user
+- tapOn: "Sign In"
+- inputText: "test+creator@getcollab.in"
+- tapOn:
+    id: "password"
+    optional: true
+- inputText: "TestPass123!"
+- tapOn: "Sign In"
+- waitForAnimationToEnd
+- tapOn: "Discover"
+- tapOn:
+    index: 0
+    text: ".*"
+- assertVisible: "Apply Now"
+- tapOn: "Apply Now"
+- tapOn:
+    id: "Your Pitch"
+    optional: true
+- inputText: "I'd love to collaborate on this campaign. My audience aligns perfectly with your brand."
+- tapOn:
+    id: "Proposed Amount (₹)"
+    optional: true
+- inputText: "5000"
+- tapOn: "Submit Bid"
+- assertVisible: "Bid submitted"

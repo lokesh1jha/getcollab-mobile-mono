@@ -1,0 +1,19 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../packages/mobile-shared/src/*"]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    ".maestro",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "jest.config.js",
+    "jest.setup.js"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "getcollab-mobile-mono",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "getcollab-brand",
+    "getcollab-influencer"
+  ],
+  "scripts": {
+    "brand": "pnpm --filter getcollab-brand start",
+    "influencer": "pnpm --filter getcollab-influencer start",
+    "brand:ios": "pnpm --filter getcollab-brand ios",
+    "brand:android": "pnpm --filter getcollab-brand android",
+    "influencer:ios": "pnpm --filter getcollab-influencer ios",
+    "influencer:android": "pnpm --filter getcollab-influencer android",
+    "test": "pnpm --recursive test"
+  }
+}

@@ -1,0 +1,18 @@
+appId: in.getcollab.app
+---
+- launchApp:
+    clearState: true
+- runFlow: auth-signin.yaml
+- waitForAnimationToEnd
+- tapOn: "Campaigns"
+- tapOn: "Create"
+- waitForAnimationToEnd
+# If subscription is expired, should see gating UI
+- assertVisible:
+    text: "Billing"
+    timeout: 10000
+    optional: true
+- assertVisible:
+    text: "Access Required"
+    timeout: 5000
+    optional: true

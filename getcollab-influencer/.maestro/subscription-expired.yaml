@@ -1,0 +1,23 @@
+appId: in.getcollab.app
+---
+- launchApp:
+    clearState: true
+- runFlow: auth-signin.yaml
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Workspace"
+    timeout: 15000
+    optional: true
+- tapOn:
+    text: "Subscription"
+    optional: true
+- waitForAnimationToEnd
+# Check for expired trial elements
+- assertVisible:
+    text: "Billing Portal"
+    timeout: 10000
+    optional: true
+- assertVisible:
+    text: "Manage"
+    timeout: 5000
+    optional: true

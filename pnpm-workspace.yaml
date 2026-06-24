@@ -1,0 +1,4 @@
+packages:
+  - 'packages/*'
+  - 'getcollab-brand'
+  - 'getcollab-influencer'

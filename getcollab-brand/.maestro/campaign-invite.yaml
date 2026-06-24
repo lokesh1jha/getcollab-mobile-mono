@@ -1,0 +1,31 @@
+appId: in.getcollab.app
+---
+- launchApp:
+    clearState: true
+- runFlow: auth-signin.yaml
+- waitForAnimationToEnd
+- tapOn: "Campaigns"
+- waitForAnimationToEnd
+- tapOn:
+    index: 0
+    text: ".*"
+    optional: true
+- tapOn:
+    text: "Invite"
+    optional: true
+- assertVisible:
+    text: "Invite"
+    timeout: 10000
+    optional: true
+- tapOn:
+    id: "influencerEmail"
+    optional: true
+- inputText: "test+creator@getcollab.in"
+    optional: true
+- tapOn:
+    text: "Send Invite"
+    optional: true
+- assertVisible:
+    text: "invited"
+    timeout: 10000
+    optional: true

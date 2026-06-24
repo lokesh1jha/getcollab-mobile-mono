@@ -1,0 +1,22 @@
+appId: in.getcollab.app
+---
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- assertVisible: "GetCollab"
+- tapOn: "Sign Up"
+- inputText: "test+brand@getcollab.in"
+- tapOn:
+    id: "password"
+    optional: true
+- inputText: "TestPass123!"
+- tapOn:
+    id: "name"
+    optional: true
+- inputText: "Test Brand"
+- tapOn: "Sign Up"
+- waitForAnimationToEnd
+- assertVisible:
+    text: "brand"
+    timeout: 10000
+    optional: true

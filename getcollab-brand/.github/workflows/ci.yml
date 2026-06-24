@@ -1,0 +1,45 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    paths:
+      - 'getcollab-mobile/**'
+      - '.github/workflows/ci.yml'
+
+defaults:
+  run:
+    working-directory: getcollab-mobile
+
+jobs:
+  typecheck-test:
+    name: Typecheck + Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: getcollab-mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Type check
+        run: npm run tsc
+
+      - name: Tests
+        run: npm test -- --ci --coverage --maxWorkers=2
+        env:
+          CI: true
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jest-coverage
+          path: getcollab-mobile/coverage
+          if-no-files-found: ignore

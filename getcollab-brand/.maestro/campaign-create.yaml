@@ -1,0 +1,33 @@
+appId: in.getcollab.app
+---
+- launchApp
+- runFlow: auth-signin.yaml
+- tapOn: "Campaigns"
+- tapOn: "Create"
+- assertVisible: "Create New Campaign"
+- tapOn:
+    id: "Campaign Title"
+    optional: true
+- inputText: "Summer Drop 2026"
+- tapOn:
+    id: "Description"
+    optional: true
+- inputText: "Looking for creators to launch our summer collection across Instagram and YouTube."
+- tapOn:
+    id: "Budget (₹)"
+    optional: true
+- inputText: "50000"
+- tapOn:
+    id: "Start Date"
+    optional: true
+- inputText: "2026-06-01"
+- tapOn:
+    id: "End Date"
+    optional: true
+- inputText: "2026-07-01"
+- tapOn: "Fashion"
+- tapOn: "Instagram Post"
+- tapOn: "Create Campaign"
+- assertVisible:
+    text: "Success"
+    timeout: 10000
