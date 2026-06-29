@@ -1,6 +1,6 @@
-import { useChatStore } from '../chat-store'
+import { useChatStore } from '@shared/stores/chat-store'
 
-jest.mock('../../services/api', () => ({
+jest.mock('@shared/services/api', () => ({
   __esModule: true,
   default: {
     getToken: jest.fn(() => Promise.resolve('tok')),
@@ -13,7 +13,7 @@ jest.mock('../../services/api', () => ({
   },
 }))
 
-const apiService = require('../../services/api').default
+const apiService = require('@shared/services/api').default
 
 describe('chat-store', () => {
   beforeEach(() => {

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import apiService from '../services/api'
+import { extractCampaigns } from '../lib/campaign-utils'
 import type { Campaign, CampaignWithBids, Bid } from '../types'
 
 interface CampaignState {
@@ -59,13 +60,13 @@ export const useCampaignStore = create<CampaignState>((set, get) => ({
   fetchMyCampaigns: async (params) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await apiService.getMyCampaigns()
-      const campaigns = response.data || response || []
+      const response = await apiService.getMyCampaigns(params)
+      const campaigns = extractCampaigns(response)
       const newPage = params?.page || 1
       set((state) => ({
         myCampaigns: newPage === 1 ? campaigns : [...state.myCampaigns, ...campaigns],
         page: newPage,
-        hasMore: response.hasMore,
+        hasMore: response?.pagination?.hasMore ?? response?.hasMore ?? false,
         isLoading: false,
       }))
     } catch (error: any) {
@@ -92,9 +93,10 @@ export const useCampaignStore = create<CampaignState>((set, get) => ({
   createCampaign: async (data: any) => {
     set({ isLoading: true, error: null })
     try {
-      const campaign = await apiService.createCampaign(data)
+      const response = await apiService.createCampaign(data)
+      const campaign = response?.campaign || response?.data?.campaign || response
       set((state) => ({
-        campaigns: [campaign, ...state.campaigns],
+        myCampaigns: campaign ? [campaign, ...state.myCampaigns] : state.myCampaigns,
         isLoading: false,
       }))
       return campaign

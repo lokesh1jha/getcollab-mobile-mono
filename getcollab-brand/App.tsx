@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { NavigationContainer } from '@react-navigation/native'
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors } from '@shared/constants'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { colors, spacing } from '@/src/theme'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { useChatStore } from '@shared/stores/chat-store'
 import { notificationService, navigationRef } from '@shared/services/notification-service'
@@ -21,19 +21,30 @@ import MaintenanceScreen from '@shared/screens/MaintenanceScreen'
 
 const Stack = createNativeStackNavigator()
 
+const navigationTheme = {
+  ...DefaultTheme,
+  dark: true,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: colors.blue,
+    background: colors.bg,
+    card: colors.card,
+    text: colors.text,
+    border: colors.border,
+    notification: colors.neon,
+  },
+}
+
 function SplashScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Image 
-          source={require('./assets/icon.png')} 
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <Text style={styles.title}>GetCollab Brands</Text>
-        <Text style={styles.subtitle}>Grow your brand with creators</Text>
-        <ActivityIndicator size="large" color={colors.primary} style={styles.loading} />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <View style={styles.logoBadge}>
+          <View style={styles.logoDot} />
+        </View>
+        <Text style={styles.title}>GetCollab</Text>
+        <Text style={styles.subtitle}>For Brands</Text>
+        <ActivityIndicator size="large" color={colors.neon} style={styles.loading} />
       </View>
     </SafeAreaView>
   )
@@ -47,7 +58,7 @@ export default function App() {
   const { isAuthenticated, user, fetchCurrentUser } = useAuthStore()
 
   // Store timeout ID for cleanup
-  const splashTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const splashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const initializeApp = async () => {
     try {
@@ -79,6 +90,14 @@ export default function App() {
     })
   }, [])
 
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      notificationService.initialize().catch((error) => {
+        logger.warn('Notification init failed', { error: error?.message })
+      })
+    }
+  }, [isAuthenticated, user?.id])
+
   const MainTabsWrapper = () => <MainTabs />
 
   useEffect(() => {
@@ -106,13 +125,21 @@ export default function App() {
 
   // Show maintenance screen if API error
   if (apiError) {
-    return <MaintenanceScreen onRetry={initializeApp} />
+    return <MaintenanceScreen onRetry={initializeApp} logo={require('./assets/icon.png')} />
   }
 
   return (
+    <SafeAreaProvider>
     <ErrorBoundary>
-      <NavigationContainer ref={navigationRef}>
-        <Stack.Navigator>
+      <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+        <Stack.Navigator
+          screenOptions={{
+            headerStyle: { backgroundColor: colors.bg },
+            headerTintColor: colors.text,
+            headerTitleStyle: { fontSize: 15, fontWeight: '700' },
+            contentStyle: { backgroundColor: colors.bg },
+          }}
+        >
           {!isAuthenticated ? (
             <>
               <Stack.Screen
@@ -123,12 +150,12 @@ export default function App() {
               <Stack.Screen
                 name="SignIn"
                 component={SignInScreen}
-                options={{ headerShown: true }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="SignUp"
                 component={SignUpScreen}
-                options={{ headerShown: true }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="ForgotPassword"
@@ -152,44 +179,48 @@ export default function App() {
       </NavigationContainer>
       <NetworkBanner />
     </ErrorBoundary>
+    </SafeAreaProvider>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.bg,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    gap: spacing.sm,
   },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
+  logoBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: colors.neon,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  logoDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+    backgroundColor: colors.black,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: 8,
-    textAlign: 'center',
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 14,
     color: colors.textMuted,
-    textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: spacing.md,
   },
   loading: {
-    marginVertical: 30,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: colors.primary,
-    textAlign: 'center',
+    marginTop: spacing.sm,
   },
 })

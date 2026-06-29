@@ -1,14 +1,14 @@
-import { useAuthStore } from '../auth-store'
+import { useAuthStore } from '@shared/stores/auth-store'
 import apiService from '@shared/services/api'
 
-jest.mock('../../services/notification-service', () => ({
+jest.mock('@shared/services/notification-service', () => ({
   notificationService: {
     unregisterPushToken: jest.fn(() => Promise.resolve()),
     cleanup: jest.fn(),
   },
 }))
 
-jest.mock('../../services/api', () => ({
+jest.mock('@shared/services/api', () => ({
   __esModule: true,
   default: {
     signin: jest.fn(),

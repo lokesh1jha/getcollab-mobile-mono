@@ -1,8 +1,6 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
-import { Modal } from './ui/Modal'
-import { Button } from './ui/Button'
-import { colors, spacing } from '@shared/constants'
+import { View, Text, StyleSheet, Modal as RNModal, Pressable } from 'react-native'
+import { colors, spacing, radius } from '@/src/theme'
 import { useSubscriptionStore } from '../stores/subscription-store'
 
 interface SubscriptionExpiredModalProps {
@@ -14,61 +12,73 @@ export function SubscriptionExpiredModal({ visible, onClose }: SubscriptionExpir
   const openBillingPortal = useSubscriptionStore((s) => s.openBillingPortal)
 
   return (
-    <Modal visible={visible} onClose={onClose} showCloseButton={false}>
-      <View style={styles.container}>
-        <View style={styles.iconContainer}>
-          <Text style={styles.icon}>🔒</Text>
-        </View>
+    <RNModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.overlay}>
+        <View style={styles.card}>
+          <View style={styles.iconContainer}>
+            <Text style={styles.icon}>🔒</Text>
+          </View>
 
-        <Text style={styles.title}>Your workspace trial has ended.</Text>
+          <Text style={styles.title}>Your workspace trial has ended.</Text>
 
-        <Text style={styles.description}>
-          Continue collaborating with influencers by managing your workspace subscription securely on the web dashboard.
-        </Text>
+          <Text style={styles.description}>
+            Continue collaborating with influencers by managing your workspace subscription securely on the web dashboard.
+          </Text>
 
-        <View style={styles.features}>
-          <Text style={styles.featureTitle}>You can still:</Text>
-          <Text style={styles.featureItem}>View existing chats</Text>
-          <Text style={styles.featureItem}>Access current campaigns</Text>
-          <Text style={styles.featureItem}>Manage your profile</Text>
-        </View>
+          <View style={styles.features}>
+            <Text style={styles.featureTitle}>You can still:</Text>
+            <Text style={styles.featureItem}>View existing chats</Text>
+            <Text style={styles.featureItem}>Access current campaigns</Text>
+            <Text style={styles.featureItem}>Manage your profile</Text>
+          </View>
 
-        <View style={styles.actions}>
-          <Button
-            title="Open Billing Portal"
+          <Pressable
+            style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
             onPress={() => {
               onClose()
               openBillingPortal()
             }}
-            fullWidth
-          />
-          <Button
-            title="Maybe Later"
-            onPress={onClose}
-            variant="outline"
-            fullWidth
-            style={styles.laterButton}
-          />
-        </View>
+          >
+            <Text style={styles.primaryBtnText}>Open Billing Portal</Text>
+          </Pressable>
 
-        <Text style={styles.footer}>
-          Subscription management is handled securely on our website.
-        </Text>
+          <Pressable
+            style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.7 }]}
+            onPress={onClose}
+          >
+            <Text style={styles.outlinedBtnText}>Maybe Later</Text>
+          </Pressable>
+
+          <Text style={styles.footer}>Subscription management is handled securely on our website.</Text>
+        </View>
       </View>
-    </Modal>
+    </RNModal>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    padding: spacing.lg,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    alignItems: 'center',
   },
   iconContainer: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.warning + '20',
+    backgroundColor: colors.warningSoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.lg,
@@ -78,11 +88,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
     marginBottom: spacing.md,
     lineHeight: 28,
+    letterSpacing: -0.5,
   },
   description: {
     fontSize: 14,
@@ -93,8 +104,8 @@ const styles = StyleSheet.create({
   },
   features: {
     width: '100%',
-    backgroundColor: colors.background,
-    borderRadius: 12,
+    backgroundColor: colors.bg,
+    borderRadius: radius.md,
     padding: spacing.md,
     marginBottom: spacing.lg,
   },
@@ -110,17 +121,41 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingLeft: spacing.md,
   },
-  actions: {
+  primaryBtn: {
     width: '100%',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.blue,
+    borderRadius: radius.pill,
+    paddingVertical: 14,
+    marginBottom: spacing.sm,
   },
-  laterButton: {
-    marginTop: spacing.xs,
+  primaryBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  outlinedBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.pill,
+    paddingVertical: 14,
+  },
+  outlinedBtnText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: '600',
   },
   footer: {
     fontSize: 12,
-    color: colors.textDark,
+    color: colors.textSubtle,
     textAlign: 'center',
+    marginTop: spacing.md,
   },
 })

@@ -168,7 +168,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
       const payload: any = {
         title: formData.title.trim(),
         description: formData.description.trim(),
-        region: formData.region,
+        targetCountries: ['IN'],
         budget: parseInt(formData.budget, 10),
         budgetCurrency: 'INR',
         deliverables: formData.deliverables,
@@ -535,5 +535,34 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     marginTop: spacing.sm,
+  },
+  dateButton: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  dateButtonError: {
+    borderColor: colors.error,
+  },
+  dateButtonText: {
+    fontSize: 16,
+    color: colors.textMuted,
+  },
+  dateButtonTextFilled: {
+    color: colors.text,
+  },
+  dateDoneButton: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  dateDoneButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600',
   },
 })

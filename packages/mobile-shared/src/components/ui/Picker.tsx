@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing } from '../../constants'
 import { Modal } from './Modal'
 
@@ -17,17 +18,9 @@ interface PickerProps {
   error?: string
 }
 
-export function Picker({ 
-  label, 
-  placeholder = 'Select an option', 
-  options, 
-  selectedValue, 
-  onValueChange,
-  error
-}: PickerProps) {
+export function Picker({ label, placeholder = 'Select an option', options, selectedValue, onValueChange, error }: PickerProps) {
   const [modalVisible, setModalVisible] = useState(false)
-
-  const selectedOption = options.find(option => option.value === selectedValue)
+  const selectedOption = options.find((o) => o.value === selectedValue)
   const displayText = selectedOption ? selectedOption.label : placeholder
 
   const handleSelect = (value: string) => {
@@ -38,43 +31,44 @@ export function Picker({
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={[styles.picker, error && styles.errorBorder]}
         onPress={() => setModalVisible(true)}
+        accessibilityRole="combobox"
+        accessibilityLabel={label || placeholder}
+        accessibilityValue={{ text: displayText }}
       >
-        <Text style={[styles.pickerText, !selectedValue && styles.placeholderText]}>
+        <Text style={[styles.pickerText, !selectedValue && styles.placeholderText]} numberOfLines={1}>
           {displayText}
         </Text>
-        <Text style={styles.arrow}>▼</Text>
+        <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
       </TouchableOpacity>
-      
+
       {error && <Text style={styles.errorText}>{error}</Text>}
-      
-      <Modal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        title={label || 'Select Option'}
-      >
-        <View style={styles.optionsContainer}>
-          {options.map((option) => (
-            <TouchableOpacity
-              key={option.value}
-              style={[
-                styles.option,
-                selectedValue === option.value && styles.selectedOption
-              ]}
-              onPress={() => handleSelect(option.value)}
-            >
-              <Text style={[
-                styles.optionText,
-                selectedValue === option.value && styles.selectedOptionText
-              ]}>
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+
+      <Modal visible={modalVisible} onClose={() => setModalVisible(false)} title={label || 'Select'}>
+        <ScrollView style={styles.optionsContainer} showsVerticalScrollIndicator={false}>
+          {options.map((option) => {
+            const isSelected = selectedValue === option.value
+            return (
+              <TouchableOpacity
+                key={option.value}
+                style={[styles.option, isSelected && styles.selectedOption]}
+                onPress={() => handleSelect(option.value)}
+                accessibilityRole="menuitem"
+                accessibilityState={{ selected: isSelected }}
+              >
+                <Text style={[styles.optionText, isSelected && styles.selectedOptionText]}>
+                  {option.label}
+                </Text>
+                {isSelected && (
+                  <Ionicons name="checkmark" size={18} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+            )
+          })}
+        </ScrollView>
       </Modal>
     </View>
   )
@@ -85,10 +79,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   picker: {
     flexDirection: 'row',
@@ -99,42 +93,44 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    minHeight: 44,
   },
   errorBorder: {
     borderColor: colors.error,
   },
   pickerText: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.text,
     flex: 1,
   },
   placeholderText: {
     color: colors.textMuted,
   },
-  arrow: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
   errorText: {
     color: colors.error,
-    fontSize: 14,
+    fontSize: 12,
     marginTop: spacing.xs,
   },
   optionsContainer: {
-    maxHeight: 300,
+    maxHeight: 320,
   },
   option: {
-    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   selectedOption: {
-    backgroundColor: `${colors.primary}10`, // Hex color with alpha transparency
+    backgroundColor: `${colors.primary}12`,
   },
   optionText: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.text,
+    flex: 1,
   },
   selectedOptionText: {
     color: colors.primary,

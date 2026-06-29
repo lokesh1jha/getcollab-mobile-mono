@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { colors } from '@shared/constants'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { useChatStore } from '@shared/stores/chat-store'
@@ -106,10 +106,11 @@ export default function App() {
 
   // Show maintenance screen if API error
   if (apiError) {
-    return <MaintenanceScreen onRetry={initializeApp} />
+    return <MaintenanceScreen onRetry={initializeApp} logo={require('./assets/icon.png')} />
   }
 
   return (
+    <SafeAreaProvider>
     <ErrorBoundary>
       <NavigationContainer ref={navigationRef}>
         <Stack.Navigator>
@@ -152,6 +153,7 @@ export default function App() {
       </NavigationContainer>
       <NetworkBanner />
     </ErrorBoundary>
+    </SafeAreaProvider>
   )
 }
 

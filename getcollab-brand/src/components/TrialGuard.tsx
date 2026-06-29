@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
-import { colors, spacing } from '@shared/constants'
-import { Button, Card } from './ui'
+import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native'
+import { colors, spacing, radius } from '@/src/theme'
 import { useTrialGuard } from '../hooks/useTrialGuard'
 
 interface TrialGuardProps {
@@ -19,7 +18,7 @@ export function TrialGuard({ children, feature, loading: externalLoading, fallba
   if (externalLoading || loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.neon} />
       </View>
     )
   }
@@ -39,7 +38,7 @@ export function TrialGuard({ children, feature, loading: externalLoading, fallba
   if (isPastDue || showFullScreen) {
     return (
       <View style={styles.fullScreen}>
-        <Card style={styles.card}>
+        <View style={styles.card}>
           <View style={styles.iconContainer}>
             <Text style={styles.icon}>🔒</Text>
           </View>
@@ -50,8 +49,8 @@ export function TrialGuard({ children, feature, loading: externalLoading, fallba
             {blockReason || 'Manage your subscription to continue using this feature.'}
           </Text>
           <View style={styles.actions}>
-            <Button
-              title="Open Billing Portal"
+            <Pressable
+              style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
               onPress={async () => {
                 setActionLoading(true)
                 try {
@@ -60,26 +59,29 @@ export function TrialGuard({ children, feature, loading: externalLoading, fallba
                   setActionLoading(false)
                 }
               }}
-              loading={actionLoading}
               disabled={actionLoading}
-              fullWidth
-            />
-            <Button
-              title="Check Status"
+            >
+              {actionLoading ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <Text style={styles.primaryBtnText}>Open Billing Portal</Text>
+              )}
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.7 }]}
               onPress={refresh}
-              variant="outline"
-              fullWidth
-              style={styles.secondaryAction}
-            />
+            >
+              <Text style={styles.outlinedBtnText}>Check Status</Text>
+            </Pressable>
           </View>
-        </Card>
+        </View>
       </View>
     )
   }
 
   return (
     <View style={styles.fullScreen}>
-      <Card style={styles.card}>
+      <View style={styles.card}>
         <View style={styles.iconContainer}>
           <Text style={styles.icon}>🔒</Text>
         </View>
@@ -88,29 +90,32 @@ export function TrialGuard({ children, feature, loading: externalLoading, fallba
           {blockReason || 'Manage your subscription to continue using this feature.'}
         </Text>
         <View style={styles.actions}>
-          <Button
-            title="Continue Access"
+          <Pressable
+            style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
             onPress={async () => {
               setActionLoading(true)
               try {
-                startTrial()
+                await startTrial()
               } finally {
                 setActionLoading(false)
               }
             }}
-            loading={actionLoading}
-            disabled={isPastDue}
-            fullWidth
-          />
-          <Button
-            title="Open Billing Portal"
+            disabled={isPastDue || actionLoading}
+          >
+            {actionLoading ? (
+              <ActivityIndicator size="small" color="#000" />
+            ) : (
+              <Text style={styles.primaryBtnText}>Continue Access</Text>
+            )}
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.7 }]}
             onPress={openBillingPortal}
-            variant="outline"
-            fullWidth
-            style={styles.secondaryAction}
-          />
+          >
+            <Text style={styles.outlinedBtnText}>Open Billing Portal</Text>
+          </Pressable>
         </View>
-      </Card>
+      </View>
     </View>
   )
 }
@@ -127,11 +132,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,
-    backgroundColor: colors.background,
+    backgroundColor: colors.bg,
   },
   card: {
     width: '100%',
     maxWidth: 400,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
     padding: spacing.xl,
     alignItems: 'center',
   },
@@ -139,7 +148,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.warning + '20',
+    backgroundColor: colors.warningSoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.lg,
@@ -149,10 +158,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
     marginBottom: spacing.md,
+    letterSpacing: -0.5,
+    lineHeight: 28,
   },
   description: {
     fontSize: 14,
@@ -165,7 +176,34 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: spacing.sm,
   },
-  secondaryAction: {
-    marginTop: spacing.xs,
+  primaryBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.neon,
+    borderRadius: radius.pill,
+    paddingVertical: 14,
+  },
+  primaryBtnText: {
+    color: colors.black,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  outlinedBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.pill,
+    paddingVertical: 14,
+  },
+  outlinedBtnText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: '600',
   },
 })

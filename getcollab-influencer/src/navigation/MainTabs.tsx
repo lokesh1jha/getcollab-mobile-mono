@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@shared/constants'
 import { useChatStore } from '@shared/stores/chat-store'
 
@@ -51,17 +52,35 @@ function InfluencerStack() {
             <Tab.Screen
               name="Dashboard"
               component={InfluencerDashboard}
-              options={{ tabBarLabel: 'Dashboard', tabBarAccessibilityLabel: 'Dashboard tab' }}
+              options={{
+                tabBarLabel: 'Dashboard',
+                tabBarAccessibilityLabel: 'Dashboard tab',
+                tabBarIcon: ({ color, focused }) => (
+                  <Ionicons name={focused ? 'grid' : 'grid-outline'} size={22} color={color} />
+                ),
+              }}
             />
             <Tab.Screen
               name="Discover"
               component={InfluencerDiscover}
-              options={{ tabBarLabel: 'Discover', tabBarAccessibilityLabel: 'Discover tab' }}
+              options={{
+                tabBarLabel: 'Discover',
+                tabBarAccessibilityLabel: 'Discover tab',
+                tabBarIcon: ({ color, focused }) => (
+                  <Ionicons name={focused ? 'compass' : 'compass-outline'} size={22} color={color} />
+                ),
+              }}
             />
             <Tab.Screen
               name="MyCampaigns"
               component={InfluencerCampaigns}
-              options={{ tabBarLabel: 'My Bids', tabBarAccessibilityLabel: 'My Bids tab' }}
+              options={{
+                tabBarLabel: 'My Bids',
+                tabBarAccessibilityLabel: 'My Bids tab',
+                tabBarIcon: ({ color, focused }) => (
+                  <Ionicons name={focused ? 'document-text' : 'document-text-outline'} size={22} color={color} />
+                ),
+              }}
             />
             <Tab.Screen
               name="Chat"
@@ -70,12 +89,21 @@ function InfluencerStack() {
                 tabBarLabel: 'Messages',
                 tabBarAccessibilityLabel: 'Messages tab',
                 tabBarBadge: totalUnread > 0 ? totalUnread : undefined,
+                tabBarIcon: ({ color, focused }) => (
+                  <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={22} color={color} />
+                ),
               }}
             />
             <Tab.Screen
               name="Profile"
               component={InfluencerProfile}
-              options={{ tabBarLabel: 'Profile', tabBarAccessibilityLabel: 'Profile tab' }}
+              options={{
+                tabBarLabel: 'Profile',
+                tabBarAccessibilityLabel: 'Profile tab',
+                tabBarIcon: ({ color, focused }) => (
+                  <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={color} />
+                ),
+              }}
             />
           </Tab.Navigator>
         )}

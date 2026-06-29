@@ -2,6 +2,7 @@ import React from 'react'
 import {
   TouchableOpacity,
   Text,
+  View,
   StyleSheet,
   ActivityIndicator,
   ViewStyle,
@@ -38,32 +39,26 @@ export const Button: React.FC<ButtonProps> = ({
   accessibilityLabel,
 }) => {
   const getButtonStyle = (): StyleProp<ViewStyle> => {
-    const styleArray: StyleProp<ViewStyle>[] = [styles.button, styles[size as keyof typeof styles] as ViewStyle]
-
-    if (variant === 'primary') styleArray.push(styles.primary)
-    else if (variant === 'secondary') styleArray.push(styles.secondary)
-    else if (variant === 'outline') styleArray.push(styles.outline)
-    else if (variant === 'ghost') styleArray.push(styles.ghost)
-    else if (variant === 'danger') styleArray.push(styles.danger)
-
-    if (disabled || loading) styleArray.push(styles.disabled)
-    if (fullWidth) styleArray.push(styles.fullWidth)
-
-    return styleArray
+    const arr: StyleProp<ViewStyle>[] = [styles.button, styles[size as keyof typeof styles] as ViewStyle]
+    if (variant === 'primary') arr.push(styles.primary)
+    else if (variant === 'secondary') arr.push(styles.secondary)
+    else if (variant === 'outline') arr.push(styles.outline)
+    else if (variant === 'ghost') arr.push(styles.ghost)
+    else if (variant === 'danger') arr.push(styles.danger)
+    if (disabled || loading) arr.push(styles.disabled)
+    if (fullWidth) arr.push(styles.fullWidth)
+    return arr
   }
 
   const getTextStyle = (): StyleProp<TextStyle> => {
-    const styleArray: StyleProp<TextStyle>[] = [styles.text, styles[`${size}Text` as keyof typeof styles] as TextStyle]
-
-    if (variant === 'primary') styleArray.push(styles.primaryText)
-    else if (variant === 'secondary') styleArray.push(styles.secondaryText)
-    else if (variant === 'outline') styleArray.push(styles.outlineText)
-    else if (variant === 'ghost') styleArray.push(styles.ghostText)
-    else if (variant === 'danger') styleArray.push(styles.dangerText)
-
-    if (disabled) styleArray.push(styles.disabledText)
-
-    return styleArray
+    const arr: StyleProp<TextStyle>[] = [styles.text, styles[`${size}Text` as keyof typeof styles] as TextStyle]
+    if (variant === 'primary') arr.push(styles.primaryText)
+    else if (variant === 'secondary') arr.push(styles.secondaryText)
+    else if (variant === 'outline') arr.push(styles.outlineText)
+    else if (variant === 'ghost') arr.push(styles.ghostText)
+    else if (variant === 'danger') arr.push(styles.dangerText)
+    if (disabled) arr.push(styles.disabledText)
+    return arr
   }
 
   return (
@@ -71,10 +66,9 @@ export const Button: React.FC<ButtonProps> = ({
       style={[getButtonStyle(), style]}
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.7}
+      activeOpacity={0.75}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || title}
-      accessibilityState={{ disabled: disabled || loading }}
     >
       {loading ? (
         <ActivityIndicator color={variant === 'outline' || variant === 'ghost' ? colors.primary : colors.white} />
@@ -94,6 +88,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: borderRadius.md,
+    // Minimum 44pt touch target (Apple HIG)
+    minHeight: 44,
   },
   contentRow: {
     flexDirection: 'row',
@@ -103,66 +99,33 @@ const styles = StyleSheet.create({
   sm: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
+    minHeight: 44,
   },
   md: {
-    paddingVertical: spacing.md - 2,
+    paddingVertical: 12,
     paddingHorizontal: spacing.lg,
+    minHeight: 44,
   },
   lg: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
+    minHeight: 48,
   },
-  primary: {
-    backgroundColor: colors.primary,
-  },
-  secondary: {
-    backgroundColor: colors.secondary,
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-  },
-  danger: {
-    backgroundColor: colors.error,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  fullWidth: {
-    width: '100%',
-  },
-  text: {
-    fontWeight: '600',
-  },
-  smText: {
-    fontSize: 14,
-  },
-  mdText: {
-    fontSize: 16,
-  },
-  lgText: {
-    fontSize: 18,
-  },
-  primaryText: {
-    color: colors.white,
-  },
-  secondaryText: {
-    color: colors.white,
-  },
-  outlineText: {
-    color: colors.primary,
-  },
-  ghostText: {
-    color: colors.primary,
-  },
-  dangerText: {
-    color: colors.white,
-  },
-  disabledText: {
-    color: colors.textMuted,
-  },
+  primary: { backgroundColor: colors.primary },
+  secondary: { backgroundColor: colors.secondary },
+  outline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary },
+  ghost: { backgroundColor: 'transparent' },
+  danger: { backgroundColor: colors.error },
+  disabled: { opacity: 0.45 },
+  fullWidth: { width: '100%' },
+  text: { fontWeight: '600' },
+  smText: { fontSize: 14 },
+  mdText: { fontSize: 15 },
+  lgText: { fontSize: 16 },
+  primaryText: { color: colors.white },
+  secondaryText: { color: colors.white },
+  outlineText: { color: colors.primary },
+  ghostText: { color: colors.primary },
+  dangerText: { color: colors.white },
+  disabledText: { color: colors.textMuted },
 })

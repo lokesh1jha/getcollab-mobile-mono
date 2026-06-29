@@ -4,66 +4,66 @@
 // export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api/v1'
 // export const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:3000'
 
-// Colors - trendy influencer-focused design system
+// Colors — Linear design system, matches web globals.css dark theme
 export const colors = {
-  // Primary gradient colors
-  primary: '#8B5CF6', // Vibrant Purple
-  primaryDark: '#7C3AED',
-  primaryLight: '#A78BFA',
-  
-  // Secondary gradient colors
-  secondary: '#EC4899', // Hot Pink
-  secondaryDark: '#DB2777',
-  secondaryLight: '#F472B6',
-  
-  // Accent colors
-  accent: '#06B6D4', // Cyan
-  accentDark: '#0891B2',
-  accentLight: '#22D3EE',
-  
-  // Background gradients
-  background: '#0F172A', // Deep Navy
-  backgroundGradient: ['#1E293B', '#0F172A'],
-  backgroundLight: '#1E293B',
-  
-  // Surface with gradient effect
-  surface: '#1E293B',
-  surfaceLight: '#334155',
-  surfaceGradient: ['#334155', '#1E293B'],
-  
-  // Text colors
-  text: '#F1F5F9', // Light Gray
-  textMuted: '#94A3B8', // Muted Gray
-  textDark: '#64748B',
-  
-  // Social media inspired colors
+  // Primary — Linear indigo
+  primary: '#5e6ad2',
+  primaryDark: '#4a55c0',
+  primaryLight: '#7b85dc',
+
+  // Secondary
+  secondary: '#141516',
+  secondaryDark: '#0f1011',
+  secondaryLight: '#18191a',
+
+  // Accent
+  accent: '#5e6ad2',
+  accentDark: '#4a55c0',
+  accentLight: '#7b85dc',
+
+  // Backgrounds — Linear canvas ladder
+  background: '#010102',
+  backgroundGradient: ['#0f1011', '#010102'],
+  backgroundLight: '#0f1011',
+
+  // Surfaces
+  surface: '#0f1011',
+  surfaceLight: '#141516',
+  surfaceGradient: ['#141516', '#0f1011'],
+
+  // Text
+  text: '#f7f8f8',
+  textMuted: '#8a8f98',
+  textDark: '#4a4f5a',
+
+  // Social media
   instagram: '#E1306C',
   youtube: '#FF0000',
-  tiktok: '#000000',
+  tiktok: '#ffffff',
   twitter: '#1DA1F2',
-  
-  // UI elements
-  border: '#334155',
-  borderLight: '#475569',
-  
-  // Status colors
-  error: '#EF4444',
-  errorDark: '#DC2626',
-  success: '#10B981',
-  successDark: '#059669',
+
+  // UI structure
+  border: '#23252a',
+  borderLight: '#2e3138',
+
+  // Status
+  error: '#e5484d',
+  errorDark: '#c83f44',
+  success: '#27a644',
+  successDark: '#1e8436',
   warning: '#F59E0B',
   warningDark: '#D97706',
   info: '#3B82F6',
-  
+
   // Neutrals
   white: '#FFFFFF',
   black: '#000000',
   transparent: 'transparent',
-  
-  // Gradient stops for trendy effects
-  gradient1: ['#8B5CF6', '#EC4899'],
-  gradient2: ['#06B6D4', '#8B5CF6'],
-  gradient3: ['#F472B6', '#8B5CF6'],
+
+  // Gradients
+  gradient1: ['#5e6ad2', '#7b85dc'],
+  gradient2: ['#4a55c0', '#5e6ad2'],
+  gradient3: ['#7b85dc', '#5e6ad2'],
 }
 
 // Spacing
@@ -216,6 +216,24 @@ export const CATEGORIES = [
   'Parenting',
   'Photography',
   'Art & Design',
+]
+
+// Content languages an influencer can create in.
+// Label is shown in UI; code is stored (BCP 47).
+export const CONTENT_LANGUAGES: { code: string; label: string }[] = [
+  { code: 'en', label: 'English' },
+  { code: 'hi', label: 'Hindi' },
+  { code: 'ta', label: 'Tamil' },
+  { code: 'te', label: 'Telugu' },
+  { code: 'kn', label: 'Kannada' },
+  { code: 'ml', label: 'Malayalam' },
+  { code: 'mr', label: 'Marathi' },
+  { code: 'gu', label: 'Gujarati' },
+  { code: 'pa', label: 'Punjabi' },
+  { code: 'bn', label: 'Bengali' },
+  { code: 'or', label: 'Odia' },
+  { code: 'as', label: 'Assamese' },
+  { code: 'ur', label: 'Urdu' },
 ]
 
 // Coin Packages for purchase

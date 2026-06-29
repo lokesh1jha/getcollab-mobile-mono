@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, spacing, CATEGORIES, REGIONS } from '@shared/constants'
@@ -6,9 +6,11 @@ import { Button } from '@shared/components/ui/Button'
 import { Input } from '@shared/components/ui/Input'
 import { useAuthStore } from '@shared/stores/auth-store'
 import apiService, { handleApiError } from '@shared/services/api'
+import { onboardingPathToStep } from '@shared/lib/onboarding-target'
 
 interface Props {
   navigation?: any
+  route?: { params?: { initialStep?: number } }
 }
 
 const CAMPAIGN_TYPES = ['Sponsored Posts', 'Product Reviews', 'Brand Ambassador', 'Affiliate', 'UGC', 'Event Coverage']
@@ -16,12 +18,14 @@ const AGE_RANGES = ['13-17', '18-24', '25-34', '35-44', '45-54', '55+']
 const GENDERS = ['Male', 'Female', 'Non-binary', 'All']
 const OBJECTIVES = ['Brand Awareness', 'Sales', 'Engagement', 'App Installs', 'Lead Gen', 'Content']
 
-export default function OnboardingScreen({ navigation }: Props) {
+export default function OnboardingScreen({ navigation, route }: Props) {
   const { user, fetchCurrentUser } = useAuthStore()
   const role = user?.role === 'brand' ? 'brand' : 'influencer'
   const totalSteps = role === 'brand' ? 3 : 2
-  const [step, setStep] = useState(1)
+  const [step, setStep] = useState(route?.params?.initialStep || 1)
   const [submitting, setSubmitting] = useState(false)
+  const [loadingState, setLoadingState] = useState(true)
+  const [termsAccepted, setTermsAccepted] = useState(false)
 
   // Brand state
   const [brandStep1, setBrandStep1] = useState({ companyName: '', websiteUrl: '', primaryPhone: '', industry: '' })
@@ -45,6 +49,59 @@ export default function OnboardingScreen({ navigation }: Props) {
     tiktok: '',
     tiktokFollowers: '',
   })
+
+  useEffect(() => {
+    const loadOnboardingState = async () => {
+      try {
+        const state = await apiService.getOnboardingState()
+        const currentStep = onboardingPathToStep(
+          state?.currentStep || user?.onboardingCurrentStep,
+          role
+        )
+        setStep(route?.params?.initialStep || currentStep)
+
+        if (role === 'brand' && state?.brand) {
+          const profile = state.brand.profile || {}
+          const campaigns = state.brand.campaigns || {}
+          const scale = state.brand.scale || {}
+          setBrandStep1({
+            companyName: profile.companyName || '',
+            websiteUrl: profile.websiteUrl || '',
+            primaryPhone: profile.primaryPhone || '',
+            industry: profile.industry || '',
+          })
+          setBrandStep2({
+            campaignTypes: campaigns.campaignTypes || [],
+            ageRanges: campaigns.targetAudience?.ageRanges || [],
+            genders: campaigns.targetAudience?.genders || [],
+            location: campaigns.targetAudience?.location || '',
+            creatorCategories: campaigns.creatorCategories || [],
+            objectives: campaigns.objectives || [],
+          })
+          setBrandStep3({
+            budgetRange: scale.budgetRange || '',
+            companySize: scale.companySize || '',
+            timeline: scale.timeline || '',
+            frequency: scale.frequency || '',
+          })
+        }
+      } catch (error) {
+        console.warn('Failed to load onboarding state:', error)
+      } finally {
+        setLoadingState(false)
+      }
+    }
+
+    loadOnboardingState()
+  }, [role, route?.params?.initialStep, user?.onboardingCurrentStep])
+
+  if (loadingState) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
+    )
+  }
 
   const toggle = (list: string[], v: string) =>
     list.includes(v) ? list.filter((x) => x !== v) : [...list, v]
@@ -99,6 +156,10 @@ export default function OnboardingScreen({ navigation }: Props) {
   }
 
   const handleBrandStep3 = async () => {
+    if (!termsAccepted) {
+      Alert.alert('Terms required', 'Please accept the Terms of Service to continue.')
+      return
+    }
     setSubmitting(true)
     try {
       await apiService.submitBrandOnboardingStep3({
@@ -107,11 +168,13 @@ export default function OnboardingScreen({ navigation }: Props) {
         timeline: brandStep3.timeline,
         frequency: brandStep3.frequency,
         currency: 'INR',
+        termsAccepted: true,
       })
       await fetchCurrentUser()
-      Alert.alert('Welcome aboard!', 'Your brand profile is set up. Start your free trial to launch campaigns.', [
-        { text: "Let's go", onPress: () => navigation?.navigate('Subscription') },
-      ])
+      navigation?.reset({
+        index: 1,
+        routes: [{ name: 'MainTabs' }, { name: 'Subscription' }],
+      })
     } catch (e) {
       handleApiError(e, 'Failed to complete onboarding')
     } finally {
@@ -164,9 +227,10 @@ export default function OnboardingScreen({ navigation }: Props) {
         },
       })
       await fetchCurrentUser()
-      Alert.alert('You\'re all set!', 'Time to find campaigns that match your style.', [
-        { text: 'Discover Campaigns', onPress: () => navigation?.navigate('Discover') },
-      ])
+      navigation?.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs' }],
+      })
     } catch (e) {
       handleApiError(e, 'Failed to complete onboarding')
     } finally {
@@ -268,6 +332,13 @@ export default function OnboardingScreen({ navigation }: Props) {
         <SectionLabel label="Campaign Frequency" />
         {renderChips(['Monthly', 'Quarterly', 'One-time', 'Ongoing'], [brandStep3.frequency], (v) => setBrandStep3({ ...brandStep3, frequency: brandStep3.frequency === v ? '' : v }))}
 
+        <TouchableOpacity style={styles.termsRow} onPress={() => setTermsAccepted((v) => !v)}>
+          <View style={[styles.termsBox, termsAccepted && styles.termsBoxActive]}>
+            {termsAccepted ? <Text style={styles.termsCheck}>✓</Text> : null}
+          </View>
+          <Text style={styles.termsText}>I accept GetCollab Terms of Service and Privacy Policy</Text>
+        </TouchableOpacity>
+
         <View style={styles.actionRow}>
           <Button title="Back" variant="outline" onPress={() => setStep(2)} style={{ flex: 1 }} />
           <Button title={submitting ? 'Finishing...' : 'Finish & Start Trial'} onPress={handleBrandStep3} loading={submitting} disabled={submitting} style={{ flex: 1 }} />
@@ -365,4 +436,18 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 13, color: colors.text },
   chipTextActive: { color: colors.white },
   actionRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
+  termsRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg },
+  termsBox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  termsBoxActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  termsCheck: { color: colors.white, fontSize: 12, fontWeight: '700' },
+  termsText: { flex: 1, color: colors.textMuted, fontSize: 13, lineHeight: 18 },
 })

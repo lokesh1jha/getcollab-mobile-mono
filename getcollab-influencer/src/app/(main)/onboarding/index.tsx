@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing, CATEGORIES, REGIONS } from '@shared/constants'
+import { colors, spacing, CATEGORIES, REGIONS, CONTENT_LANGUAGES } from '@shared/constants'
 import { Button } from '@shared/components/ui/Button'
 import { Input } from '@shared/components/ui/Input'
 import { useAuthStore } from '@shared/stores/auth-store'
@@ -36,7 +36,7 @@ export default function OnboardingScreen({ navigation }: Props) {
   const [brandStep3, setBrandStep3] = useState({ budgetRange: '', companySize: '', timeline: '', frequency: '' })
 
   // Influencer state
-  const [infStep1, setInfStep1] = useState({ bio: '', location: '', phoneNumber: '', categories: [] as string[] })
+  const [infStep1, setInfStep1] = useState({ bio: '', location: '', phoneNumber: '', categories: [] as string[], languages: [] as string[] })
   const [infStep2, setInfStep2] = useState({
     instagram: '',
     instagramFollowers: '',
@@ -132,12 +132,17 @@ export default function OnboardingScreen({ navigation }: Props) {
       Alert.alert('Categories', 'Pick at least one category.')
       return
     }
+    if (infStep1.languages.length === 0) {
+      Alert.alert('Content Language', 'Pick at least one language you create content in.')
+      return
+    }
     setSubmitting(true)
     try {
       await apiService.submitInfluencerOnboardingStep1({
         bio: infStep1.bio,
         location: infStep1.location,
         categories: infStep1.categories,
+        languages: infStep1.languages,
         phoneNumber: infStep1.phoneNumber || undefined,
       })
       setStep(2)
@@ -290,6 +295,17 @@ export default function OnboardingScreen({ navigation }: Props) {
 
         <SectionLabel label="Categories *" />
         {renderChips(CATEGORIES, infStep1.categories, (v) => setInfStep1({ ...infStep1, categories: toggle(infStep1.categories, v) }))}
+
+        <SectionLabel label="Content Languages *" />
+        {renderChips(
+          CONTENT_LANGUAGES.map((l) => l.label),
+          CONTENT_LANGUAGES.filter((l) => infStep1.languages.includes(l.code)).map((l) => l.label),
+          (label) => {
+            const lang = CONTENT_LANGUAGES.find((l) => l.label === label)
+            if (!lang) return
+            setInfStep1({ ...infStep1, languages: toggle(infStep1.languages, lang.code) })
+          },
+        )}
 
         <Button title={submitting ? 'Saving...' : 'Continue'} onPress={handleInfStep1} loading={submitting} disabled={submitting} fullWidth style={{ marginTop: spacing.lg }} />
       </Wrapper>

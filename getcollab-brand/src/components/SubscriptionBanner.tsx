@@ -1,6 +1,7 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
-import { colors, spacing } from '@shared/constants'
+import { View, Text, StyleSheet, Pressable } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
+import { colors, spacing, radius } from '@/src/theme'
 import { useSubscriptionStore, getTrialDaysRemaining } from '../stores/subscription-store'
 
 export function SubscriptionBanner() {
@@ -16,63 +17,67 @@ export function SubscriptionBanner() {
     if (daysLeft !== null) {
       const urgent = daysLeft <= 3
       return (
-        <TouchableOpacity
-          style={[styles.banner, urgent && styles.bannerUrgent]}
-          onPress={openBillingPortal}
-          activeOpacity={0.8}
-        >
-          <View style={styles.bannerContent}>
-            <Text style={styles.text}>
-              {urgent
-                ? `Your workspace trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`
-                : `Workspace trial · ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`}
-            </Text>
-            <Text style={styles.cta}>Manage Workspace</Text>
-          </View>
-        </TouchableOpacity>
+        <Animated.View entering={FadeInDown.duration(400)}>
+          <Pressable
+            style={({ pressed }) => [styles.banner, urgent && styles.bannerUrgent, pressed && { opacity: 0.85 }]}
+            onPress={openBillingPortal}
+          >
+            <View style={styles.bannerContent}>
+              <Text style={styles.bannerText}>
+                {urgent
+                  ? `Your workspace trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`
+                  : `Workspace trial · ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`}
+              </Text>
+              <Text style={styles.bannerCta}>Manage →</Text>
+            </View>
+          </Pressable>
+        </Animated.View>
       )
     }
     return (
-      <TouchableOpacity
-        style={[styles.banner, styles.bannerError]}
-        onPress={openBillingPortal}
-        activeOpacity={0.8}
-      >
-        <View style={styles.bannerContent}>
-          <Text style={styles.text}>Trial ended — renew to continue access.</Text>
-          <Text style={styles.cta}>Open Billing Portal</Text>
-        </View>
-      </TouchableOpacity>
+      <Animated.View entering={FadeInDown.duration(400)}>
+        <Pressable
+          style={({ pressed }) => [styles.banner, styles.bannerError, pressed && { opacity: 0.85 }]}
+          onPress={openBillingPortal}
+        >
+          <View style={styles.bannerContent}>
+            <Text style={styles.bannerText}>Trial ended — renew to continue access.</Text>
+            <Text style={styles.bannerCta}>Manage →</Text>
+          </View>
+        </Pressable>
+      </Animated.View>
     )
   }
 
   if (status === 'PAST_DUE') {
     return (
-      <TouchableOpacity
-        style={[styles.banner, styles.bannerError]}
-        onPress={openBillingPortal}
-        activeOpacity={0.8}
-      >
-        <View style={styles.bannerContent}>
-          <Text style={styles.text}>Payment issue. Update billing to continue access.</Text>
-          <Text style={styles.cta}>Open Billing Portal</Text>
-        </View>
-      </TouchableOpacity>
+      <Animated.View entering={FadeInDown.duration(400)}>
+        <Pressable
+          style={({ pressed }) => [styles.banner, styles.bannerError, pressed && { opacity: 0.85 }]}
+          onPress={openBillingPortal}
+        >
+          <View style={styles.bannerContent}>
+            <Text style={styles.bannerText}>Payment issue. Update billing to continue access.</Text>
+            <Text style={styles.bannerCta}>Manage →</Text>
+          </View>
+        </Pressable>
+      </Animated.View>
     )
   }
 
   if (status === 'EXPIRED' || status === 'CANCELLED') {
     return (
-      <TouchableOpacity
-        style={[styles.banner, styles.bannerError]}
-        onPress={openBillingPortal}
-        activeOpacity={0.8}
-      >
-        <View style={styles.bannerContent}>
-          <Text style={styles.text}>Workspace access ended. Manage subscription online.</Text>
-          <Text style={styles.cta}>Continue Access</Text>
-        </View>
-      </TouchableOpacity>
+      <Animated.View entering={FadeInDown.duration(400)}>
+        <Pressable
+          style={({ pressed }) => [styles.banner, styles.bannerError, pressed && { opacity: 0.85 }]}
+          onPress={openBillingPortal}
+        >
+          <View style={styles.bannerContent}>
+            <Text style={styles.bannerText}>Workspace access ended. Manage subscription online.</Text>
+            <Text style={styles.bannerCta}>Continue →</Text>
+          </View>
+        </Pressable>
+      </Animated.View>
     )
   }
 
@@ -81,13 +86,13 @@ export function SubscriptionBanner() {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
+    backgroundColor: colors.blue,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     marginHorizontal: spacing.lg,
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   bannerUrgent: {
     backgroundColor: colors.warning,
@@ -100,14 +105,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  text: {
-    color: colors.white,
+  bannerText: {
+    color: '#fff',
     fontSize: 13,
     fontWeight: '600',
     flex: 1,
   },
-  cta: {
-    color: colors.white,
+  bannerCta: {
+    color: '#fff',
     fontSize: 13,
     fontWeight: '700',
     marginLeft: spacing.sm,

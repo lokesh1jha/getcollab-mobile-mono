@@ -4,9 +4,9 @@ import { notificationService } from '../services/notification-service'
 import type { User } from '../types'
 import { useChatStore } from './chat-store'
 import { useCampaignStore } from './campaign-store'
-import { useInfluencerStore, useSettingsStore } from './influencer-store'
+import { useInfluencerStore } from './influencer-store'
+import { useSettingsStore } from './settings-store'
 import { useNotificationStore } from './notification-store'
-import { useSubscriptionStore } from './subscription-store'
 
 interface AuthState {
   user: User | null
@@ -45,15 +45,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await apiService.setRefreshToken(response.refreshToken)
       }
 
-      const userData: any = response.user || response.data
-      set({
-        user: userData ? {
-          ...userData,
-          phoneNumbers: userData.phoneNumbers ?? []
-        } as User : null,
-        isAuthenticated: true,
-        isLoading: false,
-      })
+      await get().fetchCurrentUser()
     } catch (error: any) {
       set({
         error: error.message || 'Failed to sign in',
@@ -68,25 +60,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const response = await apiService.signup({ name, email, password, role })
 
-      // Store JWT token if returned by backend
       if (response.token) {
         await apiService.setToken(response.token)
       }
 
-      // Store refresh token if returned
       if (response.refreshToken) {
         await apiService.setRefreshToken(response.refreshToken)
       }
 
-      const userData: any = response.user || response.data
-      set({
-        user: userData ? {
-          ...userData,
-          phoneNumbers: userData.phoneNumbers ?? []
-        } as User : null,
-        isAuthenticated: true,
-        isLoading: false,
-      })
+      await apiService.updateRole(role)
+      await get().fetchCurrentUser()
     } catch (error: any) {
       set({
         error: error.message || 'Failed to sign up',
@@ -115,7 +98,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       useInfluencerStore.getState().reset()
       useNotificationStore.getState().reset()
       useSettingsStore.getState().reset()
-      useSubscriptionStore.getState().reset()
 
       // Clear stored tokens
       await apiService.clearTokens()
@@ -131,14 +113,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   updateRole: async (role: 'brand' | 'influencer') => {
     set({ isLoading: true, error: null })
     try {
-      await apiService.updateProfile({ role })
-      const currentUser = get().user
-      if (currentUser) {
-        set({
-          user: { ...currentUser, role },
-          isLoading: false,
-        })
-      }
+      await apiService.updateRole(role)
+      await get().fetchCurrentUser()
     } catch (error: any) {
       set({
         error: error.message || 'Failed to update role',
@@ -151,13 +127,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   updateProfile: async (updates: Partial<User>) => {
     set({ isLoading: true, error: null })
     try {
-      await apiService.updateProfile(updates)
       const currentUser = get().user
+      if (currentUser?.role === 'brand') {
+        await apiService.updateGeneralProfile({
+          name: updates.name,
+          websiteUrl: (updates as any).portfolioUrl,
+        })
+      } else {
+        await apiService.updateProfile(updates)
+      }
       if (currentUser) {
         set({
           user: { ...currentUser, ...updates },
           isLoading: false,
         })
+      } else {
+        set({ isLoading: false })
       }
     } catch (error: any) {
       set({

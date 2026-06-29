@@ -1,24 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TextInput, Pressable, ActivityIndicator } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, spacing } from '@shared/constants'
+import { colors, radius, spacing } from '@/src/theme'
 import { apiService } from '@shared/services/api'
 import { useChatStore } from '@shared/stores/chat-store'
 
-interface Chat {
-  id: string
-  influencerName: string
-  influencerHandle: string
-  lastMessage: string
-  timestamp: string
-  unread: number
-  campaignTitle: string
-}
-
-interface BrandChatScreenProps {
-  navigation?: any
-}
+interface Chat { id: string; influencerName: string; influencerHandle: string; lastMessage: string; timestamp: string; unread: number; campaignTitle: string }
+interface Props { navigation?: any }
 
 const formatTimestamp = (date: Date): string => {
   const now = new Date()
@@ -26,24 +17,21 @@ const formatTimestamp = (date: Date): string => {
   const minutes = Math.floor(diff / 60000)
   const hours = Math.floor(diff / 3600000)
   const days = Math.floor(diff / 86400000)
-
   if (minutes < 1) return 'Just now'
-  if (minutes < 60) return `${minutes}m ago`
-  if (hours < 24) return `${hours}h ago`
-  if (days < 7) return `${days}d ago`
+  if (minutes < 60) return `${minutes}m`
+  if (hours < 24) return `${hours}h`
+  if (days < 7) return `${days}d`
   return date.toLocaleDateString()
 }
 
-export default function BrandChatScreen({ navigation }: BrandChatScreenProps) {
+export default function BrandChatScreen({ navigation }: Props) {
   const [chats, setChats] = useState<Chat[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
   const initializeSocketConnection = useCallback(async () => {
     const chatStore = useChatStore.getState()
-    if (!chatStore.socket) {
-      await chatStore.initializeSocket()
-    }
+    if (!chatStore.socket) await chatStore.initializeSocket()
   }, [])
 
   const loadChats = useCallback(async () => {
@@ -51,265 +39,123 @@ export default function BrandChatScreen({ navigation }: BrandChatScreenProps) {
     try {
       const response = await apiService.getChats()
       const rooms = response?.data || response || []
-      const mappedChats: Chat[] = (Array.isArray(rooms) ? rooms : []).map((room: any) => ({
+      const mapped: Chat[] = (Array.isArray(rooms) ? rooms : []).map((room: any) => ({
         id: room.id,
         influencerName: room.influencerName || room.influencer?.name || 'Unknown',
         influencerHandle: room.influencerHandle || room.influencer?.handle || '',
         lastMessage: room.lastMessage?.content || room.lastMessage || 'No messages yet',
-        timestamp: room.lastMessage?.createdAt
-          ? formatTimestamp(new Date(room.lastMessage.createdAt))
-          : 'New',
+        timestamp: room.lastMessage?.createdAt ? formatTimestamp(new Date(room.lastMessage.createdAt)) : 'New',
         unread: room.unreadCount || 0,
         campaignTitle: room.campaign?.title || room.campaignTitle || 'Direct Message',
       }))
-      setChats(mappedChats)
-    } catch (error) {
-      console.error('Failed to load chats:', error)
-    } finally {
-      setLoading(false)
-    }
+      setChats(mapped)
+    } catch (error) { console.error('Failed to load chats:', error) }
+    finally { setLoading(false) }
   }, [])
 
-  useEffect(() => {
-    loadChats()
-    initializeSocketConnection()
-  }, [loadChats, initializeSocketConnection])
+  useEffect(() => { loadChats(); initializeSocketConnection() }, [loadChats, initializeSocketConnection])
+  useFocusEffect(useCallback(() => { loadChats() }, [loadChats]))
 
-  useFocusEffect(
-    useCallback(() => {
-      loadChats()
-    }, [loadChats])
-  )
-
-  const filteredChats = useMemo(
-    () =>
-      chats.filter(
-        (chat) =>
-          chat.influencerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          chat.influencerHandle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          chat.campaignTitle.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-    [chats, searchQuery]
-  )
-
-  const renderChat = useCallback(
-    ({ item }: { item: Chat }) => (
-      <TouchableOpacity
-        style={styles.chatItem}
-        onPress={() => navigation?.navigate('ChatDetail', { chat: item, roomId: item.id })}
-      >
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{item.influencerName.charAt(0)}</Text>
-        </View>
-
-        <View style={styles.chatContent}>
-          <View style={styles.chatHeader}>
-            <View>
-              <Text style={styles.influencerName}>{item.influencerName}</Text>
-              <Text style={styles.influencerHandle}>{item.influencerHandle}</Text>
-            </View>
-            <View style={styles.rightHeader}>
-              <Text style={styles.timestamp}>{item.timestamp}</Text>
-              {item.unread > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{item.unread}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          <Text style={styles.campaignTitle}>{item.campaignTitle}</Text>
-          <Text style={styles.lastMessage} numberOfLines={1}>
-            {item.lastMessage}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    ),
-    [navigation]
-  )
-
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyTitle}>No conversations yet</Text>
-      <Text style={styles.emptySubtitle}>
-        When creators apply to your campaigns, you can message them here
-      </Text>
-    </View>
-  )
+  const filtered = useMemo(() => chats.filter((c) => c.influencerName.toLowerCase().includes(searchQuery.toLowerCase()) || c.influencerHandle.toLowerCase().includes(searchQuery.toLowerCase()) || c.campaignTitle.toLowerCase().includes(searchQuery.toLowerCase())), [chats, searchQuery])
+  const totalUnread = chats.reduce((acc, c) => acc + c.unread, 0)
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </SafeAreaView>
+      <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.neon} />
+      </View>
     )
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+    <View style={styles.root}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.header}>
-          <Text style={styles.title}>Messages</Text>
-          <Text style={styles.subtitle}>Communicate with creators</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Inbox</Text>
+            <Text style={styles.subtitle}>{totalUnread} unread · {chats.length} conversations</Text>
+          </View>
+          <Pressable style={styles.iconBtn}>
+            <Ionicons name="create-outline" size={20} color="#fff" />
+          </Pressable>
         </View>
 
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search conversations..."
-            placeholderTextColor={colors.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+        <View style={styles.searchWrap}>
+          <Ionicons name="search" size={18} color={colors.textMuted} />
+          <TextInput value={searchQuery} onChangeText={setSearchQuery} placeholder="Search conversations" placeholderTextColor={colors.textSubtle} style={styles.searchInput} />
         </View>
 
         <FlatList
-          data={filteredChats}
-          renderItem={renderChat}
+          data={filtered}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={renderEmptyState}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={10}
+          contentContainerStyle={{ paddingBottom: spacing.xxl }}
+          renderItem={({ item, index }) => (
+            <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+              <Pressable
+                style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.card }]}
+                onPress={() => navigation?.navigate('ChatDetail', { chat: item, roomId: item.id })}
+              >
+                <View>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{item.influencerName.charAt(0)}</Text>
+                  </View>
+                </View>
+                <View style={styles.rowBody}>
+                  <View style={styles.rowTop}>
+                    <Text style={styles.name} numberOfLines={1}>{item.influencerName}</Text>
+                    <Text style={[styles.time, item.unread > 0 && { color: colors.blue, fontWeight: '700' }]}>{item.timestamp}</Text>
+                  </View>
+                  <View style={styles.rowBottom}>
+                    <Text style={[styles.preview, item.unread > 0 && { color: '#fff' }]} numberOfLines={1}>{item.lastMessage}</Text>
+                    {item.unread > 0 && (
+                      <View style={styles.unreadBadge}>
+                        <Text style={styles.unreadText}>{item.unread}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </Pressable>
+            </Animated.View>
+          )}
+          ItemSeparatorComponent={() => <View style={styles.sep} />}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <View style={styles.emptyIcon}><Ionicons name="chatbubbles-outline" size={26} color={colors.textMuted} /></View>
+              <Text style={styles.emptyTitle}>No conversations</Text>
+              <Text style={styles.emptySub}>Reach out to creators to start a chat.</Text>
+            </View>
+          }
         />
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    flex: 1,
-    padding: spacing.lg,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    marginBottom: spacing.lg,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textMuted,
-  },
-  searchContainer: {
-    marginBottom: spacing.lg,
-  },
-  searchInput: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  listContainer: {
-    flexGrow: 1,
-  },
-  chatItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border + '80',
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  avatarText: {
-    color: colors.white,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  chatContent: {
-    flex: 1,
-  },
-  chatHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.xs,
-  },
-  influencerName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  influencerHandle: {
-    fontSize: 14,
-    color: colors.primary,
-  },
-  rightHeader: {
-    alignItems: 'flex-end',
-    gap: spacing.xs,
-  },
-  timestamp: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  badge: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    minWidth: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xs,
-  },
-  badgeText: {
-    color: colors.white,
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  campaignTitle: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-  },
-  lastMessage: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: spacing.xxl,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
+  root: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
+  subtitle: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
+
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: spacing.lg, marginTop: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
+  searchInput: { flex: 1, color: '#fff', fontSize: 14, padding: 0 },
+
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: 14 },
+  avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { color: '#fff', fontSize: 20, fontWeight: '700' },
+  rowBody: { flex: 1, gap: 4 },
+  rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  name: { color: '#fff', fontSize: 15, fontWeight: '600', flex: 1, paddingRight: 8 },
+  time: { color: colors.textMuted, fontSize: 11 },
+  rowBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  preview: { color: colors.textMuted, fontSize: 13, flex: 1, paddingRight: 8 },
+  unreadBadge: { minWidth: 20, height: 20, paddingHorizontal: 6, borderRadius: 10, backgroundColor: colors.blue, alignItems: 'center', justifyContent: 'center' },
+  unreadText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  sep: { height: 1, backgroundColor: colors.border, marginLeft: spacing.lg + 52 + spacing.md },
+
+  empty: { alignItems: 'center', paddingTop: spacing.xxxl, gap: spacing.sm },
+  emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  emptyTitle: { color: '#fff', fontSize: 16, fontWeight: '700', marginTop: spacing.sm },
+  emptySub: { color: colors.textMuted, fontSize: 13 },
 })

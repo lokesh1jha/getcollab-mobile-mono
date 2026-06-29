@@ -11,6 +11,8 @@ export interface User {
   emailVerified?: boolean
   createdAt?: string
   onboardingCompleted?: boolean
+  onboardingCurrentStep?: string | null
+  termsAcceptedAt?: string | null
   subscription?: Subscription | null
   [key: string]: any
 }

@@ -69,18 +69,35 @@ class ApiService {
     }
   }
 
-  async setToken(token: string): Promise<void> {
+  async setToken(token: any): Promise<void> {
     try {
-      await SecureStore.setItemAsync(TOKEN_KEY, token)
+      const value = this.extractTokenString(token)
+      if (!value) return
+      await SecureStore.setItemAsync(TOKEN_KEY, value)
     } catch (error) {
       console.error('Failed to store token in SecureStore:', error)
       throw error
     }
   }
 
-  async setRefreshToken(refreshToken: string): Promise<void> {
+  private extractTokenString(token: any): string | null {
+    if (!token) return null
+    if (typeof token === 'string') return token
+    // Handle objects: { accessToken }, { access }, { token }, { jwt }
+    if (typeof token === 'object') {
+      const t = token.accessToken || token.access || token.token || token.jwt
+      if (typeof t === 'string') return t
+      // Last resort: JSON-encode the object
+      return JSON.stringify(token)
+    }
+    return String(token)
+  }
+
+  async setRefreshToken(refreshToken: any): Promise<void> {
     try {
-      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken)
+      const value = this.extractTokenString(refreshToken)
+      if (!value) return
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, value)
     } catch (error) {
       console.error('Failed to store refresh token:', error)
     }
@@ -242,7 +259,7 @@ class ApiService {
 
   async getMyCampaigns(params?: Record<string, any>): Promise<any> {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
-    return this.request(`/campaigns/mine${queryString}`)
+    return this.request(`/campaigns/brand${queryString}`)
   }
 
   async getCampaign(id: string): Promise<any> {
@@ -258,9 +275,13 @@ class ApiService {
 
   async updateCampaign(id: string, data: any): Promise<any> {
     return this.request(`/campaigns/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data),
     })
+  }
+
+  async publishCampaign(id: string): Promise<any> {
+    return this.request(`/campaigns/${id}/publish`, { method: 'PATCH' })
   }
 
   async deleteCampaign(id: string): Promise<any> {
@@ -294,9 +315,9 @@ class ApiService {
   }
 
   async updateBidStatus(bidId: string, status: string): Promise<any> {
-    return this.request(`/bids/${bidId}/status`, {
+    return this.request('/bids', {
       method: 'PATCH',
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ bidId, status }),
     })
   }
 
@@ -335,7 +356,7 @@ class ApiService {
   // ------- Influencers / Discovery -------
   async getInfluencers(params?: Record<string, any>): Promise<any> {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
-    return this.request(`/influencers/${queryString}`)
+    return this.request(`/influencers${queryString}`)
   }
 
   async getInfluencer(id: string): Promise<any> {
@@ -392,9 +413,31 @@ class ApiService {
 
   async updateProfile(data: any): Promise<any> {
     return this.request('/profile', {
-      method: 'PUT',
+      method: 'POST',
       body: JSON.stringify(data),
     })
+  }
+
+  async updateGeneralProfile(data: { name?: string; websiteUrl?: string; industry?: string; phoneNumbers?: string[] }): Promise<any> {
+    return this.request('/settings/profile', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateRole(role: 'brand' | 'influencer'): Promise<any> {
+    return this.request('/auth/update-role', {
+      method: 'POST',
+      body: JSON.stringify({ role }),
+    })
+  }
+
+  async acceptTerms(): Promise<any> {
+    return this.request('/auth/accept-terms', { method: 'POST', body: JSON.stringify({}) })
+  }
+
+  async getOnboardingState(): Promise<any> {
+    return this.request('/onboarding/state')
   }
 
   async uploadProfileImage(base64Image: string): Promise<any> {
@@ -446,7 +489,7 @@ class ApiService {
 
   async updateNotificationSettings(data: any): Promise<any> {
     return this.request('/settings/notifications', {
-      method: 'PUT',
+      method: 'POST',
       body: JSON.stringify(data),
     })
   }
@@ -610,35 +653,35 @@ class ApiService {
 
   // ------- Onboarding -------
   async submitBrandOnboardingStep1(data: any): Promise<any> {
-    return this.request('/auth/onboarding/brand', {
+    return this.request('/onboarding/brand/profile', {
       method: 'POST',
       body: JSON.stringify(data),
     })
   }
 
   async submitBrandOnboardingStep2(data: any): Promise<any> {
-    return this.request('/auth/onboarding/brand/step-2-campaigns', {
+    return this.request('/onboarding/brand/campaigns', {
       method: 'POST',
       body: JSON.stringify(data),
     })
   }
 
   async submitBrandOnboardingStep3(data: any): Promise<any> {
-    return this.request('/auth/onboarding/brand/step-3-scale', {
+    return this.request('/onboarding/brand/scale', {
       method: 'POST',
       body: JSON.stringify(data),
     })
   }
 
   async submitInfluencerOnboardingStep1(data: any): Promise<any> {
-    return this.request('/auth/onboarding/influencer/step-2-profile', {
+    return this.request('/onboarding/influencer/profile', {
       method: 'POST',
       body: JSON.stringify(data),
     })
   }
 
   async submitInfluencerOnboardingStep2(data: any): Promise<any> {
-    return this.request('/auth/onboarding/influencer/step-3-socials', {
+    return this.request('/onboarding/influencer/socials', {
       method: 'POST',
       body: JSON.stringify(data),
     })
@@ -653,9 +696,9 @@ class ApiService {
   }
 
   async inviteCreatorToCampaign(campaignId: string, influencerId: string, message?: string): Promise<any> {
-    return this.request('/campaigns/invite', {
+    return this.request(`/campaigns/${campaignId}/invite`, {
       method: 'POST',
-      body: JSON.stringify({ campaignId, influencerId, message }),
+      body: JSON.stringify({ influencerId, message }),
     })
   }
 

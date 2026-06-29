@@ -3,9 +3,10 @@ import { Linking, Alert, AppState, AppStateStatus } from 'react-native'
 import { useEffect, useRef } from 'react'
 import apiService from '@shared/services/api'
 import { logger } from '@shared/services/logger'
+import { useAuthStore } from '@shared/stores/auth-store'
 import type { Subscription, SubscriptionStatus } from '@shared/types'
 
-const BILLING_PORTAL_URL = '/billing'
+const BILLING_PORTAL_URL = 'https://getcollab.in/dashboard/billing'
 const STALE_THRESHOLD_MS = 5 * 60 * 1000
 const BACKGROUND_REFRESH_INTERVAL_MS = 60 * 1000
 const MAX_RETRIES = 3
@@ -58,7 +59,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   fetchStatus: async () => {
     set({ loading: true, error: null })
     try {
-      const response = await apiService.get('/subscriptions/mobile-status')
+      const response = await apiService.get('/subscriptions/mobile-status') as any
       const data = response?.data || response
       set({ subscription: normalizeSubscription(data), loading: false, lastFetchedAt: Date.now(), retryCount: 0 })
     } catch (error: any) {
@@ -84,7 +85,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       return
     }
     try {
-      const response = await apiService.get('/subscriptions/mobile-status')
+      const response = await apiService.get('/subscriptions/mobile-status') as any
       const data = response?.data || response
       set({ subscription: normalizeSubscription(data), lastFetchedAt: Date.now(), retryCount: 0 })
     } catch {
@@ -96,7 +97,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   startTrial: async () => {
     set({ loading: true, error: null })
     try {
-      const response = await apiService.post('/subscriptions/start-trial', {})
+      const response = await apiService.post('/subscriptions/start-trial', {}) as any
       const data = response?.subscription || response?.data || response
       set({ subscription: normalizeSubscription(data), loading: false, lastFetchedAt: Date.now() })
       logger.capture('subscription_trial_started')
@@ -138,6 +139,13 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     retryCount: 0,
   }),
 }))
+
+// Reset when the user signs out (auth-store is shared and can't import brand-specific stores)
+useAuthStore.subscribe((state, prev) => {
+  if (prev.isAuthenticated && !state.isAuthenticated) {
+    useSubscriptionStore.getState().reset()
+  }
+})
 
 export function useSubscriptionBackgroundRefresh() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)

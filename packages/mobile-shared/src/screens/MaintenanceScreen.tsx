@@ -1,41 +1,44 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Image, ImageSourcePropType } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, spacing } from '../constants'
 
 interface MaintenanceScreenProps {
   onRetry: () => void
+  logo?: ImageSourcePropType
 }
 
-export default function MaintenanceScreen({ onRetry }: MaintenanceScreenProps) {
+export default function MaintenanceScreen({ onRetry, logo }: MaintenanceScreenProps) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Image 
-          source={require('../../assets/icon.png')} 
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        
+        {logo ? (
+          <Image
+            source={logo}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        ) : null}
+
         <View style={styles.iconContainer}>
           <Text style={styles.icon}>🔧</Text>
         </View>
-        
+
         <Text style={styles.title}>Under Maintenance</Text>
         <Text style={styles.subtitle}>We'll be back soon</Text>
-        
+
         <Text style={styles.description}>
           We're currently performing maintenance to improve your experience. Please try again in a few moments.
         </Text>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.button}
           onPress={onRetry}
           activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>Try Again</Text>
         </TouchableOpacity>
-        
+
         <Text style={styles.footer}>
           Need help? Contact us at support@getcollab.com
         </Text>

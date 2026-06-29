@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 're
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, spacing } from '@shared/constants'
 import { Card } from '@shared/components/ui'
-import { PortfolioGallery } from '../../../components/PortfolioGallery'
+import { PortfolioGallery } from '@shared/components/PortfolioGallery'
 import apiService from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 

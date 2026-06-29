@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
+import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing } from '../constants'
 import { useAuthStore } from '../stores/auth-store'
 import apiService, { handleApiError } from '../services/api'
@@ -30,19 +31,30 @@ export function EmailVerificationBanner() {
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>Verify your email</Text>
         <Text style={styles.body} numberOfLines={2}>
-          We need to confirm <Text style={styles.email}>{user.email}</Text>. Tap to resend the link.
+          Confirm <Text style={styles.email}>{user.email}</Text> to unlock all features.
         </Text>
       </View>
       <View style={styles.actions}>
         {sending ? (
-          <ActivityIndicator color={colors.white} />
+          <ActivityIndicator color={colors.white} size="small" />
         ) : (
-          <TouchableOpacity onPress={handleResend} style={styles.btn}>
+          <TouchableOpacity
+            onPress={handleResend}
+            style={styles.btn}
+            accessibilityRole="button"
+            accessibilityLabel="Resend verification email"
+          >
             <Text style={styles.btnText}>Resend</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity onPress={() => setDismissed(true)} style={styles.close}>
-          <Text style={styles.closeText}>×</Text>
+        <TouchableOpacity
+          onPress={() => setDismissed(true)}
+          style={styles.close}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="close" size={16} color={colors.white} />
         </TouchableOpacity>
       </View>
     </View>
@@ -58,7 +70,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     marginHorizontal: spacing.lg,
     marginTop: spacing.sm,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   title: {
     color: colors.white,
@@ -69,13 +81,13 @@ const styles = StyleSheet.create({
   body: {
     color: colors.white,
     fontSize: 12,
+    opacity: 0.9,
   },
-  email: {
-    fontWeight: '700',
-  },
+  email: { fontWeight: '700' },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
     marginLeft: spacing.sm,
   },
   btn: {
@@ -83,6 +95,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     backgroundColor: 'rgba(255,255,255,0.25)',
     borderRadius: 6,
+    minHeight: 32,
+    justifyContent: 'center',
   },
   btnText: {
     color: colors.white,
@@ -90,11 +104,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   close: {
-    paddingHorizontal: spacing.sm,
-  },
-  closeText: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: 'bold',
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 })

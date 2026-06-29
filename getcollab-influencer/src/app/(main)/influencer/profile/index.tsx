@@ -7,7 +7,7 @@ import { Button } from '@shared/components/ui/Button'
 import { Input } from '@shared/components/ui/Input'
 import { useAuthStore } from '@shared/stores/auth-store'
 import apiService, { handleApiError } from '@shared/services/api'
-import { PortfolioGallery } from '../../../../components/PortfolioGallery'
+import { PortfolioGallery } from '@shared/components/PortfolioGallery'
 
 interface ProfileScreenProps {
   navigation?: any
