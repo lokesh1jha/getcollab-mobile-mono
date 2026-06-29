@@ -1,306 +1,142 @@
-import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native'
+import React, { useState, useEffect, useCallback } from 'react'
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View, ActivityIndicator } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing } from '@shared/constants'
-import { apiService, handleApiError } from '@shared/services/api'
+import { Ionicons } from '@expo/vector-icons'
+import { useFocusEffect } from '@react-navigation/native'
+import { colors, radius, spacing } from '@/src/theme'
 import { useChatStore } from '@shared/stores/chat-store'
 
-interface Message {
-  id: string
-  text: string
-  sender: 'me' | 'other'
-  timestamp: string
+function formatTime(value?: string): string {
+  if (!value) return ''
+  const diffMs = Date.now() - new Date(value).getTime()
+  const mins = Math.floor(diffMs / 60_000)
+  if (mins < 1) return 'Now'
+  if (mins < 60) return `${mins}m`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h`
+  const days = Math.floor(hrs / 24)
+  if (days < 7) return `${days}d`
+  return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-interface Chat {
-  id: string
-  name: string
-  lastMessage: string
-  timestamp: string
-  unread: number
-}
+export default function InfluencerChat({ navigation }: any) {
+  const { rooms, fetchRooms, unreadByRoom, isLoading } = useChatStore()
+  const [query, setQuery] = useState('')
 
-interface ChatScreenProps {
-  navigation?: any
-}
+  useFocusEffect(useCallback(() => { fetchRooms() }, [fetchRooms]))
 
-export default function ChatScreen({ navigation }: ChatScreenProps) {
-  const [chats, setChats] = useState<Chat[]>([])
-  const [loading, setLoading] = useState(true)
-  const { rooms, fetchRooms, initializeSocket, isSocketConnected } = useChatStore()
-  
-  useEffect(() => {
-    loadChats()
-    initializeSocketConnection()
-  }, [])
+  const filtered = query.trim()
+    ? rooms.filter(r => ((r as any).brandName || r.brand?.name || (r as any).name || '').toLowerCase().includes(query.toLowerCase()) || (r.lastMessage?.content || '').toLowerCase().includes(query.toLowerCase()))
+    : rooms
 
-  const initializeSocketConnection = async () => {
-    if (!isSocketConnected) {
-      await initializeSocket()
-    }
-  }
+  const totalUnread = Object.values(unreadByRoom).reduce((s, n) => s + n, 0)
 
-  const loadChats = async () => {
-    setLoading(true)
-    try {
-      const response = await apiService.getChats()
-      const roomsData = response.data || response || []
-      
-      const mappedChats: Chat[] = roomsData.map((room: any) => ({
-        id: room.id,
-        name: room.brand?.name || 'Brand',
-        lastMessage: room.lastMessage?.content || 'No messages yet',
-        timestamp: room.lastMessage?.createdAt 
-          ? formatTimestamp(new Date(room.lastMessage.createdAt))
-          : 'New',
-        unread: room.unreadCount || 0,
-      }))
-      
-      setChats(mappedChats)
-    } catch (error: any) {
-      // Fall back to mock data if API fails
-      const mockChats = [
-        {
-          id: '1',
-          name: 'FashionHub Team',
-          lastMessage: 'Thanks for your proposal! Let\'s schedule a call',
-          timestamp: '2h ago',
-          unread: 3
-        },
-        {
-          id: '2',
-          name: 'TechGadgets',
-          lastMessage: 'We\'ve reviewed your application',
-          timestamp: '1d ago',
-          unread: 0
-        },
-        {
-          id: '3',
-          name: 'FitLife App',
-          lastMessage: 'Hi! Are you available for this campaign?',
-          timestamp: '3d ago',
-          unread: 1
-        }
-      ]
-      setChats(mockChats)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const formatTimestamp = (date: Date): string => {
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
-    
-    if (minutes < 1) return 'Just now'
-    if (minutes < 60) return `${minutes}m ago`
-    if (hours < 24) return `${hours}h ago`
-    if (days < 7) return `${days}d ago`
-    return date.toLocaleDateString()
-  }
-
-  if (loading) {
+  const renderRoom = ({ item, index }: { item: any; index: number }) => {
+    const unread = unreadByRoom[item.id] || 0
+    const name = (item as any).brandName || item.brand?.name || (item as any).name || 'Brand'
+    const lastMsg = item.lastMessage?.content || 'Start a conversation'
+    const isRead = unread === 0
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading messages...</Text>
-        </View>
-      </SafeAreaView>
+      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+        <Pressable
+          onPress={() => navigation?.navigate('ChatDetail', { roomId: item.id, chat: { id: item.id, influencerName: name } })}
+          style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.elevated }]}
+        >
+          <View style={styles.avatarWrap}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>
+            </View>
+            {item.online && <View style={styles.onlineDot} />}
+          </View>
+
+          <View style={styles.rowContent}>
+            <View style={styles.rowTop}>
+              <Text style={[styles.name, !isRead && styles.nameUnread]}>{name}</Text>
+              <Text style={[styles.time, !isRead && styles.timeUnread]}>{formatTime(item.lastMessage?.createdAt || item.updatedAt)}</Text>
+            </View>
+            <View style={styles.rowBottom}>
+              <Text style={[styles.preview, !isRead && styles.previewUnread]} numberOfLines={1}>{lastMsg}</Text>
+              {unread > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unread > 99 ? '99+' : unread}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </Pressable>
+      </Animated.View>
     )
   }
 
-  const renderChat = ({ item }: { item: Chat }) => (
-    <TouchableOpacity 
-      style={styles.chatItem}
-      onPress={() => navigation?.navigate('ChatDetail', { chat: item })}
-    >
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
-      </View>
-      
-      <View style={styles.chatContent}>
-        <View style={styles.chatHeader}>
-          <Text style={styles.chatName}>{item.name}</Text>
-          <Text style={styles.chatTime}>{item.timestamp}</Text>
-        </View>
-        
-        <Text style={styles.lastMessage} numberOfLines={1}>
-          {item.lastMessage}
-        </Text>
-      </View>
-      
-      {item.unread > 0 && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{item.unread}</Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  )
-
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Header */}
+    <View style={styles.root}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.header}>
-          <Text style={styles.title}>Messages</Text>
-          <Text style={styles.subtitle}>Your conversations</Text>
+          <View>
+            <Text style={styles.title}>Messages</Text>
+            {totalUnread > 0 && <Text style={styles.unreadCount}>{totalUnread} unread</Text>}
+          </View>
         </View>
 
-        {/* Search */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search conversations..."
-            placeholderTextColor={colors.textMuted}
+        <View style={styles.searchWrap}>
+          <Ionicons name="search" size={18} color={colors.textMuted} />
+          <TextInput value={query} onChangeText={setQuery} placeholder="Search conversations…" placeholderTextColor={colors.textSubtle} style={styles.searchInput} />
+          {query.length > 0 && <Pressable onPress={() => setQuery('')} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.textMuted} /></Pressable>}
+        </View>
+
+        {isLoading && rooms.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={colors.neon} />
+          </View>
+        ) : (
+          <FlatList
+            data={filtered}
+            renderItem={renderRoom}
+            keyExtractor={r => r.id}
+            contentContainerStyle={{ paddingTop: spacing.sm, paddingBottom: spacing.xxl }}
+            showsVerticalScrollIndicator={false}
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+            ListEmptyComponent={
+              <View style={styles.empty}>
+                <View style={styles.emptyIcon}><Ionicons name="chatbubbles-outline" size={26} color={colors.textMuted} /></View>
+                <Text style={styles.emptyTitle}>No messages yet</Text>
+                <Text style={styles.emptySub}>Apply to campaigns to start chatting with brands.</Text>
+              </View>
+            }
           />
-        </View>
-
-        {/* Chats List */}
-        <FlatList
-          data={chats}
-          renderItem={renderChat}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No messages yet</Text>
-              <Text style={styles.emptySubtext}>
-                Start conversations by applying to campaigns
-              </Text>
-            </View>
-          }
-        />
-      </View>
-    </SafeAreaView>
+        )}
+      </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    flex: 1,
-    padding: spacing.lg,
-  },
-  header: {
-    marginBottom: spacing.lg,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textMuted,
-  },
-  searchContainer: {
-    marginBottom: spacing.lg,
-  },
-  searchInput: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  listContainer: {
-    flexGrow: 1,
-  },
-  chatItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border + '50',
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  avatarText: {
-    color: colors.white,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  chatContent: {
-    flex: 1,
-  },
-  chatHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-  },
-  chatName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  chatTime: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  lastMessage: {
-    fontSize: 14,
-    color: colors.textMuted,
-    lineHeight: 20,
-  },
-  badge: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    minWidth: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xs,
-  },
-  badgeText: {
-    color: colors.white,
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: spacing.xxl,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: colors.textMuted,
-    marginBottom: spacing.sm,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xxl,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: colors.textMuted,
-    marginTop: spacing.md,
-  },
+  root: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  title: { color: colors.text, fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
+  unreadCount: { color: colors.neon, fontSize: 12, fontWeight: '600', marginTop: 2 },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: spacing.lg, marginBottom: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: 13, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
+  searchInput: { flex: 1, color: colors.text, fontSize: 14, padding: 0 },
+  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.md },
+  avatarWrap: { position: 'relative' },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.elevated, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { color: colors.text, fontSize: 18, fontWeight: '700' },
+  onlineDot: { position: 'absolute', bottom: 1, right: 1, width: 12, height: 12, borderRadius: 6, backgroundColor: colors.onlineGreen, borderWidth: 2, borderColor: colors.bg },
+  rowContent: { flex: 1 },
+  rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  name: { color: colors.textMuted, fontSize: 15, fontWeight: '500' },
+  nameUnread: { color: colors.text, fontWeight: '700' },
+  time: { color: colors.textSubtle, fontSize: 11 },
+  timeUnread: { color: colors.blue, fontWeight: '600' },
+  rowBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  preview: { color: colors.textSubtle, fontSize: 13, flex: 1 },
+  previewUnread: { color: colors.textMuted },
+  badge: { backgroundColor: colors.blue, minWidth: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
+  badgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  separator: { height: 0.5, backgroundColor: colors.border, marginLeft: 80 },
+  empty: { alignItems: 'center', paddingTop: spacing.xxxl + spacing.xl, gap: spacing.sm },
+  emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  emptyTitle: { color: colors.text, fontSize: 15, fontWeight: '700', marginTop: spacing.sm },
+  emptySub: { color: colors.textMuted, fontSize: 13, textAlign: 'center', paddingHorizontal: spacing.xl },
 })

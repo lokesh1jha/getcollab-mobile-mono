@@ -1,696 +1,370 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useRef } from 'react'
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-  RefreshControl,
-  TextInput,
-  Modal,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
+  FlatList, Modal, Pressable, RefreshControl, ScrollView, StyleSheet,
+  Text, TextInput, View, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native'
-import { useFocusEffect } from '@react-navigation/native'
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing, CATEGORIES, REGIONS } from '@shared/constants'
-import { Card, Button } from '@shared/components/ui'
-import apiService, { handleApiError } from '@shared/services/api'
+import { Ionicons } from '@expo/vector-icons'
+import { useFocusEffect } from '@react-navigation/native'
+import { colors, radius, spacing, statusColor } from '@/src/theme'
+import { apiService, handleApiError } from '@shared/services/api'
+
+const CATEGORIES = ['All', 'Fashion', 'Beauty', 'Fitness', 'Tech', 'Travel', 'Food', 'Lifestyle', 'Gaming']
 
 interface Campaign {
-  id: string
-  title: string
-  description: string
-  budget: number
-  status: string
-  bidCount?: number
-  categories?: string[]
-  deliverables?: string[]
-  region?: string
-  startDate?: string
-  endDate?: string
-  brand?: {
-    id: string
-    name?: string
-    image?: string
-  }
-  brandName?: string
+  id: string; title: string; description?: string; budget: number
+  status: string; category?: string; region?: string; deliverables?: string[]
+  startDate?: string; endDate?: string; brandName?: string
+  minFollowers?: number; maxBudget?: number
 }
 
-interface DiscoverScreenProps {
-  navigation?: any
+function formatBudget(n: number): string {
+  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`
+  if (n >= 1000) return `₹${(n / 1000).toFixed(0)}K`
+  return `₹${n}`
 }
 
-const REGION_FILTERS = ['All Regions', ...REGIONS]
+function timeLeft(end?: string): string | null {
+  if (!end) return null
+  const diff = new Date(end).getTime() - Date.now()
+  if (diff <= 0) return 'Closed'
+  const days = Math.floor(diff / 86_400_000)
+  if (days > 30) return null
+  if (days === 0) return 'Ends today'
+  return `${days}d left`
+}
 
-export default function DiscoverCampaigns({ navigation }: DiscoverScreenProps) {
+export default function InfluencerDiscover({ navigation }: any) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [selectedRegion, setSelectedRegion] = useState<string>('All Regions')
-
-  const [bidModal, setBidModal] = useState<Campaign | null>(null)
-  const [bidPitch, setBidPitch] = useState('')
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState('All')
+  const [bidTarget, setBidTarget] = useState<Campaign | null>(null)
   const [bidAmount, setBidAmount] = useState('')
-  const [submittingBid, setSubmittingBid] = useState(false)
+  const [bidPitch, setBidPitch] = useState('')
+  const [bidding, setBidding] = useState(false)
 
-  const loadCampaigns = useCallback(async () => {
-    setError(null)
+  const load = useCallback(async (spinner = false) => {
+    if (spinner) setLoading(true)
     try {
-      const params: Record<string, any> = { status: 'ACTIVE' }
-      if (searchQuery.trim()) params.search = searchQuery.trim()
-      const response = await apiService.getCampaigns(params)
-      const list: Campaign[] = response?.data || response?.campaigns || (Array.isArray(response) ? response : [])
+      const params: Record<string, any> = { status: 'active' }
+      if (category !== 'All') params.category = category
+      const res = await apiService.getCampaigns(params)
+      const list: Campaign[] = res?.data || res?.campaigns || (Array.isArray(res) ? res : [])
       setCampaigns(Array.isArray(list) ? list : [])
     } catch (err: any) {
-      setError(err?.message || 'Failed to load campaigns')
       handleApiError(err, 'Failed to load campaigns')
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [searchQuery])
+  }, [category])
 
-  useFocusEffect(
-    useCallback(() => {
-      loadCampaigns()
-    }, [loadCampaigns])
-  )
+  useFocusEffect(useCallback(() => { load(true) }, [load]))
+  const onRefresh = () => { setRefreshing(true); load(false) }
 
-  const handleRefresh = () => {
-    setRefreshing(true)
-    loadCampaigns()
-  }
+  const filtered = useMemo(() => {
+    if (!query.trim()) return campaigns
+    const q = query.toLowerCase()
+    return campaigns.filter(c =>
+      c.title?.toLowerCase().includes(q) ||
+      c.brandName?.toLowerCase().includes(q) ||
+      c.category?.toLowerCase().includes(q) ||
+      c.region?.toLowerCase().includes(q) ||
+      c.description?.toLowerCase().includes(q)
+    )
+  }, [campaigns, query])
 
-  const filteredCampaigns = useMemo(() => {
-    return campaigns.filter((campaign) => {
-      const status = (campaign.status || '').toString().toLowerCase()
-      if (status !== 'active') return false
-
-      if (selectedCategory) {
-        const cats = (campaign.categories || []).map((c) => c.toLowerCase())
-        if (!cats.includes(selectedCategory.toLowerCase())) return false
-      }
-
-      if (selectedRegion && selectedRegion !== 'All Regions') {
-        const region = (campaign.region || '').toLowerCase()
-        if (region && region !== selectedRegion.toLowerCase()) return false
-      }
-
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase()
-        const title = (campaign.title || '').toLowerCase()
-        const description = (campaign.description || '').toLowerCase()
-        const brand = (campaign.brand?.name || campaign.brandName || '').toLowerCase()
-        if (!title.includes(q) && !description.includes(q) && !brand.includes(q)) return false
-      }
-
-      return true
-    })
-  }, [campaigns, selectedCategory, selectedRegion, searchQuery])
-
-  const openBidModal = (campaign: Campaign) => {
-    setBidModal(campaign)
-    setBidPitch('')
-    setBidAmount(campaign.budget ? String(Math.max(0, Math.floor(campaign.budget * 0.5))) : '')
-  }
-
-  const closeBidModal = () => {
-    if (submittingBid) return
-    setBidModal(null)
-    setBidPitch('')
-    setBidAmount('')
-  }
-
-  const submitBid = async () => {
-    if (!bidModal) return
-    if (!bidPitch.trim() || bidPitch.trim().length < 10) {
-      Alert.alert('Pitch too short', 'Tell the brand why you are a great fit (at least 10 characters).')
-      return
-    }
-    const amount = Number(bidAmount)
-    if (!Number.isFinite(amount) || amount <= 0) {
-      Alert.alert('Invalid amount', 'Enter a positive bid amount.')
-      return
-    }
-
-    setSubmittingBid(true)
+  const handleBid = async () => {
+    if (!bidTarget || !bidAmount.trim() || !bidPitch.trim()) return
+    setBidding(true)
     try {
       await apiService.submitBid({
-        campaignId: bidModal.id,
-        pitch: bidPitch.trim(),
-        proposedAmount: amount,
+        campaignId: bidTarget.id,
+        amount: Number(bidAmount),
+        message: bidPitch,
       })
-      Alert.alert('Bid submitted', 'The brand will review your pitch. You can track status under My Campaigns.', [
-        {
-          text: 'OK',
-          onPress: () => {
-            setBidModal(null)
-            setBidPitch('')
-            setBidAmount('')
-          },
-        },
-      ])
-    } catch (err) {
+      setBidTarget(null)
+      setBidAmount('')
+      setBidPitch('')
+      load(false)
+    } catch (err: any) {
       handleApiError(err, 'Failed to submit bid')
     } finally {
-      setSubmittingBid(false)
+      setBidding(false)
     }
   }
 
-  const renderCampaign = useCallback(
-    ({ item }: { item: Campaign }) => (
-      <Card style={styles.campaignCard}>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => navigation?.navigate('CampaignDetails', { id: item.id, campaign: item })}
-        >
-          <View style={styles.campaignHeader}>
-            <View style={styles.campaignInfo}>
-              <Text style={styles.campaignTitle} numberOfLines={2}>
-                {item.title}
-              </Text>
-              <Text style={styles.brand} numberOfLines={1}>
-                {item.brand?.name || item.brandName || 'Brand'}
-              </Text>
-              {item.region ? <Text style={styles.region}>📍 {item.region}</Text> : null}
-            </View>
-            <Text style={styles.budget}>₹{Number(item.budget || 0).toLocaleString()}</Text>
-          </View>
-
-          <Text style={styles.description} numberOfLines={2}>
-            {item.description}
-          </Text>
-
-          {(item.categories?.length || 0) > 0 && (
-            <View style={styles.tagRow}>
-              {item.categories!.slice(0, 3).map((cat) => (
-                <View key={cat} style={styles.categoryTag}>
-                  <Text style={styles.categoryTagText}>{cat}</Text>
-                </View>
-              ))}
-              {item.categories!.length > 3 && (
-                <Text style={styles.moreText}>+{item.categories!.length - 3}</Text>
-              )}
-            </View>
-          )}
-
-          {(item.deliverables?.length || 0) > 0 && (
-            <View style={styles.tagRow}>
-              {item.deliverables!.slice(0, 3).map((d) => (
-                <View key={d} style={styles.deliverableTag}>
-                  <Text style={styles.deliverableText} numberOfLines={1}>
-                    {d}
-                  </Text>
-                </View>
-              ))}
-              {item.deliverables!.length > 3 && (
-                <Text style={styles.moreText}>+{item.deliverables!.length - 3}</Text>
-              )}
-            </View>
-          )}
-        </TouchableOpacity>
-
-        <View style={styles.campaignFooter}>
-          <Text style={styles.bidsText}>
-            {item.bidCount || 0} bid{(item.bidCount || 0) !== 1 ? 's' : ''}
-          </Text>
-          <Button title="Apply Now" size="sm" onPress={() => openBidModal(item)} />
-        </View>
-      </Card>
-    ),
-    [navigation]
-  )
-
-  if (loading && !refreshing) {
+  const renderCampaign = ({ item, index }: { item: Campaign; index: number }) => {
+    const s = statusColor(item.status)
+    const tl = timeLeft(item.endDate)
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading campaigns...</Text>
+      <Animated.View entering={FadeInDown.delay(index * 50).duration(320)} style={styles.campaignCard}>
+        {/* Card header row */}
+        <View style={styles.cardTop}>
+          <View style={styles.brandAvatarWrap}>
+            <Text style={styles.brandAvatarText}>{(item.brandName || item.title)?.charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.campaignTitle} numberOfLines={1}>{item.title}</Text>
+            <Text style={styles.brandName}>{item.brandName || 'Brand'}</Text>
+          </View>
+          <View style={[styles.statusPill, { backgroundColor: s.bg }]}>
+            <View style={[styles.statusDot, { backgroundColor: s.dot }]} />
+            <Text style={[styles.statusText, { color: s.fg }]}>
+              {item.status?.charAt(0).toUpperCase() + item.status?.slice(1)}
+            </Text>
+          </View>
         </View>
-      </SafeAreaView>
+
+        {/* Description */}
+        {item.description ? (
+          <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
+        ) : null}
+
+        {/* Tags */}
+        <View style={styles.tagsRow}>
+          {item.category ? <Tag text={item.category} icon="pricetag-outline" /> : null}
+          {item.region ? <Tag text={item.region} icon="location-outline" /> : null}
+          {item.deliverables?.slice(0, 1).map(d => <Tag key={d} text={d} icon="camera-outline" />) ?? null}
+        </View>
+
+        {/* Footer */}
+        <View style={styles.cardFooter}>
+          <View>
+            <Text style={styles.budgetLabel}>Budget</Text>
+            <Text style={styles.budgetValue}>{formatBudget(item.budget)}</Text>
+          </View>
+          <View style={styles.cardActions}>
+            {tl && (
+              <View style={[styles.urgencyPill, tl === 'Ends today' && { backgroundColor: colors.errorSoft }]}>
+                <Ionicons name="time-outline" size={11} color={tl === 'Ends today' ? colors.error : colors.textMuted} />
+                <Text style={[styles.urgencyText, tl === 'Ends today' && { color: colors.error }]}>{tl}</Text>
+              </View>
+            )}
+            <Pressable
+              onPress={() => navigation?.navigate('CampaignDetails', { id: item.id, campaign: item })}
+              style={({ pressed }) => [styles.viewBtn, pressed && { opacity: 0.8 }]}
+            >
+              <Text style={styles.viewBtnText}>Details</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => { setBidTarget(item); setBidAmount(String(item.budget || '')); setBidPitch('') }}
+              style={({ pressed }) => [styles.applyBtn, pressed && { opacity: 0.85 }]}
+            >
+              <Ionicons name="flash" size={14} color="#000" />
+              <Text style={styles.applyBtnText}>Apply</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Animated.View>
     )
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <FlatList
-        style={styles.content}
-        contentContainerStyle={styles.listContent}
-        data={filteredCampaigns}
-        renderItem={renderCampaign}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <View>
-            <View style={styles.header}>
-              <Text style={styles.title}>Discover Campaigns</Text>
-              <Text style={styles.subtitle}>Find your next collaboration opportunity</Text>
-            </View>
+    <View style={styles.root}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        {/* Sticky header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Discover</Text>
+          <Pressable style={styles.iconBtn}>
+            <Ionicons name="options-outline" size={20} color={colors.text} />
+          </Pressable>
+        </View>
 
-            <View style={styles.searchWrap}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search campaigns, brands, keywords..."
-                placeholderTextColor={colors.textMuted}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                returnKeyType="search"
-                onSubmitEditing={loadCampaigns}
-              />
-            </View>
+        {/* Search */}
+        <View style={styles.searchWrap}>
+          <Ionicons name="search" size={18} color={colors.textMuted} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search campaigns, brands, categories…"
+            placeholderTextColor={colors.textSubtle}
+            style={styles.searchInput}
+          />
+          {query.length > 0 && (
+            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            </Pressable>
+          )}
+        </View>
 
-            <View style={styles.statsContainer}>
-              <View style={styles.statBox}>
-                <Text style={styles.statNumber}>{filteredCampaigns.length}</Text>
-                <Text style={styles.statLabel}>Matching</Text>
-              </View>
-              <View style={styles.statBox}>
-                <Text style={styles.statNumber}>{campaigns.length}</Text>
-                <Text style={styles.statLabel}>Active Total</Text>
-              </View>
-            </View>
+        {/* Category chips */}
+        <View style={styles.chipsRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingHorizontal: spacing.lg }}>
+            {CATEGORIES.map(cat => {
+              const active = cat === category
+              return (
+                <Pressable key={cat} onPress={() => setCategory(cat)} style={[styles.chip, active && styles.chipActive]}>
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{cat}</Text>
+                </Pressable>
+              )
+            })}
+          </ScrollView>
+        </View>
 
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Category</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipRow}
-              >
-                <TouchableOpacity
-                  style={[styles.chip, !selectedCategory && styles.chipActive]}
-                  onPress={() => setSelectedCategory(null)}
-                >
-                  <Text style={[styles.chipText, !selectedCategory && styles.chipTextActive]}>All</Text>
-                </TouchableOpacity>
-                {CATEGORIES.map((category) => {
-                  const active = selectedCategory === category
-                  return (
-                    <TouchableOpacity
-                      key={category}
-                      style={[styles.chip, active && styles.chipActive]}
-                      onPress={() => setSelectedCategory(active ? null : category)}
-                    >
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{category}</Text>
-                    </TouchableOpacity>
-                  )
-                })}
-              </ScrollView>
-            </View>
-
-            <View style={styles.filterSection}>
-              <Text style={styles.filterLabel}>Region</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipRow}
-              >
-                {REGION_FILTERS.map((region) => {
-                  const active = selectedRegion === region
-                  return (
-                    <TouchableOpacity
-                      key={region}
-                      style={[styles.chip, active && styles.chipActive]}
-                      onPress={() => setSelectedRegion(region)}
-                    >
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{region}</Text>
-                    </TouchableOpacity>
-                  )
-                })}
-              </ScrollView>
-            </View>
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-            <Text style={styles.sectionTitle}>
-              {selectedCategory ? `${selectedCategory} ` : ''}Campaigns
-              {selectedRegion && selectedRegion !== 'All Regions' ? ` · ${selectedRegion}` : ''}
-            </Text>
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={colors.neon} />
           </View>
-        }
-        ListEmptyComponent={
-          <Card style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No campaigns found</Text>
-            <Text style={styles.emptySubtext}>
-              Try changing your filters or check back later for new opportunities.
-            </Text>
-          </Card>
-        }
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
-        }
-        initialNumToRender={8}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-      />
+        ) : (
+          <FlatList
+            data={filtered}
+            renderItem={renderCampaign}
+            keyExtractor={c => c.id}
+            contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xxl }}
+            ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+            ListHeaderComponent={
+              filtered.length > 0 ? (
+                <Animated.View entering={FadeIn.duration(360)} style={styles.aiBanner}>
+                  <View style={styles.aiLeft}>
+                    <View style={styles.aiSparkle}>
+                      <Ionicons name="sparkles" size={14} color={colors.blue} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.aiBannerTitle}>{filtered.length} campaigns available for you</Text>
+                      <Text style={styles.aiBannerSub}>{category !== 'All' ? category : 'All categories'} · Active now</Text>
+                    </View>
+                  </View>
+                </Animated.View>
+              ) : null
+            }
+            ListEmptyComponent={
+              <View style={styles.empty}>
+                <View style={styles.emptyIcon}>
+                  <Ionicons name="compass-outline" size={26} color={colors.textMuted} />
+                </View>
+                <Text style={styles.emptyTitle}>No campaigns found</Text>
+                <Text style={styles.emptySub}>Try a different category or clear your search.</Text>
+              </View>
+            }
+          />
+        )}
 
-      <Modal
-        visible={!!bidModal}
-        animationType="slide"
-        transparent
-        onRequestClose={closeBidModal}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Apply to Campaign</Text>
-            <Text style={styles.modalCampaign} numberOfLines={2}>
-              {bidModal?.title}
-            </Text>
-            <Text style={styles.modalBudget}>Budget: ₹{Number(bidModal?.budget || 0).toLocaleString()}</Text>
+        {/* Bid Modal */}
+        <Modal visible={!!bidTarget} animationType="slide" transparent>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+            <Pressable style={styles.overlay} onPress={() => setBidTarget(null)} />
+            <View style={styles.sheet}>
+              <View style={styles.sheetHandle} />
+              <Text style={styles.sheetTitle}>{bidTarget?.title}</Text>
+              <Text style={styles.sheetSubtitle}>Budget: {formatBudget(bidTarget?.budget ?? 0)}</Text>
 
-            <Text style={styles.modalLabel}>Your Pitch *</Text>
-            <TextInput
-              style={[styles.modalInput, styles.modalTextArea]}
-              placeholder="Why are you the best creator for this campaign?"
-              placeholderTextColor={colors.textMuted}
-              value={bidPitch}
-              onChangeText={setBidPitch}
-              multiline
-              numberOfLines={5}
-              editable={!submittingBid}
-            />
+              <Text style={styles.sheetLabel}>Your bid amount (₹)</Text>
+              <View style={styles.sheetInput}>
+                <Ionicons name="cash-outline" size={18} color={colors.textMuted} />
+                <TextInput
+                  value={bidAmount}
+                  onChangeText={setBidAmount}
+                  placeholder="Enter your rate"
+                  placeholderTextColor={colors.textSubtle}
+                  keyboardType="numeric"
+                  style={styles.sheetInputText}
+                />
+              </View>
 
-            <Text style={styles.modalLabel}>Proposed Amount (₹) *</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="e.g. 15000"
-              placeholderTextColor={colors.textMuted}
-              value={bidAmount}
-              onChangeText={setBidAmount}
-              keyboardType="numeric"
-              editable={!submittingBid}
-            />
+              <Text style={styles.sheetLabel}>Pitch / Cover note</Text>
+              <View style={[styles.sheetInput, { alignItems: 'flex-start', minHeight: 100, paddingTop: 14 }]}>
+                <TextInput
+                  value={bidPitch}
+                  onChangeText={setBidPitch}
+                  placeholder="Tell the brand why you're the right fit…"
+                  placeholderTextColor={colors.textSubtle}
+                  multiline
+                  style={[styles.sheetInputText, { textAlignVertical: 'top' }]}
+                />
+              </View>
 
-            <View style={styles.modalActions}>
-              <Button
-                title="Cancel"
-                variant="outline"
-                onPress={closeBidModal}
-                disabled={submittingBid}
-                style={styles.modalBtn}
-              />
-              <Button
-                title={submittingBid ? 'Submitting...' : 'Submit Bid'}
-                onPress={submitBid}
-                loading={submittingBid}
-                disabled={submittingBid}
-                style={styles.modalBtn}
-              />
+              <Pressable
+                onPress={handleBid}
+                disabled={bidding || !bidAmount.trim() || !bidPitch.trim()}
+                style={({ pressed }) => [styles.submitBtn, (bidding || !bidAmount.trim() || !bidPitch.trim()) && { opacity: 0.5 }, pressed && { opacity: 0.85 }]}
+              >
+                <Ionicons name="flash" size={18} color="#000" />
+                <Text style={styles.submitBtnText}>{bidding ? 'Submitting…' : 'Submit Application'}</Text>
+              </Pressable>
             </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-    </SafeAreaView>
+          </KeyboardAvoidingView>
+        </Modal>
+      </SafeAreaView>
+    </View>
+  )
+}
+
+function Tag({ text, icon }: { text: string; icon: string }) {
+  return (
+    <View style={styles.tag}>
+      <Ionicons name={icon as any} size={10} color={colors.textMuted} />
+      <Text style={styles.tagText}>{text}</Text>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    flex: 1,
-  },
-  listContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  header: {
-    paddingTop: spacing.xl,
-    marginBottom: spacing.md,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textMuted,
-  },
-  searchWrap: {
-    marginBottom: spacing.md,
-  },
-  searchInput: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  statBox: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: spacing.xs,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  filterSection: {
-    marginBottom: spacing.md,
-  },
-  filterLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textMuted,
-    marginBottom: spacing.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
-  },
-  chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipText: {
-    fontSize: 13,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  chipTextActive: {
-    color: colors.white,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.md,
-    marginTop: spacing.sm,
-  },
-  errorText: {
-    color: colors.error,
-    marginBottom: spacing.md,
-  },
-  campaignCard: {
-    marginBottom: spacing.md,
-    padding: spacing.md,
-  },
-  campaignHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.md,
-  },
-  campaignInfo: {
-    flex: 1,
-    marginRight: spacing.md,
-  },
-  campaignTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  brand: {
-    fontSize: 14,
-    color: colors.textMuted,
-  },
-  region: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  budget: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  description: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginBottom: spacing.md,
-    lineHeight: 20,
-  },
-  tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  categoryTag: {
-    backgroundColor: `${colors.accent}20`,
-    borderRadius: 16,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  categoryTagText: {
-    fontSize: 12,
-    color: colors.accent,
-    fontWeight: '500',
-  },
-  deliverableTag: {
-    backgroundColor: `${colors.primary}15`,
-    borderRadius: 16,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    maxWidth: '48%',
-  },
-  deliverableText: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  moreText: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontWeight: '500',
-    alignSelf: 'center',
-  },
-  campaignFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  bidsText: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  emptyCard: {
-    alignItems: 'center',
-    padding: spacing.xl,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: colors.textMuted,
-    marginTop: spacing.md,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  modalCampaign: {
-    fontSize: 16,
-    color: colors.primary,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-  },
-  modalBudget: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginBottom: spacing.md,
-  },
-  modalLabel: {
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-    marginTop: spacing.sm,
-  },
-  modalInput: {
-    backgroundColor: colors.surfaceLight,
-    borderRadius: 8,
-    padding: spacing.md,
-    color: colors.text,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  modalTextArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.lg,
-  },
-  modalBtn: {
-    flex: 1,
-  },
+  root: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  title: { color: colors.text, fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
+  iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
+
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: spacing.lg, marginTop: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
+  searchInput: { flex: 1, color: colors.text, fontSize: 14, padding: 0 },
+
+  chipsRow: { height: 52, marginTop: 4, justifyContent: 'center' },
+  chip: { height: 34, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  chipActive: { backgroundColor: colors.text, borderColor: colors.text },
+  chipText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+  chipTextActive: { color: '#000' },
+
+  aiBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(59,130,246,0.08)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.md, marginBottom: spacing.md },
+  aiLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  aiSparkle: { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(59,130,246,0.18)', alignItems: 'center', justifyContent: 'center' },
+  aiBannerTitle: { color: colors.text, fontSize: 13, fontWeight: '600' },
+  aiBannerSub: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+
+  campaignCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  brandAvatarWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.elevated, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  brandAvatarText: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  campaignTitle: { color: colors.text, fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
+  brandName: { color: colors.textMuted, fontSize: 12, marginTop: 1 },
+  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusText: { fontSize: 11, fontWeight: '700' },
+
+  description: { color: colors.textMuted, fontSize: 13, lineHeight: 18, marginTop: spacing.md },
+
+  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
+  tag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.elevated, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderColor: colors.border },
+  tagText: { color: colors.textMuted, fontSize: 11, fontWeight: '500' },
+
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
+  budgetLabel: { color: colors.textMuted, fontSize: 10, letterSpacing: 0.4 },
+  budgetValue: { color: colors.text, fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
+  cardActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  urgencyPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.elevated, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  urgencyText: { color: colors.textMuted, fontSize: 11, fontWeight: '600' },
+  viewBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: colors.borderStrong },
+  viewBtnText: { color: colors.text, fontSize: 12, fontWeight: '600' },
+  applyBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.neon, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 },
+  applyBtnText: { color: '#000', fontSize: 12, fontWeight: '700' },
+
+  empty: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.sm },
+  emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  emptyTitle: { color: colors.text, fontSize: 15, fontWeight: '700', marginTop: spacing.sm },
+  emptySub: { color: colors.textMuted, fontSize: 13 },
+
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  sheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.xl, paddingBottom: spacing.xxxl, borderWidth: 1, borderBottomWidth: 0, borderColor: colors.border },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: spacing.lg },
+  sheetTitle: { color: colors.text, fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
+  sheetSubtitle: { color: colors.textMuted, fontSize: 13, marginTop: 4, marginBottom: spacing.xl },
+  sheetLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: '600', letterSpacing: 0.4, marginBottom: 8, marginTop: spacing.md },
+  sheetInput: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.elevated, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 14 },
+  sheetInputText: { flex: 1, color: colors.text, fontSize: 15, padding: 0 },
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 16, marginTop: spacing.xl },
+  submitBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
 })

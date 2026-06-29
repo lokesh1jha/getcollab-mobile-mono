@@ -63,16 +63,19 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       const data = response?.data || response
       set({ subscription: normalizeSubscription(data), loading: false, lastFetchedAt: Date.now(), retryCount: 0 })
     } catch (error: any) {
+      const isAuthError = error?.message === 'UNAUTHORIZED' || error?.message?.includes('401')
       const retryCount = get().retryCount
-      if (retryCount < MAX_RETRIES) {
+      if (!isAuthError && retryCount < MAX_RETRIES) {
         const delay = RETRY_BASE_DELAY_MS * Math.pow(2, retryCount)
         logger.warn('Subscription fetch failed, retrying', { retryCount, delay, error: error?.message })
         await new Promise(resolve => setTimeout(resolve, delay))
         set({ retryCount: retryCount + 1 })
         return get().fetchStatus()
       }
-      logger.warn('Subscription status fetch failed after retries', { error: error?.message })
-      set({ error: error?.message || 'Failed to load subscription', loading: false, retryCount: 0 })
+      if (!isAuthError) {
+        logger.warn('Subscription status fetch failed after retries', { error: error?.message })
+      }
+      set({ error: isAuthError ? null : (error?.message || 'Failed to load subscription'), loading: false, retryCount: 0 })
     }
   },
 

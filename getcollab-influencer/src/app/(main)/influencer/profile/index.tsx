@@ -1,946 +1,357 @@
-import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native'
+import React, { useState, useEffect, useCallback } from 'react'
+import {
+  ActivityIndicator, Alert, FlatList, Image, Pressable, ScrollView,
+  StyleSheet, Text, TextInput, View, Dimensions,
+} from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import * as ImagePickerLib from 'expo-image-picker'
-import { colors, spacing, CATEGORIES } from '@shared/constants'
-import { Button } from '@shared/components/ui/Button'
-import { Input } from '@shared/components/ui/Input'
+import { colors, radius, spacing } from '@/src/theme'
+import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
-import apiService, { handleApiError } from '@shared/services/api'
-import { PortfolioGallery } from '@shared/components/PortfolioGallery'
 
-interface ProfileScreenProps {
-  navigation?: any
+const { width } = Dimensions.get('window')
+const GRID_GAP = 2
+const GRID_ITEM = (width - GRID_GAP * 2) / 3
+
+const CATEGORIES = ['Fashion', 'Beauty', 'Fitness', 'Tech', 'Travel', 'Food', 'Lifestyle', 'Gaming', 'Education', 'Business', 'Entertainment', 'Sports', 'Health', 'Photography']
+const SOCIAL_PLATFORMS = [
+  { key: 'instagramHandle', icon: 'logo-instagram', label: 'Instagram', color: '#E1306C' },
+  { key: 'youtubeHandle', icon: 'logo-youtube', label: 'YouTube', color: '#FF0000' },
+  { key: 'tiktokHandle', icon: 'logo-tiktok', label: 'TikTok', color: '#FFFFFF' },
+  { key: 'twitterHandle', icon: 'logo-twitter', label: 'Twitter', color: '#1DA1F2' },
+]
+
+interface ProfileData {
+  name?: string; bio?: string; location?: string; categories?: string[]
+  instagramHandle?: string; youtubeHandle?: string; tiktokHandle?: string; twitterHandle?: string
+  avatar?: string; coverImage?: string; portfolio?: string[]
+  instagramMetrics?: { followers?: number }
+  youtubeMetrics?: { followers?: number }
+  tiktokMetrics?: { followers?: number }
 }
 
-interface SocialFields {
-  instagramHandle: string
-  instagramFollowers: string
-  instagramAvgLikesPerPost: string
-  instagramAvgReelViews: string
-  youtubeHandle: string
-  youtubeSubscribers: string
-  youtubeAvgViews: string
-  tiktokHandle: string
-  tiktokFollowers: string
-  tiktokAvgViews: string
-  twitterHandle: string
-  twitterFollowers: string
-  facebookHandle: string
-  facebookFollowers: string
+function formatFollowers(n?: number): string {
+  if (!n) return '—'
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  return String(n)
 }
 
-interface PricingFields {
-  pricePerPost: string
-  pricePerReel: string
-  pricePerStory: string
-  pricePerVideo: string
-  pricePerCampaign: string
-}
+export default function InfluencerProfile({ navigation }: any) {
+  const { user } = useAuthStore()
+  const [profile, setProfile] = useState<ProfileData>({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState<ProfileData>({})
 
-const emptySocial: SocialFields = {
-  instagramHandle: '',
-  instagramFollowers: '',
-  instagramAvgLikesPerPost: '',
-  instagramAvgReelViews: '',
-  youtubeHandle: '',
-  youtubeSubscribers: '',
-  youtubeAvgViews: '',
-  tiktokHandle: '',
-  tiktokFollowers: '',
-  tiktokAvgViews: '',
-  twitterHandle: '',
-  twitterFollowers: '',
-  facebookHandle: '',
-  facebookFollowers: '',
-}
-
-const emptyPricing: PricingFields = {
-  pricePerPost: '',
-  pricePerReel: '',
-  pricePerStory: '',
-  pricePerVideo: '',
-  pricePerCampaign: '',
-}
-
-export default function InfluencerProfileScreen({ navigation }: ProfileScreenProps) {
-  const { user, updateProfile } = useAuthStore()
-  const [isEditing, setIsEditing] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [initialLoading, setInitialLoading] = useState(true)
-  const [avatar, setAvatar] = useState<string | null>(user?.image || null)
-  const [cover, setCover] = useState<string | null>(null)
-  const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [uploadingCover, setUploadingCover] = useState(false)
-  const [portfolio, setPortfolio] = useState<{ id: string; url: string }[]>([])
-  const [basic, setBasic] = useState({
-    name: user?.name || '',
-    bio: '',
-    location: '',
-    portfolioUrl: '',
-  })
-  const [categories, setCategories] = useState<string[]>([])
-  const [social, setSocial] = useState<SocialFields>(emptySocial)
-  const [pricing, setPricing] = useState<PricingFields>(emptyPricing)
-
-  useEffect(() => {
-    loadProfile()
-  }, [])
-
-  const loadProfile = async () => {
-    try {
-      const response = await apiService.getProfileWithMetrics().catch(() => apiService.getProfile().catch(() => null))
-      const profile = response?.data || response?.profile || response?.influencerProfile || response || {}
-
-      setBasic({
-        name: user?.name || profile.name || '',
-        bio: profile.bio || '',
-        location: profile.location || '',
-        portfolioUrl: profile.portfolioUrl || '',
-      })
-      if (profile.image || profile.avatar) {
-        setAvatar(profile.image || profile.avatar)
-      }
-      if (profile.coverImage) {
-        setCover(profile.coverImage)
-      }
-      if (Array.isArray(profile.portfolio)) {
-        setPortfolio(
-          profile.portfolio.map((url: any, idx: number) =>
-            typeof url === 'string' ? { id: `p${idx}`, url } : { id: url?.id || String(idx), url: url?.url }
-          )
-        )
-      }
-      setCategories(profile.categories || [])
-
-      const metrics = (key: string) => profile[`${key}Metrics`] || {}
-      setSocial({
-        instagramHandle: profile.instagramHandle || '',
-        instagramFollowers: profile.instagramFollowers || metrics('instagram').followers?.toString() || '',
-        instagramAvgLikesPerPost: profile.instagramAvgLikesPerPost || metrics('instagram').avgLikesPerPost?.toString() || '',
-        instagramAvgReelViews: profile.instagramAvgReelViews || metrics('instagram').avgReelViews?.toString() || '',
-        youtubeHandle: profile.youtubeHandle || '',
-        youtubeSubscribers: profile.youtubeSubscribers || metrics('youtube').followers?.toString() || '',
-        youtubeAvgViews: profile.youtubeAvgViews || metrics('youtube').avgViews?.toString() || '',
-        tiktokHandle: profile.tiktokHandle || '',
-        tiktokFollowers: profile.tiktokFollowers || metrics('tiktok').followers?.toString() || '',
-        tiktokAvgViews: profile.tiktokAvgViews || metrics('tiktok').avgViews?.toString() || '',
-        twitterHandle: profile.twitterHandle || '',
-        twitterFollowers: profile.twitterFollowers || metrics('twitter').followers?.toString() || '',
-        facebookHandle: profile.facebookHandle || '',
-        facebookFollowers: profile.facebookFollowers || metrics('facebook').followers?.toString() || '',
-      })
-
-      const pricingData = profile.pricing || profile
-      setPricing({
-        pricePerPost: pricingData.pricePerPost?.toString() || '',
-        pricePerReel: pricingData.pricePerReel?.toString() || '',
-        pricePerStory: pricingData.pricePerStory?.toString() || '',
-        pricePerVideo: pricingData.pricePerVideo?.toString() || '',
-        pricePerCampaign: pricingData.pricePerCampaign?.toString() || '',
-      })
-    } catch (error) {
-      console.error('Failed to load profile:', error)
-    } finally {
-      setInitialLoading(false)
-    }
-  }
-
-  const toggleCategory = (category: string) => {
-    setCategories((prev) =>
-      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
-    )
-  }
-
-  const pickAvatar = async () => {
-    const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Please enable photo library access.')
-      return
-    }
-    try {
-      const result = await ImagePickerLib.launchImageLibraryAsync({
-        mediaTypes: ImagePickerLib.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.7,
-        base64: true,
-      })
-      if (result.canceled || !result.assets[0] || !result.assets[0].base64) return
-
-      setUploadingAvatar(true)
-      const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`
-      try {
-        const response = await apiService.uploadProfileImage(base64Image)
-        const url = response?.url || response?.imageUrl || response?.data?.url
-        if (url) {
-          setAvatar(url)
-          await updateProfile({ image: url } as any)
-        }
-      } catch (err) {
-        handleApiError(err, 'Failed to upload avatar')
-      } finally {
-        setUploadingAvatar(false)
-      }
-    } catch (err) {
-      console.error('Avatar pick failed:', err)
-    }
-  }
-
-  const pickCover = async () => {
-    const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Please enable photo library access.')
-      return
-    }
-    try {
-      const result = await ImagePickerLib.launchImageLibraryAsync({
-        mediaTypes: ImagePickerLib.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [16, 9],
-        quality: 0.7,
-        base64: true,
-      })
-      if (result.canceled || !result.assets[0] || !result.assets[0].base64) return
-      setUploadingCover(true)
-      try {
-        const response = await apiService.uploadCoverImage(`data:image/jpeg;base64,${result.assets[0].base64}`)
-        const url = response?.url || response?.imageUrl || response?.data?.url
-        if (url) setCover(url)
-      } catch (err) {
-        handleApiError(err, 'Cover upload failed')
-      } finally {
-        setUploadingCover(false)
-      }
-    } catch (err) {
-      console.error('Cover pick failed:', err)
-    }
-  }
-
-  const handleSave = async () => {
-    if (!basic.name.trim()) {
-      Alert.alert('Error', 'Name is required')
-      return
-    }
-    if (!social.instagramHandle && !social.youtubeHandle && !social.tiktokHandle && !social.twitterHandle && !social.facebookHandle) {
-      Alert.alert('Error', 'Add at least one social handle so brands can find you.')
-      return
-    }
-
+  const load = useCallback(async () => {
     setLoading(true)
     try {
-      await updateProfile({ name: basic.name })
+      const res = await apiService.getProfileWithMetrics().catch(() => apiService.getProfile())
+      const p = res?.data || res?.profile || res?.influencerProfile || res || {}
+      setProfile(p)
+      setForm(p)
+    } catch (err: any) {
+      handleApiError(err, 'Failed to load profile')
+    } finally { setLoading(false) }
+  }, [])
 
-      const profilePayload: any = {
-        bio: basic.bio,
-        location: basic.location,
-        portfolioUrl: basic.portfolioUrl,
-        coverImage: cover || undefined,
-        portfolio: portfolio.map((p) => p.url),
-        categories,
-        ...social,
-      }
-      Object.keys(profilePayload).forEach((k) => {
-        if (profilePayload[k] === '') delete profilePayload[k]
-      })
-      await apiService.updateProfile(profilePayload)
+  useEffect(() => { load() }, [load])
 
-      const pricingPayload: Record<string, number> = {}
-      Object.entries(pricing).forEach(([key, value]) => {
-        const num = Number(value)
-        if (!isNaN(num) && num >= 0 && value !== '') {
-          pricingPayload[key] = num
-        }
-      })
-      if (Object.keys(pricingPayload).length > 0) {
-        await apiService.updatePricing(pricingPayload).catch((err) => {
-          console.warn('Pricing update failed:', err)
-        })
-      }
+  const save = async () => {
+    setSaving(true)
+    try {
+      await apiService.updateProfile(form)
+      setProfile(form)
+      setEditing(false)
+    } catch (err: any) {
+      handleApiError(err, 'Failed to save profile')
+    } finally { setSaving(false) }
+  }
 
-      Alert.alert('Success', 'Profile updated successfully!')
-      setIsEditing(false)
-      loadProfile()
-    } catch (error) {
-      handleApiError(error, 'Failed to update profile')
-    } finally {
-      setLoading(false)
+  const pickImage = async (field: 'avatar' | 'coverImage') => {
+    const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
+    if (status !== 'granted') { Alert.alert('Permission needed', 'Enable photo library access.'); return }
+    const result = await ImagePickerLib.launchImageLibraryAsync({ mediaTypes: ImagePickerLib.MediaTypeOptions.Images, quality: 0.8, base64: false })
+    if (!result.canceled && result.assets[0]?.uri) {
+      setForm(prev => ({ ...prev, [field]: result.assets[0].uri }))
     }
   }
 
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          await useAuthStore.getState().signOut()
-          navigation?.navigate('SignIn')
-        },
-      },
-    ])
+  const toggleCategory = (cat: string) => {
+    setForm(prev => {
+      const cats = prev.categories || []
+      return { ...prev, categories: cats.includes(cat) ? cats.filter(c => c !== cat) : [...cats, cat] }
+    })
   }
 
-  if (initialLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </SafeAreaView>
-    )
-  }
+  const totalFollowers = [
+    profile.instagramMetrics?.followers,
+    profile.youtubeMetrics?.followers,
+    profile.tiktokMetrics?.followers,
+  ].reduce((sum: number, n) => sum + (n || 0), 0)
+
+  if (loading) return (
+    <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
+      <ActivityIndicator size="large" color={colors.neon} />
+    </View>
+  )
+
+  const displayName = profile.name || user?.name || 'Creator'
+  const handle = `@${(profile.name || user?.name || 'creator').replace(/\s+/g, '').toLowerCase()}`
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Profile</Text>
-          <Text style={styles.subtitle}>Manage your creator profile</Text>
-        </View>
-
-        <TouchableOpacity
-          onPress={isEditing ? pickCover : undefined}
-          style={styles.coverWrap}
-          activeOpacity={isEditing ? 0.7 : 1}
-        >
-          {cover ? (
-            <Image source={{ uri: cover }} style={styles.coverImage} />
-          ) : (
-            <View style={styles.coverPlaceholder}>
-              <Text style={styles.coverPlaceholderText}>
-                {isEditing ? '📸 Tap to add a cover image (16:9)' : 'No cover image'}
-              </Text>
-            </View>
-          )}
-          {uploadingCover && (
-            <View style={styles.coverUploading}>
-              <ActivityIndicator color={colors.white} />
-            </View>
-          )}
-        </TouchableOpacity>
-
-        <View style={styles.profileSection}>
-          <TouchableOpacity onPress={isEditing ? pickAvatar : undefined} style={styles.avatarContainer}>
-            {avatar ? (
-              <Image source={{ uri: avatar }} style={styles.avatarImage} />
+    <View style={styles.root}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+          {/* Cover image */}
+          <Pressable onPress={editing ? () => pickImage('coverImage') : undefined} style={styles.coverWrap}>
+            {form.coverImage ? (
+              <Image source={{ uri: form.coverImage }} style={styles.coverImg} />
             ) : (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase() || 'U'}</Text>
+              <View style={styles.coverPlaceholder}>
+                {editing && <Ionicons name="camera-outline" size={24} color={colors.textMuted} />}
               </View>
             )}
-            {uploadingAvatar && (
-              <View style={styles.avatarOverlay}>
-                <ActivityIndicator color={colors.white} />
-              </View>
-            )}
-            {isEditing && !uploadingAvatar && (
-              <View style={styles.avatarEditBadge}>
-                <Text style={styles.avatarEditText}>✎</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {isEditing ? (
-            <View style={styles.basicForm}>
-              <Input
-                label="Name"
-                value={basic.name}
-                onChangeText={(text) => setBasic({ ...basic, name: text })}
-                style={styles.input}
-              />
-              <Input label="Email" value={user?.email || ''} editable={false} style={styles.input} />
-              <Input
-                label="Bio"
-                value={basic.bio}
-                onChangeText={(text) => setBasic({ ...basic, bio: text })}
-                placeholder="Tell brands about yourself..."
-                multiline
-                style={styles.input}
-              />
-              <Input
-                label="Location"
-                value={basic.location}
-                onChangeText={(text) => setBasic({ ...basic, location: text })}
-                placeholder="City, Country"
-                style={styles.input}
-              />
-              <Input
-                label="Portfolio URL"
-                value={basic.portfolioUrl}
-                onChangeText={(text) => setBasic({ ...basic, portfolioUrl: text })}
-                placeholder="https://your-portfolio.com"
-                style={styles.input}
-              />
-            </View>
-          ) : (
-            <View style={styles.infoContainer}>
-              <Text style={styles.name}>{user?.name}</Text>
-              <Text style={styles.email}>{user?.email}</Text>
-              {basic.bio ? <Text style={styles.bio}>{basic.bio}</Text> : null}
-              {basic.location ? <Text style={styles.location}>📍 {basic.location}</Text> : null}
-              {basic.portfolioUrl ? (
-                <Text style={styles.portfolioLink}>🔗 {basic.portfolioUrl}</Text>
-              ) : null}
-            </View>
-          )}
-        </View>
-
-        <View style={styles.editSection}>
-          <Text style={styles.sectionTitle}>Categories</Text>
-          {isEditing ? (
-            <View style={styles.categoriesContainer}>
-              {CATEGORIES.map((category) => (
-                <TouchableOpacity
-                  key={category}
-                  style={[styles.categoryChip, categories.includes(category) && styles.categoryChipActive]}
-                  onPress={() => toggleCategory(category)}
-                >
-                  <Text
-                    style={[styles.categoryChipText, categories.includes(category) && styles.categoryChipTextActive]}
-                  >
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.categoriesContainer}>
-              {categories.length === 0 ? (
-                <Text style={styles.emptyText}>No categories selected</Text>
+            {/* Header actions */}
+            <View style={styles.coverActions}>
+              <View style={{ flex: 1 }} />
+              {editing ? (
+                <View style={styles.coverBtns}>
+                  <Pressable onPress={() => { setEditing(false); setForm(profile) }} style={[styles.coverBtn, { borderColor: colors.border }]}>
+                    <Text style={styles.coverBtnText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable onPress={save} disabled={saving} style={[styles.coverBtn, { backgroundColor: colors.neon, borderColor: colors.neon }]}>
+                    {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={[styles.coverBtnText, { color: '#000' }]}>Save</Text>}
+                  </Pressable>
+                </View>
               ) : (
-                categories.map((c) => (
-                  <View key={c} style={[styles.categoryChip, styles.categoryChipActive]}>
-                    <Text style={[styles.categoryChipText, styles.categoryChipTextActive]}>{c}</Text>
-                  </View>
-                ))
+                <Pressable onPress={() => setEditing(true)} style={[styles.coverBtn, { backgroundColor: colors.card }]}>
+                  <Ionicons name="pencil-outline" size={14} color={colors.text} />
+                  <Text style={styles.coverBtnText}>Edit</Text>
+                </Pressable>
               )}
             </View>
-          )}
-        </View>
+          </Pressable>
 
-        <View style={styles.editSection}>
-          <Text style={styles.sectionTitle}>Social Profiles</Text>
+          {/* Avatar + basic info */}
+          <View style={styles.profileInfo}>
+            <Pressable onPress={editing ? () => pickImage('avatar') : undefined} style={styles.avatarOuter}>
+              {form.avatar ? (
+                <Image source={{ uri: form.avatar }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, { backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center' }]}>
+                  <Text style={{ color: colors.text, fontSize: 32, fontWeight: '700' }}>{displayName.charAt(0).toUpperCase()}</Text>
+                </View>
+              )}
+              {editing && (
+                <View style={styles.avatarEditBadge}>
+                  <Ionicons name="camera" size={12} color="#000" />
+                </View>
+              )}
+            </Pressable>
 
-          <SocialEditor
-            platform="Instagram"
-            color={colors.instagram}
-            handleValue={social.instagramHandle}
-            followersValue={social.instagramFollowers}
-            extraLabel="Avg Likes / Post"
-            extraValue={social.instagramAvgLikesPerPost}
-            editable={isEditing}
-            onChangeHandle={(v) => setSocial({ ...social, instagramHandle: v })}
-            onChangeFollowers={(v) => setSocial({ ...social, instagramFollowers: v })}
-            onChangeExtra={(v) => setSocial({ ...social, instagramAvgLikesPerPost: v })}
-          />
-          <SocialEditor
-            platform="YouTube"
-            color={colors.youtube}
-            handleValue={social.youtubeHandle}
-            followersValue={social.youtubeSubscribers}
-            followersLabel="Subscribers"
-            extraLabel="Avg Views"
-            extraValue={social.youtubeAvgViews}
-            editable={isEditing}
-            onChangeHandle={(v) => setSocial({ ...social, youtubeHandle: v })}
-            onChangeFollowers={(v) => setSocial({ ...social, youtubeSubscribers: v })}
-            onChangeExtra={(v) => setSocial({ ...social, youtubeAvgViews: v })}
-          />
-          <SocialEditor
-            platform="TikTok"
-            color={colors.tiktok}
-            handleValue={social.tiktokHandle}
-            followersValue={social.tiktokFollowers}
-            extraLabel="Avg Views"
-            extraValue={social.tiktokAvgViews}
-            editable={isEditing}
-            onChangeHandle={(v) => setSocial({ ...social, tiktokHandle: v })}
-            onChangeFollowers={(v) => setSocial({ ...social, tiktokFollowers: v })}
-            onChangeExtra={(v) => setSocial({ ...social, tiktokAvgViews: v })}
-          />
-          <SocialEditor
-            platform="Twitter / X"
-            color={colors.twitter}
-            handleValue={social.twitterHandle}
-            followersValue={social.twitterFollowers}
-            editable={isEditing}
-            onChangeHandle={(v) => setSocial({ ...social, twitterHandle: v })}
-            onChangeFollowers={(v) => setSocial({ ...social, twitterFollowers: v })}
-          />
-          <SocialEditor
-            platform="Facebook"
-            color={colors.primary}
-            handleValue={social.facebookHandle}
-            followersValue={social.facebookFollowers}
-            editable={isEditing}
-            onChangeHandle={(v) => setSocial({ ...social, facebookHandle: v })}
-            onChangeFollowers={(v) => setSocial({ ...social, facebookFollowers: v })}
-          />
-        </View>
+            {editing ? (
+              <TextInput value={form.name || ''} onChangeText={v => setForm(p => ({ ...p, name: v }))} placeholder="Your name" placeholderTextColor={colors.textSubtle} style={styles.nameInput} />
+            ) : (
+              <Text style={styles.displayName}>{displayName}</Text>
+            )}
+            <Text style={styles.handle}>{handle}</Text>
 
-        <View style={styles.editSection}>
-          <Text style={styles.sectionTitle}>Portfolio</Text>
-          <Text style={styles.fieldHint}>
-            {isEditing ? 'Add up to 9 photos showcasing your work. Long-press to remove.' : 'Showcase of recent work'}
-          </Text>
-          <PortfolioGallery items={portfolio} onChange={setPortfolio} editable={isEditing} maxItems={9} />
-        </View>
-
-        <View style={styles.editSection}>
-          <Text style={styles.sectionTitle}>Pricing (₹)</Text>
-          <Text style={styles.fieldHint}>Leave blank if not applicable. Brands see this when shortlisting.</Text>
-          <View style={styles.pricingGrid}>
-            <PricingField
-              label="Per Post"
-              value={pricing.pricePerPost}
-              editable={isEditing}
-              onChange={(v) => setPricing({ ...pricing, pricePerPost: v })}
-            />
-            <PricingField
-              label="Per Reel"
-              value={pricing.pricePerReel}
-              editable={isEditing}
-              onChange={(v) => setPricing({ ...pricing, pricePerReel: v })}
-            />
-            <PricingField
-              label="Per Story"
-              value={pricing.pricePerStory}
-              editable={isEditing}
-              onChange={(v) => setPricing({ ...pricing, pricePerStory: v })}
-            />
-            <PricingField
-              label="Per Video"
-              value={pricing.pricePerVideo}
-              editable={isEditing}
-              onChange={(v) => setPricing({ ...pricing, pricePerVideo: v })}
-            />
-            <PricingField
-              label="Full Campaign"
-              value={pricing.pricePerCampaign}
-              editable={isEditing}
-              onChange={(v) => setPricing({ ...pricing, pricePerCampaign: v })}
-            />
+            {/* Stats row */}
+            <Animated.View entering={FadeInDown.delay(80).duration(360)} style={styles.statsCard}>
+              <Stat label="Followers" value={formatFollowers(totalFollowers)} />
+              <View style={styles.statDivider} />
+              <Stat label="Campaigns" value={(profile as any).campaignCount ?? '—'} />
+              <View style={styles.statDivider} />
+              <Stat label="Rating" value={(profile as any).rating ? `${Number((profile as any).rating).toFixed(1)}★` : '—'} />
+            </Animated.View>
           </View>
-        </View>
 
-        <View style={styles.actionsContainer}>
-          {isEditing ? (
-            <>
-              <Button
-                title={loading ? 'Saving...' : 'Save Changes'}
-                onPress={handleSave}
-                disabled={loading}
-                loading={loading}
-                style={styles.saveButton}
-              />
-              <Button title="Cancel" variant="outline" onPress={() => setIsEditing(false)} />
-            </>
-          ) : (
-            <>
-              <Button title="Edit Profile" onPress={() => setIsEditing(true)} />
-              <Button
-                title="Preview Public Profile"
-                variant="outline"
-                onPress={() => navigation?.navigate('ProfilePreview')}
-              />
-            </>
-          )}
-        </View>
+          <View style={{ paddingHorizontal: spacing.lg }}>
+            {/* Bio */}
+            <Section title="Bio">
+              {editing ? (
+                <TextInput
+                  value={form.bio || ''}
+                  onChangeText={v => setForm(p => ({ ...p, bio: v }))}
+                  placeholder="Tell brands about yourself…"
+                  placeholderTextColor={colors.textSubtle}
+                  multiline
+                  style={styles.bioInput}
+                />
+              ) : (
+                <Text style={styles.bioText}>{profile.bio || 'No bio yet. Tap Edit to add one.'}</Text>
+              )}
+            </Section>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
+            {/* Location */}
+            {editing && (
+              <Section title="Location">
+                <View style={styles.fieldWrap}>
+                  <Ionicons name="location-outline" size={18} color={colors.textMuted} />
+                  <TextInput value={form.location || ''} onChangeText={v => setForm(p => ({ ...p, location: v }))} placeholder="City, Country" placeholderTextColor={colors.textSubtle} style={styles.fieldInput} />
+                </View>
+              </Section>
+            )}
 
-          <TouchableOpacity style={styles.settingItem} onPress={() => navigation?.navigate('Settings')}>
-            <Text style={styles.settingText}>Settings</Text>
-          </TouchableOpacity>
+            {/* Social handles */}
+            <Section title="Social Platforms">
+              <View style={styles.socialList}>
+                {SOCIAL_PLATFORMS.map(p => {
+                  const val = (editing ? form : profile)[p.key as keyof ProfileData] as string | undefined
+                  if (!editing && !val) return null
+                  return (
+                    <View key={p.key} style={styles.socialRow}>
+                      <View style={[styles.socialIcon, { backgroundColor: p.color + '22' }]}>
+                        <Ionicons name={p.icon as any} size={18} color={p.color} />
+                      </View>
+                      {editing ? (
+                        <TextInput
+                          value={(form[p.key as keyof ProfileData] as string) || ''}
+                          onChangeText={v => setForm(prev => ({ ...prev, [p.key]: v }))}
+                          placeholder={`@${p.label.toLowerCase()}_handle`}
+                          placeholderTextColor={colors.textSubtle}
+                          autoCapitalize="none"
+                          style={styles.socialInput}
+                        />
+                      ) : (
+                        <Text style={styles.socialHandle}>{val}</Text>
+                      )}
+                    </View>
+                  )
+                })}
+                {!editing && SOCIAL_PLATFORMS.every(p => !(profile[p.key as keyof ProfileData])) && (
+                  <Text style={styles.emptyNote}>No social handles added yet.</Text>
+                )}
+              </View>
+            </Section>
 
-          <TouchableOpacity style={styles.settingItem} onPress={() => navigation?.navigate('Earnings')}>
-            <Text style={styles.settingText}>Earnings</Text>
-          </TouchableOpacity>
+            {/* Categories */}
+            <Section title="Content Categories">
+              <View style={styles.categoryGrid}>
+                {CATEGORIES.map(cat => {
+                  const active = (editing ? form : profile).categories?.includes(cat)
+                  if (!editing && !active) return null
+                  return (
+                    <Pressable key={cat} onPress={editing ? () => toggleCategory(cat) : undefined} style={[styles.categoryChip, active && styles.categoryChipActive]}>
+                      <Text style={[styles.categoryText, active && styles.categoryTextActive]}>{cat}</Text>
+                    </Pressable>
+                  )
+                })}
+                {!editing && !profile.categories?.length && <Text style={styles.emptyNote}>No categories added yet.</Text>}
+              </View>
+            </Section>
 
-          <TouchableOpacity style={styles.settingItem} onPress={() => navigation?.navigate('Disputes')}>
-            <Text style={styles.settingText}>Disputes</Text>
-          </TouchableOpacity>
-        </View>
+            {/* Portfolio grid */}
+            {(profile.portfolio || []).length > 0 && (
+              <Section title="Portfolio">
+                <View style={styles.portfolioGrid}>
+                  {(profile.portfolio || []).slice(0, 9).map((uri, i) => (
+                    <Image key={i} source={{ uri }} style={styles.portfolioItem} />
+                  ))}
+                </View>
+              </Section>
+            )}
 
-        <View style={styles.logoutSection}>
-          <Button title="Logout" variant="outline" onPress={handleLogout} style={styles.logoutButton} />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  )
-}
+            {/* Account actions */}
+            <Section title="Account">
+              <View style={styles.listCard}>
+                <AccountRow icon="lock-closed-outline" label="Change Password" onPress={() => navigation?.navigate('ChangePassword')} divider />
+                <AccountRow icon="notifications-outline" label="Notifications" onPress={() => navigation?.navigate('Notifications')} divider />
+                <AccountRow icon="settings-outline" label="Settings" onPress={() => navigation?.navigate('Settings')} divider />
+                <AccountRow icon="help-circle-outline" label="Help & Support" onPress={() => {}} />
+              </View>
 
-interface SocialEditorProps {
-  platform: string
-  color: string
-  handleValue: string
-  followersValue: string
-  followersLabel?: string
-  extraLabel?: string
-  extraValue?: string
-  editable: boolean
-  onChangeHandle: (value: string) => void
-  onChangeFollowers: (value: string) => void
-  onChangeExtra?: (value: string) => void
-}
-
-const SocialEditor = ({
-  platform,
-  color,
-  handleValue,
-  followersValue,
-  followersLabel = 'Followers',
-  extraLabel,
-  extraValue,
-  editable,
-  onChangeHandle,
-  onChangeFollowers,
-  onChangeExtra,
-}: SocialEditorProps) => {
-  if (!editable && !handleValue) return null
-  return (
-    <View style={[styles.socialCard, { borderLeftColor: color }]}>
-      <Text style={[styles.socialPlatform, { color }]}>{platform}</Text>
-      {editable ? (
-        <>
-          <Input
-            label="Handle"
-            value={handleValue}
-            onChangeText={onChangeHandle}
-            placeholder="@username"
-            style={styles.socialInput}
-          />
-          <Input
-            label={followersLabel}
-            value={followersValue}
-            onChangeText={onChangeFollowers}
-            placeholder="e.g. 12000"
-            keyboardType="numeric"
-            style={styles.socialInput}
-          />
-          {extraLabel && onChangeExtra && (
-            <Input
-              label={extraLabel}
-              value={extraValue || ''}
-              onChangeText={onChangeExtra}
-              placeholder="e.g. 4500"
-              keyboardType="numeric"
-              style={styles.socialInput}
-            />
-          )}
-        </>
-      ) : (
-        <>
-          <Text style={styles.socialHandle}>{handleValue.startsWith('@') ? handleValue : `@${handleValue}`}</Text>
-          {followersValue ? <Text style={styles.socialStats}>{followersLabel}: {followersValue}</Text> : null}
-          {extraValue ? <Text style={styles.socialStats}>{extraLabel}: {extraValue}</Text> : null}
-        </>
-      )}
+              <Pressable
+                onPress={() => { Alert.alert('Sign Out', 'Are you sure?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Sign Out', style: 'destructive', onPress: useAuthStore.getState().signOut }]) }}
+                style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.85 }]}
+              >
+                <Ionicons name="log-out-outline" size={18} color={colors.error} />
+                <Text style={styles.logoutText}>Sign Out</Text>
+              </Pressable>
+            </Section>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   )
 }
 
-interface PricingFieldProps {
-  label: string
-  value: string
-  editable: boolean
-  onChange: (value: string) => void
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View style={{ marginTop: spacing.xl }}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {children}
+    </View>
+  )
 }
 
-const PricingField = ({ label, value, editable, onChange }: PricingFieldProps) => {
-  if (!editable && !value) return null
+function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <View style={styles.pricingItem}>
-      <Text style={styles.pricingLabel}>{label}</Text>
-      {editable ? (
-        <Input
-          value={value}
-          onChangeText={onChange}
-          placeholder="0"
-          keyboardType="numeric"
-        />
-      ) : (
-        <Text style={styles.pricingValue}>₹{Number(value || 0).toLocaleString()}</Text>
-      )}
+    <View style={{ flex: 1, alignItems: 'center' }}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
+  )
+}
+
+function AccountRow({ icon, label, onPress, divider }: { icon: string; label: string; onPress: () => void; divider?: boolean }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.accountRow, divider && styles.accountRowDivider, pressed && { opacity: 0.85 }]}>
+      <View style={styles.accountIcon}><Ionicons name={icon as any} size={18} color={colors.textMuted} /></View>
+      <Text style={styles.accountLabel}>{label}</Text>
+      <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+    </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    flex: 1,
-    padding: spacing.lg,
-  },
-  header: {
-    marginBottom: spacing.lg,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-  profileSection: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  avatarContainer: {
-    alignSelf: 'center',
-    marginBottom: spacing.lg,
-    position: 'relative',
-  },
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarImage: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-  },
-  avatarText: {
-    color: colors.white,
-    fontSize: 36,
-    fontWeight: 'bold',
-  },
-  avatarOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    borderRadius: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarEditBadge: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.primary,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.surface,
-  },
-  avatarEditText: {
-    color: colors.white,
-    fontSize: 16,
-  },
-  basicForm: {
-    gap: spacing.sm,
-  },
-  infoContainer: {
-    alignItems: 'center',
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  email: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-  },
-  bio: {
-    fontSize: 14,
-    color: colors.text,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    lineHeight: 20,
-  },
-  location: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-  },
-  portfolioLink: {
-    fontSize: 13,
-    color: colors.primary,
-    marginTop: spacing.xs,
-  },
-  editSection: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-  fieldHint: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginBottom: spacing.md,
-  },
-  input: {
-    marginBottom: spacing.md,
-  },
-  categoriesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: colors.textMuted,
-  },
-  categoryChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
-    backgroundColor: colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  categoryChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  categoryChipText: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  categoryChipTextActive: {
-    color: colors.white,
-  },
-  socialCard: {
-    backgroundColor: colors.surfaceLight,
-    borderRadius: 12,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    borderLeftWidth: 4,
-  },
-  socialPlatform: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  socialHandle: {
-    fontSize: 16,
-    color: colors.text,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-  },
-  socialStats: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  socialInput: {
-    marginBottom: spacing.sm,
-  },
-  pricingGrid: {
-    gap: spacing.sm,
-  },
-  pricingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.md,
-  },
-  pricingLabel: {
-    fontSize: 14,
-    color: colors.textMuted,
-    flex: 1,
-  },
-  pricingValue: {
-    fontSize: 16,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  actionsContainer: {
-    marginBottom: spacing.lg,
-    gap: spacing.md,
-  },
-  saveButton: {
-    marginBottom: spacing.sm,
-  },
-  section: {
-    marginBottom: spacing.lg,
-  },
-  settingItem: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing.lg,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  settingText: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  logoutSection: {
-    marginTop: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  logoutButton: {
-    borderColor: colors.error,
-  },
-  coverWrap: {
-    height: 160,
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.lg,
-    position: 'relative',
-  },
-  coverImage: {
-    width: '100%',
-    height: '100%',
-  },
-  coverPlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-  },
-  coverPlaceholderText: {
-    color: colors.textMuted,
-    fontSize: 14,
-  },
-  coverUploading: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  root: { flex: 1, backgroundColor: colors.bg },
+  coverWrap: { width: '100%', height: 180, backgroundColor: colors.elevated, position: 'relative' },
+  coverImg: { width: '100%', height: '100%' },
+  coverPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  coverActions: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'flex-start', padding: spacing.md },
+  coverBtns: { flexDirection: 'row', gap: spacing.sm },
+  coverBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: 'rgba(0,0,0,0.6)' },
+  coverBtnText: { color: colors.text, fontSize: 13, fontWeight: '600' },
+  profileInfo: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: 0, marginTop: -40 },
+  avatarOuter: { position: 'relative', marginBottom: spacing.md },
+  avatar: { width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: colors.bg },
+  avatarEditBadge: { position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderRadius: 12, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.bg },
+  displayName: { color: colors.text, fontSize: 20, fontWeight: '700', letterSpacing: -0.4 },
+  nameInput: { color: colors.text, fontSize: 20, fontWeight: '700', letterSpacing: -0.4, textAlign: 'center', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 4, minWidth: 200 },
+  handle: { color: colors.textMuted, fontSize: 14, marginTop: 2, marginBottom: spacing.lg },
+  statsCard: { flexDirection: 'row', alignItems: 'center', width: '100%', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, paddingVertical: spacing.lg },
+  statDivider: { width: 1, height: 28, backgroundColor: colors.border },
+  statValue: { color: colors.text, fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
+  statLabel: { color: colors.textMuted, fontSize: 11, marginTop: 4, letterSpacing: 0.3 },
+  sectionTitle: { color: colors.text, fontSize: 16, fontWeight: '700', letterSpacing: -0.3, marginBottom: spacing.md },
+  bioText: { color: colors.textMuted, fontSize: 14, lineHeight: 21 },
+  bioInput: { color: colors.text, fontSize: 14, lineHeight: 21, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, minHeight: 80, textAlignVertical: 'top' },
+  fieldWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 13 },
+  fieldInput: { flex: 1, color: colors.text, fontSize: 14, padding: 0 },
+  socialList: { gap: spacing.sm },
+  socialRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  socialIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  socialHandle: { color: colors.text, fontSize: 14, fontWeight: '500' },
+  socialInput: { flex: 1, color: colors.text, fontSize: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  emptyNote: { color: colors.textSubtle, fontSize: 13 },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  categoryChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
+  categoryChipActive: { backgroundColor: colors.neon, borderColor: colors.neon },
+  categoryText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+  categoryTextActive: { color: '#000' },
+  portfolioGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
+  portfolioItem: { width: GRID_ITEM, height: GRID_ITEM, backgroundColor: colors.elevated },
+  listCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden' },
+  accountRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  accountRowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  accountIcon: { width: 36, height: 36, borderRadius: 9, backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center' },
+  accountLabel: { color: colors.text, fontSize: 15, fontWeight: '500', flex: 1 },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: spacing.lg, borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)', backgroundColor: colors.errorSoft, borderRadius: radius.md, paddingVertical: 14 },
+  logoutText: { color: colors.error, fontSize: 15, fontWeight: '600' },
 })

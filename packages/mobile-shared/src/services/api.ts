@@ -196,15 +196,18 @@ class ApiService {
     }
 
     let response: Response
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
     try {
-      response = await fetch(url, config)
+      response = await fetch(url, { ...config, signal: controller.signal })
     } catch (networkErr: any) {
-      // Surface a single retry banner for network failures
       try {
         const { networkBanner } = await import('../components/NetworkBanner')
         networkBanner.show('Network unavailable. Check your connection.')
       } catch {}
       throw networkErr
+    } finally {
+      clearTimeout(timeoutId)
     }
 
     try {

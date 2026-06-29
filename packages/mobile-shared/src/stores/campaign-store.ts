@@ -41,12 +41,12 @@ export const useCampaignStore = create<CampaignState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const response = await apiService.getCampaigns()
-      const campaigns = response.data || response
+      const campaigns: Campaign[] = Array.isArray(response.data) ? response.data : Array.isArray(response) ? response : []
       const newPage = params?.page || 1
       set((state) => ({
         campaigns: newPage === 1 ? campaigns : [...state.campaigns, ...campaigns],
         page: newPage,
-        hasMore: campaigns.hasMore,
+        hasMore: response.hasMore ?? response.data?.hasMore ?? false,
         isLoading: false,
       }))
     } catch (error: any) {

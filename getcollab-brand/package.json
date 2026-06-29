@@ -11,7 +11,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "tsc": "tsc --noEmit",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "dev": "npx expo run:ios"
   },
   "dependencies": {
     "@getcollab/mobile-shared": "workspace:*",

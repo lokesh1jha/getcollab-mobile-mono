@@ -1,13 +1,11 @@
 import React, { useCallback, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, spacing } from '@shared/constants'
-import apiService, { handleApiError } from '@shared/services/api'
-
-interface SettingsScreenProps {
-  navigation?: any
-}
+import { colors, radius, spacing } from '@/src/theme'
+import { apiService, handleApiError } from '@shared/services/api'
+import { useAuthStore } from '@shared/stores/auth-store'
 
 interface SettingsState {
   twoFactorEnabled: boolean
@@ -16,265 +14,170 @@ interface SettingsState {
   pushNotifications: boolean
 }
 
-const defaultSettings: SettingsState = {
-  twoFactorEnabled: false,
-  emailNotifications: true,
-  campaignUpdates: true,
-  pushNotifications: true,
-}
-
-const SettingsScreen = ({ navigation }: SettingsScreenProps) => {
-  const [settings, setSettings] = useState<SettingsState>(defaultSettings)
+export default function SettingsScreen({ navigation }: any) {
+  const { signOut } = useAuthStore()
+  const [settings, setSettings] = useState<SettingsState>({ twoFactorEnabled: false, emailNotifications: true, campaignUpdates: true, pushNotifications: true })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
 
-  const loadSettings = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
-      const response = await apiService.getSettings()
-      const data = response?.data || response?.settings || response || {}
-      setSettings({
-        twoFactorEnabled: !!data.twoFactorEnabled,
-        emailNotifications: data.emailNotifications ?? true,
-        campaignUpdates: data.campaignUpdates ?? true,
-        pushNotifications: data.pushNotifications ?? true,
-      })
-    } catch (error) {
-      console.warn('Failed to load settings, using defaults:', error)
-    } finally {
-      setLoading(false)
-    }
+      const res = await (apiService as any).getSettings?.()
+      if (res) setSettings(prev => ({ ...prev, ...res }))
+    } catch {}
+    finally { setLoading(false) }
   }, [])
 
-  useFocusEffect(
-    useCallback(() => {
-      loadSettings()
-    }, [loadSettings])
-  )
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
-  const updateSetting = async (key: keyof SettingsState, value: boolean) => {
-    setSettings((prev) => ({ ...prev, [key]: value }))
+  const toggle = async (key: keyof SettingsState) => {
+    const newVal = !settings[key]
+    setSettings(prev => ({ ...prev, [key]: newVal }))
     setSaving(key)
-    try {
-      if (key === 'emailNotifications' || key === 'campaignUpdates') {
-        await apiService.updateNotificationSettings({ [key]: value })
-      } else {
-        await apiService.updateSettings({ [key]: value })
-      }
-    } catch (error) {
-      handleApiError(error, 'Failed to update setting')
-    } finally {
-      setSaving(null)
-    }
+    try { await (apiService as any).updateSettings?.({ [key]: newVal }) }
+    catch (err: any) {
+      setSettings(prev => ({ ...prev, [key]: !newVal }))
+      handleApiError(err, 'Failed to update setting')
+    } finally { setSaving(null) }
   }
 
-  const confirmDeleteAccount = () => {
+  const handleDeleteAccount = () => {
     Alert.alert(
       'Delete Account',
-      'This action is permanent. Are you sure you want to delete your account?',
+      'This action is permanent. All your data, campaigns, and earnings history will be deleted.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Delete Account',
           style: 'destructive',
           onPress: async () => {
-            try {
-              await apiService.post('/profile/delete', { confirmation: 'DELETE' })
-              Alert.alert('Account deleted', 'Your account has been deleted.')
-              navigation?.navigate('SignIn')
-            } catch (err) {
-              handleApiError(err, 'Failed to delete account')
-            }
-          },
-        },
+            try { await (apiService as any).deleteAccount?.(); await signOut() }
+            catch (err: any) { handleApiError(err, 'Failed to delete account') }
+          }
+        }
       ]
     )
   }
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </SafeAreaView>
-    )
-  }
+  if (loading) return (
+    <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
+      <ActivityIndicator size="large" color={colors.neon} />
+    </View>
+  )
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.header}>Settings</Text>
-
-        <Text style={styles.sectionLabel}>Notifications</Text>
-        <View style={styles.section}>
-          <SettingRow
-            label="Email Notifications"
-            description="Receive updates about your account by email"
-            value={settings.emailNotifications}
-            onValueChange={(v) => updateSetting('emailNotifications', v)}
-            saving={saving === 'emailNotifications'}
-          />
-          <SettingRow
-            label="Campaign Updates"
-            description="Alerts for new bids, matches and status changes"
-            value={settings.campaignUpdates}
-            onValueChange={(v) => updateSetting('campaignUpdates', v)}
-            saving={saving === 'campaignUpdates'}
-          />
-          <SettingRow
-            label="Push Notifications"
-            description="Mobile push alerts for time-sensitive activity"
-            value={settings.pushNotifications}
-            onValueChange={(v) => updateSetting('pushNotifications', v)}
-            saving={saving === 'pushNotifications'}
-            isLast
-          />
+    <View style={styles.root}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <View style={styles.header}>
+          <Pressable hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Settings</Text>
+          <View style={{ width: 40 }} />
         </View>
 
-        <Text style={styles.sectionLabel}>Security</Text>
-        <View style={styles.section}>
-          <SettingRow
-            label="Two-Factor Authentication"
-            description="Add an extra layer of security to your account"
-            value={settings.twoFactorEnabled}
-            onValueChange={(v) => updateSetting('twoFactorEnabled', v)}
-            saving={saving === 'twoFactorEnabled'}
-            isLast
-          />
-        </View>
+        <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
+          {/* Security */}
+          <SectionHeader title="Security" />
+          <View style={styles.listCard}>
+            <ToggleRow
+              icon="shield-checkmark-outline"
+              label="Two-Factor Authentication"
+              description="Add an extra layer of security"
+              value={settings.twoFactorEnabled}
+              onToggle={() => toggle('twoFactorEnabled')}
+              loading={saving === 'twoFactorEnabled'}
+            />
+          </View>
 
-        <Text style={styles.sectionLabel}>Account</Text>
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.option}
-            onPress={() => navigation?.navigate('ChangePassword')}
-          >
-            <Text style={styles.optionText}>Change Password</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.option}
-            onPress={() => navigation?.navigate('Subscription')}
-          >
-            <Text style={styles.optionText}>Subscription & Billing</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.option}
-            onPress={() => navigation?.navigate('Notifications')}
-          >
-            <Text style={styles.optionText}>View Notifications</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.option, styles.lastOption]}
-            onPress={confirmDeleteAccount}
-          >
-            <Text style={[styles.optionText, styles.dangerText]}>Delete Account</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          {/* Notifications */}
+          <SectionHeader title="Notifications" />
+          <View style={styles.listCard}>
+            <ToggleRow icon="mail-outline" label="Email Notifications" value={settings.emailNotifications} onToggle={() => toggle('emailNotifications')} loading={saving === 'emailNotifications'} divider />
+            <ToggleRow icon="megaphone-outline" label="Campaign Updates" value={settings.campaignUpdates} onToggle={() => toggle('campaignUpdates')} loading={saving === 'campaignUpdates'} divider />
+            <ToggleRow icon="notifications-outline" label="Push Notifications" value={settings.pushNotifications} onToggle={() => toggle('pushNotifications')} loading={saving === 'pushNotifications'} />
+          </View>
+
+          {/* Account */}
+          <SectionHeader title="Account" />
+          <View style={styles.listCard}>
+            <LinkRow icon="lock-closed-outline" label="Change Password" onPress={() => navigation?.navigate('ChangePassword')} divider />
+            <LinkRow icon="receipt-outline" label="Subscription" onPress={() => navigation?.navigate('Subscription')} divider />
+            <LinkRow icon="notifications-outline" label="Notification Preferences" onPress={() => navigation?.navigate('Notifications')} />
+          </View>
+
+          {/* Danger Zone */}
+          <SectionHeader title="Danger Zone" />
+          <View style={styles.listCard}>
+            <Pressable onPress={handleDeleteAccount} style={({ pressed }) => [styles.dangerRow, pressed && { opacity: 0.85 }]}>
+              <View style={[styles.rowIcon, { backgroundColor: colors.errorSoft }]}>
+                <Ionicons name="trash-outline" size={18} color={colors.error} />
+              </View>
+              <Text style={styles.dangerText}>Delete Account</Text>
+            </Pressable>
+          </View>
+
+          <Text style={styles.versionText}>GetCollab v1.0.0 · For Creators</Text>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   )
 }
 
-interface SettingRowProps {
-  label: string
-  description: string
-  value: boolean
-  onValueChange: (value: boolean) => void
-  saving?: boolean
-  isLast?: boolean
+function SectionHeader({ title }: { title: string }) {
+  return <Text style={styles.sectionHeader}>{title}</Text>
 }
 
-const SettingRow = ({ label, description, value, onValueChange, saving, isLast }: SettingRowProps) => (
-  <View style={[styles.row, !isLast && styles.rowBorder]}>
-    <View style={styles.rowText}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowDescription}>{description}</Text>
+function ToggleRow({ icon, label, description, value, onToggle, loading, divider }: { icon: string; label: string; description?: string; value: boolean; onToggle: () => void; loading?: boolean; divider?: boolean }) {
+  return (
+    <View style={[styles.row, divider && styles.rowDivider]}>
+      <View style={styles.rowIcon}>
+        <Ionicons name={icon as any} size={18} color={colors.textMuted} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        {description && <Text style={styles.rowDesc}>{description}</Text>}
+      </View>
+      {loading ? (
+        <ActivityIndicator size="small" color={colors.neon} />
+      ) : (
+        <Switch
+          value={value}
+          onValueChange={onToggle}
+          trackColor={{ false: colors.elevated, true: colors.neonSoft }}
+          thumbColor={value ? colors.neon : colors.textSubtle}
+          ios_backgroundColor={colors.elevated}
+        />
+      )}
     </View>
-    <Switch
-      value={value}
-      onValueChange={onValueChange}
-      trackColor={{ false: colors.border, true: colors.primary }}
-      thumbColor={colors.white}
-      disabled={!!saving}
-    />
-  </View>
-)
+  )
+}
+
+function LinkRow({ icon, label, onPress, divider }: { icon: string; label: string; onPress: () => void; divider?: boolean }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.row, divider && styles.rowDivider, pressed && { opacity: 0.85 }]}>
+      <View style={styles.rowIcon}>
+        <Ionicons name={icon as any} size={18} color={colors.textMuted} />
+      </View>
+      <Text style={[styles.rowLabel, { flex: 1 }]}>{label}</Text>
+      <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+    </Pressable>
+  )
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.lg,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-    marginTop: spacing.md,
-  },
-  section: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  row: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  rowText: {
-    flex: 1,
-    marginRight: spacing.md,
-  },
-  rowLabel: {
-    fontSize: 16,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  rowDescription: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  option: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  lastOption: {
-    borderBottomWidth: 0,
-  },
-  optionText: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  dangerText: {
-    color: colors.error,
-  },
+  root: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
+  iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
+  headerTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
+  sectionHeader: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.sm },
+  listCard: { marginHorizontal: spacing.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  rowIcon: { width: 36, height: 36, borderRadius: 9, backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center' },
+  rowLabel: { color: colors.text, fontSize: 15, fontWeight: '500' },
+  rowDesc: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  dangerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  dangerText: { color: colors.error, fontSize: 15, fontWeight: '600' },
+  versionText: { color: colors.textSubtle, fontSize: 12, textAlign: 'center', marginTop: spacing.xl },
 })
-
-export default SettingsScreen

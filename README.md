@@ -67,23 +67,29 @@ cp getcollab-influencer/.env.example getcollab-influencer/.env
 
 ## Running the Apps
 
+> **Note:** Both apps use custom native modules (Reanimated, Notifications, Secure Store) that don't work in Expo Go. You must use a dev build (`run:ios` / `run:android`). The first build takes a few minutes; subsequent starts only need Metro.
+
+**From the monorepo root (recommended):**
+
 ```bash
 # Brand app
-pnpm brand             # start Metro bundler
-pnpm brand:ios         # run on iOS simulator
-pnpm brand:android     # run on Android emulator
+pnpm brand             # start Metro bundler (after a build exists)
+pnpm brand:ios         # build + run on iOS simulator
+pnpm brand:android     # build + run on Android emulator
 
 # Influencer app
-pnpm influencer
-pnpm influencer:ios
+pnpm influencer        # start Metro bundler
+pnpm influencer:ios    # build + run on iOS simulator
 pnpm influencer:android
 ```
 
-Or run from the app directory directly:
+**Or with npx from inside each app folder:**
 
 ```bash
-cd getcollab-brand && pnpm start
-cd getcollab-influencer && pnpm start
+cd getcollab-brand
+npx expo run:ios       # first time — full native build + launch
+npx expo run:android
+npx expo start         # subsequent starts — just Metro
 ```
 
 ## Shared Code (`@shared/*`)

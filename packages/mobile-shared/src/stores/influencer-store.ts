@@ -38,10 +38,11 @@ export const useInfluencerStore = create<InfluencerState>((set) => ({
         region: params?.region,
       })
       const newPage = params?.page || 1
+      const list: Influencer[] = Array.isArray(response.data) ? response.data : Array.isArray(response) ? response : []
       set((state) => ({
-        influencers: newPage === 1 ? response.data : [...state.influencers, ...response.data],
+        influencers: newPage === 1 ? list : [...state.influencers, ...list],
         page: newPage,
-        hasMore: response.hasMore,
+        hasMore: response.hasMore ?? response.data?.hasMore ?? false,
         isLoading: false,
       }))
     } catch (error: any) {

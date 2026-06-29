@@ -1,198 +1,163 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Image } from 'react-native'
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing, borderRadius, typography } from '@shared/constants'
-import { Button } from '@shared/components/ui/Button'
-import { Input } from '@shared/components/ui/Input'
-import { apiService, handleApiError } from '@shared/services/api'
+import { Ionicons } from '@expo/vector-icons'
+import { colors, radius, spacing } from '@/src/theme'
+import { handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 
-interface ScreenProps {
-  navigation?: any
-}
+interface Props { navigation?: any }
 
-export default function SignInScreen({ navigation }: ScreenProps) {
+export default function SignInScreen({ navigation }: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({ email: '', password: '' })
 
-  const validateForm = () => {
+  const validate = () => {
     let valid = true
-    const newErrors = { email: '', password: '' }
-    
-    if (!email) {
-      newErrors.email = 'Email is required'
-      valid = false
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Please enter a valid email'
-      valid = false
-    }
-    
-    if (!password) {
-      newErrors.password = 'Password is required'
-      valid = false
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters'
-      valid = false
-    }
-    
-    setErrors(newErrors)
+    const e = { email: '', password: '' }
+    if (!email) { e.email = 'Email is required'; valid = false }
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { e.email = 'Enter a valid email'; valid = false }
+    if (!password) { e.password = 'Password is required'; valid = false }
+    else if (password.length < 6) { e.password = 'Min 6 characters'; valid = false }
+    setErrors(e)
     return valid
   }
 
   const handleSignIn = async () => {
-    if (!validateForm()) return
-    
+    if (!validate()) return
     setLoading(true)
     try {
       await useAuthStore.getState().signIn(email, password)
-      
-      Alert.alert('Success', 'Signed in successfully!')
-      navigation?.navigate('Main')
     } catch (error: any) {
       handleApiError(error, 'Failed to sign in. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.content}>
-        {/* Logo Section */}
-        <View style={styles.logoContainer}>
-          <Image 
-            source={require('../../../../assets/icon.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
-        
-        {/* Welcome Text */}
-        <View style={styles.textContainer}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to continue your journey</Text>
-        </View>
-        
-        {/* Form Section */}
-        <View style={styles.formContainer}>
-          <View style={styles.form}>
-            <Input
-              label="Email"
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              error={errors.email}
-              style={styles.input}
-            />
-            
-            <Input
-              label="Password"
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              error={errors.password}
-              style={styles.input}
-            />
-            
-            <Button
-              title="Sign In"
-              onPress={handleSignIn}
-              loading={loading}
-              fullWidth
-              style={styles.button}
-            />
-
-            <TouchableOpacity
-              onPress={() => navigation?.navigate('ForgotPassword')}
-              style={{ marginTop: 12, alignItems: 'center' }}
-            >
-              <Text style={styles.link}>Forgot password?</Text>
-            </TouchableOpacity>
+    <View style={styles.root}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <View style={styles.header}>
+            <Pressable hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
+              <Ionicons name="chevron-back" size={22} color={colors.text} />
+            </Pressable>
+            <View style={styles.brandRow}>
+              <Image source={require('../../../../assets/icon.png')} style={styles.logoImg} resizeMode="contain" />
+              <Text style={styles.logoText}><Text style={styles.logoGet}>Get</Text><Text style={styles.logoCollab}>Collab</Text></Text>
+            </View>
+            <View style={{ width: 36 }} />
           </View>
 
-          <View style={styles.footer}>
-            <TouchableOpacity onPress={() => navigation?.navigate('SignUp')}>
-              <Text style={styles.linkText}>
-                Don't have an account? <Text style={styles.link}>Sign Up</Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <Animated.View entering={FadeInDown.duration(400)} style={styles.body}>
+              <Text style={styles.eyebrow}>WELCOME BACK</Text>
+              <Text style={styles.heading}>Sign in to your{'\n'}creator account</Text>
+              <Text style={styles.sub}>Pick up where you left off.</Text>
+
+              <View style={{ gap: spacing.md, marginTop: spacing.xxl }}>
+                <View>
+                  <Text style={styles.fieldLabel}>Email</Text>
+                  <View style={[styles.fieldWrap, !!errors.email && styles.fieldError]}>
+                    <Ionicons name="mail-outline" size={18} color={colors.textMuted} />
+                    <TextInput
+                      value={email}
+                      onChangeText={(v) => { setEmail(v); setErrors({ ...errors, email: '' }) }}
+                      placeholder="you@example.com"
+                      placeholderTextColor={colors.textSubtle}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      style={styles.fieldInput}
+                    />
+                  </View>
+                  {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+                </View>
+
+                <View>
+                  <Text style={styles.fieldLabel}>Password</Text>
+                  <View style={[styles.fieldWrap, !!errors.password && styles.fieldError]}>
+                    <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
+                    <TextInput
+                      value={password}
+                      onChangeText={(v) => { setPassword(v); setErrors({ ...errors, password: '' }) }}
+                      secureTextEntry
+                      placeholder="Enter password"
+                      placeholderTextColor={colors.textSubtle}
+                      style={styles.fieldInput}
+                    />
+                  </View>
+                  {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+                </View>
+              </View>
+
+              <Pressable style={styles.forgotRow} onPress={() => navigation?.navigate('ForgotPassword')}>
+                <Text style={styles.forgotText}>Forgot password?</Text>
+              </Pressable>
+
+              <Pressable onPress={handleSignIn} disabled={loading} style={({ pressed }) => [styles.primaryBtn, pressed && !loading && { opacity: 0.85 }]}>
+                <View style={styles.primaryInner}>
+                  <Text style={styles.primaryBtnText}>{loading ? 'Signing in…' : 'Sign In'}</Text>
+                  {!loading && <Ionicons name="arrow-forward" size={18} color="#000" />}
+                </View>
+              </Pressable>
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <Pressable style={({ pressed }) => [styles.socialBtn, pressed && { opacity: 0.85 }]}>
+                <Ionicons name="logo-google" size={18} color={colors.text} />
+                <Text style={styles.socialBtnText}>Continue with Google</Text>
+              </Pressable>
+
+              <View style={styles.bottomRow}>
+                <Text style={styles.bottomText}>New to GetCollab? </Text>
+                <Pressable onPress={() => navigation?.navigate('SignUp')}>
+                  <Text style={styles.bottomLink}>Create account</Text>
+                </Pressable>
+              </View>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  content: {
-    justifyContent: 'center',
-    padding: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: spacing.xxl,
-    marginTop: spacing.xl,
-  },
-  logo: {
-    width: 120,
-    height: 120,
-  },
-  textContainer: {
-    alignItems: 'center',
-    marginBottom: spacing.xxl,
-  },
-  title: {
-    ...typography.h1,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  formContainer: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  form: {
-    marginBottom: spacing.lg,
-  },
-  button: {
-    marginTop: spacing.md,
-  },
-  footer: {
-    alignItems: 'center',
-    paddingTop: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  linkText: {
-    ...typography.bodySmall,
-    color: colors.textMuted,
-  },
-  link: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  input: {
-    marginBottom: spacing.lg,
-  },
+  root: { flex: 1, backgroundColor: colors.bg },
+  scrollContent: { flexGrow: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
+  iconBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  logoImg: { width: 26, height: 26 },
+  logoText: { fontSize: 17, fontWeight: '800', letterSpacing: -0.4 },
+  logoGet: { color: colors.text },
+  logoCollab: { color: colors.neon },
+  body: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl },
+  eyebrow: { color: colors.neon, fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
+  heading: { color: colors.text, fontSize: 30, fontWeight: '800', lineHeight: 36, letterSpacing: -1, marginTop: spacing.md },
+  sub: { color: 'rgba(255,255,255,0.55)', fontSize: 14, marginTop: spacing.sm },
+  fieldLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: '600', letterSpacing: 0.4, marginBottom: 8 },
+  fieldWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 14, backgroundColor: colors.card },
+  fieldError: { borderColor: colors.error },
+  fieldInput: { flex: 1, color: colors.text, fontSize: 15, padding: 0 },
+  errorText: { color: colors.error, fontSize: 11, marginTop: 4 },
+  forgotRow: { alignSelf: 'flex-end', marginTop: spacing.md },
+  forgotText: { color: colors.neon, fontSize: 13, fontWeight: '600' },
+  primaryBtn: { borderRadius: radius.pill, overflow: 'hidden', marginTop: spacing.xl },
+  primaryInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, backgroundColor: colors.neon },
+  primaryBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: spacing.xl },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerText: { color: colors.textSubtle, fontSize: 12 },
+  socialBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, paddingVertical: 16, marginTop: spacing.lg },
+  socialBtnText: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  bottomRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xxl, paddingBottom: spacing.xl },
+  bottomText: { color: 'rgba(255,255,255,0.5)', fontSize: 13 },
+  bottomLink: { color: colors.neon, fontSize: 13, fontWeight: '700' },
 })

@@ -48,7 +48,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
   const [input, setInput] = useState('')
   const [searchMode, setSearchMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const typingTimer = useRef<NodeJS.Timeout | null>(null)
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const listRef = useRef<FlatList<Message>>(null)
 
   useEffect(() => {

@@ -1,405 +1,133 @@
 import React, { useEffect } from 'react'
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Image, 
-  Animated, 
-  Dimensions,
-  TouchableOpacity,
-  ScrollView,
-  StatusBar
-} from 'react-native'
+import { Dimensions, Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
+import { colors, radius, spacing } from '@/src/theme'
 import { useAuthStore } from '@shared/stores/auth-store'
 
 const { width } = Dimensions.get('window')
 
 export default function LandingScreen({ navigation }: any) {
-  const [logoAnim] = React.useState(new Animated.Value(0))
-  const [contentAnim] = React.useState(new Animated.Value(0))
-  const [buttonAnim] = React.useState(new Animated.Value(0))
   const { isAuthenticated } = useAuthStore()
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigation.replace('Main')
-    }
+    if (isAuthenticated) navigation.replace('Main')
   }, [isAuthenticated, navigation])
 
-  useEffect(() => {
-    Animated.sequence([
-      Animated.timing(logoAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(contentAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(buttonAnim, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-    ]).start()
-  }, [])
-
-  const logoScale = logoAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.8, 1],
-  })
-
-  const contentOpacity = contentAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  })
-
-  const buttonScale = buttonAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.9, 1],
-  })
-
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor="#101022" />
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Background Accents */}
-        <View style={styles.bgAccent1} />
-        <View style={styles.bgAccent2} />
-
-        {/* Header Navigation */}
-        <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <View style={styles.logoBadge}>
-              <Image 
-                source={require('../../../../assets/icon.png')}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
-            <Text style={styles.appName}>GetCollab</Text>
-          </View>
-
-          <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
-            <Text style={styles.signInBtn}>Sign In</Text>
-          </TouchableOpacity>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        {/* Decorative neon dots */}
+        <View style={styles.gridBg} pointerEvents="none">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <View key={i} style={[styles.dot, { top: 60 + i * 48, left: (i * 67) % (width - 60) }]} />
+          ))}
         </View>
 
-        {/* Main Content */}
-        <View style={styles.mainContent}>
-          {/* Hero Image Card */}
-          <Animated.View
-            style={[
-              styles.heroCard,
-              { transform: [{ scale: logoScale }] }
-            ]}
-          >
-            <View style={styles.heroImageArea}>
-              <Text style={styles.heroPlaceholder}>🎬</Text>
-            </View>
-
-            {/* Creator Avatars */}
-            <View style={styles.creatorsStack}>
-              <View style={[styles.creatorAvatar, { backgroundColor: '#FF6B6B' }]}>
-                <Text style={styles.creatorInitial}>A</Text>
-              </View>
-              <View style={[styles.creatorAvatar, { backgroundColor: '#4ECDC4', marginLeft: -12 }]}>
-                <Text style={styles.creatorInitial}>B</Text>
-              </View>
-              <View style={[styles.creatorAvatar, { backgroundColor: '#45B7D1', marginLeft: -12 }]}>
-                <Text style={styles.creatorInitial}>C</Text>
-              </View>
-              <View style={styles.creatorBadge}>
-                <Text style={styles.creatorBadgeText}>50k+</Text>
-              </View>
-            </View>
-
-            {/* Community Badge */}
-            <Text style={styles.communityText}>ACTIVE COMMUNITY</Text>
+        {/* Hero */}
+        <View style={styles.hero}>
+          <Animated.View entering={FadeIn.duration(400)} style={styles.logoWrap}>
+            <Image source={require('../../../../assets/icon.png')} style={styles.logoImg} resizeMode="contain" />
+            <Text style={styles.logoText}>
+              <Text style={styles.logoGet}>Get</Text>
+              <Text style={styles.logoCollab}>Collab</Text>
+            </Text>
           </Animated.View>
 
-          {/* Main Title and Subtitle */}
-          <Animated.View style={{ opacity: contentOpacity }}>
-            <View style={styles.titleContainer}>
-              <Text style={styles.mainTitle}>Scale Your</Text>
-              <Text style={styles.titleHighlight}>Brand</Text>
-            </View>
-
-            <Text style={styles.subtitle}>
-              Connect with Elite Creators and expand your reach.
+          <Animated.View entering={FadeInDown.delay(150).duration(500)} style={styles.headingWrap}>
+            <Text style={styles.eyebrow}>FOR CREATORS & INFLUENCERS</Text>
+            <Text style={styles.heading}>
+              Turn your{'\n'}audience into{'\n'}<Text style={styles.headingAccent}>income.</Text>
+            </Text>
+            <Text style={styles.subheading}>
+              Discover brand campaigns, apply in seconds, and get paid — all in one place.
             </Text>
           </Animated.View>
         </View>
 
-        {/* Action Buttons */}
-        <Animated.View
-          style={[
-            styles.actionsContainer,
-            { transform: [{ scale: buttonScale }] }
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.primaryButtonLarge}
-            onPress={() => navigation.navigate('SignUp', { selectedRole: 'brand' })}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.primaryButtonTextLarge}>I'm a Brand</Text>
-            <Text style={styles.buttonArrow}>→</Text>
-          </TouchableOpacity>
+        {/* Footer CTAs */}
+        <Animated.View entering={FadeInDown.delay(280).duration(500)} style={styles.footer}>
+          <View style={styles.statsRow}>
+            <Stat value="50M+" label="Creators" />
+            <View style={styles.statDivider} />
+            <Stat value="12K" label="Brands" />
+            <View style={styles.statDivider} />
+            <Stat value="4.8×" label="Avg ROAS" />
+          </View>
 
-          <TouchableOpacity
-            style={styles.secondaryButtonLarge}
-            onPress={() => navigation.navigate('SignUp', { selectedRole: 'influencer' })}
-            activeOpacity={0.8}
+          <Pressable
+            testID="landing-creator-btn"
+            onPress={() => navigation.navigate('SignUp')}
+            style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
           >
-            <Text style={styles.secondaryButtonTextLarge}>I'm an Influencer</Text>
-            <Text style={styles.boltIcon}>⚡</Text>
-          </TouchableOpacity>
+            <View style={styles.primaryGradient}>
+              <Ionicons name="flash" size={18} color="#000" />
+              <Text style={styles.primaryBtnText}>Start as Creator</Text>
+              <Ionicons name="arrow-forward" size={18} color="#000" />
+            </View>
+          </Pressable>
+
+          <Pressable
+            testID="landing-signin-btn"
+            onPress={() => navigation.navigate('SignIn')}
+            style={({ pressed }) => [styles.secondaryBtn, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={styles.secondaryBtnText}>I already have an account</Text>
+          </Pressable>
         </Animated.View>
+      </SafeAreaView>
+    </View>
+  )
+}
 
-        {/* Premium Platform Badge */}
-        <View style={styles.premiumBadge}>
-          <View style={styles.badgeLine} />
-          <Text style={styles.badgeText}>PREMIUM PLATFORM</Text>
-          <View style={styles.badgeLine} />
-        </View>
-
-        <View style={{ height: 24 }} />
-      </ScrollView>
-    </SafeAreaView>
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#101022',
+  root: { flex: 1, backgroundColor: colors.bg },
+  safe: { flex: 1, justifyContent: 'space-between' },
+  gridBg: { position: 'absolute', inset: 0 },
+  dot: { position: 'absolute', width: 4, height: 4, borderRadius: 2, backgroundColor: colors.neonSoft },
+
+  hero: { flex: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
+  logoWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
+  logoImg: { width: 32, height: 32 },
+  logoText: { fontSize: 20, fontWeight: '800', letterSpacing: -0.4 },
+  logoGet: { color: colors.text },
+  logoCollab: { color: colors.neon },
+
+  headingWrap: { marginTop: spacing.xxxl },
+  eyebrow: { color: colors.neon, fontSize: 11, fontWeight: '700', letterSpacing: 1.4, marginBottom: spacing.md },
+  heading: { color: colors.text, fontSize: 44, fontWeight: '800', lineHeight: 50, letterSpacing: -1.5 },
+  headingAccent: { color: colors.neon },
+  subheading: { color: 'rgba(255,255,255,0.6)', fontSize: 15, lineHeight: 22, marginTop: spacing.lg, maxWidth: 320 },
+
+  footer: { paddingHorizontal: spacing.xl, paddingBottom: spacing.lg, gap: spacing.md },
+  statsRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.lg, paddingVertical: spacing.lg, paddingHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
   },
-  scrollView: {
-    flex: 1,
+  stat: { flex: 1, alignItems: 'center' },
+  statDivider: { width: 1, height: 28, backgroundColor: colors.border },
+  statValue: { color: colors.text, fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
+  statLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 2, letterSpacing: 0.4 },
+
+  primaryBtn: { borderRadius: radius.pill, overflow: 'hidden' },
+  primaryGradient: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 18, backgroundColor: colors.neon,
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-  },
-  bgAccent1: {
-    position: 'absolute',
-    top: '-10%',
-    right: '-10%',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: 'rgba(19, 19, 236, 0.25)',
-  },
-  bgAccent2: {
-    position: 'absolute',
-    bottom: '5%',
-    left: '-10%',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: 'rgba(0, 245, 160, 0.12)',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    marginBottom: 20,
-    zIndex: 10,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  logoBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#1313EC',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 4,
-  },
-  appName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  signInBtn: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1313EC',
-  },
-  mainContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroCard: {
-    width: width - 48,
-    aspectRatio: 1,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 20,
-    justifyContent: 'space-between',
-    overflow: 'hidden',
-    marginBottom: 40,
-  },
-  heroImageArea: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  heroPlaceholder: {
-    fontSize: 100,
-    opacity: 0.3,
-  },
-  creatorsStack: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  creatorAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#101022',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  creatorInitial: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  creatorBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#101022',
-    backgroundColor: '#1313EC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 4,
-  },
-  creatorBadgeText: {
-    fontSize: 8,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  communityText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#00F5A0',
-    letterSpacing: 1.5,
-  },
-  titleContainer: {
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  mainTitle: {
-    fontSize: 44,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    letterSpacing: -1,
-    lineHeight: 52,
-  },
-  titleHighlight: {
-    fontSize: 44,
-    fontWeight: '700',
-    color: '#1313EC',
-    textAlign: 'center',
-    letterSpacing: -1,
-  },
-  subtitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#9CA3AF',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
-  },
-  actionsContainer: {
-    gap: 12,
-    marginBottom: 32,
-  },
-  primaryButtonLarge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#1313EC',
-    paddingVertical: 16,
-    borderRadius: 16,
-    shadowColor: '#1313EC',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  primaryButtonTextLarge: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginRight: 8,
-  },
-  buttonArrow: {
-    fontSize: 18,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  secondaryButtonLarge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    paddingVertical: 16,
-    borderRadius: 16,
-  },
-  secondaryButtonTextLarge: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginRight: 8,
-  },
-  boltIcon: {
-    fontSize: 16,
-    color: '#00F5A0',
-  },
-  premiumBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  badgeLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#555555',
-    letterSpacing: 2,
-  },
+  primaryBtnText: { color: '#000', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+
+  secondaryBtn: { alignItems: 'center', paddingVertical: spacing.md },
+  secondaryBtnText: { color: 'rgba(255,255,255,0.6)', fontSize: 14, fontWeight: '500' },
 })

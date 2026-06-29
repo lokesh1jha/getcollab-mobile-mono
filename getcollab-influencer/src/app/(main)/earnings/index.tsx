@@ -1,482 +1,212 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, Modal, TextInput, Alert } from 'react-native'
+import { FlatList, Modal, Pressable, RefreshControl, StyleSheet, Text, TextInput, View, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, spacing } from '@shared/constants'
-import { Card, Button } from '@shared/components/ui'
-import apiService, { handleApiError } from '@shared/services/api'
+import { colors, radius, spacing, statusColor } from '@/src/theme'
+import { apiService, handleApiError } from '@shared/services/api'
 
-interface Settlement {
-  id: string
-  campaignId?: string
-  campaign?: {
-    id?: string
-    title?: string
-  }
-  amount: number
-  status: 'pending' | 'paid' | 'rejected' | 'completed'
-  message?: string
-  createdAt: string
+interface Settlement { id: string; amount: number; status: string; campaignId?: string; campaignTitle?: string; createdAt?: string; notes?: string }
+
+function formatDate(v?: string): string {
+  if (!v) return '—'
+  try { return new Date(v).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) } catch { return v }
 }
 
-interface EarningsScreenProps {
-  navigation?: any
-}
-
-export default function EarningsScreen({ navigation }: EarningsScreenProps) {
-  const [refreshing, setRefreshing] = useState(false)
-  const [loading, setLoading] = useState(true)
+export default function EarningsScreen({ navigation }: any) {
   const [settlements, setSettlements] = useState<Settlement[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [requestModal, setRequestModal] = useState(false)
-  const [requestForm, setRequestForm] = useState({ amount: '', message: '', campaignId: '' })
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [amount, setAmount] = useState('')
+  const [campaignId, setCampaignId] = useState('')
+  const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const fetchSettlements = useCallback(async () => {
+  const totalPaid = settlements.filter(s => s.status === 'paid' || s.status === 'completed').reduce((sum, s) => sum + Number(s.amount || 0), 0)
+  const totalPending = settlements.filter(s => s.status === 'pending' || s.status === 'processing').reduce((sum, s) => sum + Number(s.amount || 0), 0)
+
+  const load = useCallback(async (spinner = false) => {
+    if (spinner) setLoading(true)
     try {
-      setError(null)
-      const response = await apiService.getEarnings()
-      const list = response?.data || response?.requests || response?.earnings || response || []
+      const res = await apiService.getEarnings()
+      const list: Settlement[] = res?.data || res?.requests || res?.earnings || (Array.isArray(res) ? res : [])
       setSettlements(Array.isArray(list) ? list : [])
     } catch (err: any) {
-      setError(err?.message || 'Failed to load earnings')
-      console.error('Error fetching settlements:', err)
-    } finally {
-      setLoading(false)
-    }
+      handleApiError(err, 'Failed to load earnings')
+    } finally { setLoading(false); setRefreshing(false) }
   }, [])
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchSettlements()
-    }, [fetchSettlements])
-  )
+  useFocusEffect(useCallback(() => { load(true) }, [load]))
+  const onRefresh = () => { setRefreshing(true); load(false) }
 
-  const handleRefresh = async () => {
-    setRefreshing(true)
-    await fetchSettlements()
-    setRefreshing(false)
-  }
-
-  const handleSubmitPayout = async () => {
-    const amount = Number(requestForm.amount)
-    if (!amount || amount <= 0) {
-      Alert.alert('Invalid amount', 'Enter a payout amount greater than zero.')
-      return
-    }
+  const handleRequest = async () => {
+    if (!amount.trim()) return
     setSubmitting(true)
     try {
-      await apiService.requestPayout({
-        amount,
-        message: requestForm.message.trim(),
-        campaignId: requestForm.campaignId.trim() || undefined,
-      })
-      Alert.alert(
-        'Payout requested',
-        'Your request has been logged. Our team will review and process it shortly.'
-      )
-      setRequestModal(false)
-      setRequestForm({ amount: '', message: '', campaignId: '' })
-      fetchSettlements()
-    } catch (err) {
-      handleApiError(err, 'Failed to submit payout request')
-    } finally {
-      setSubmitting(false)
-    }
+      await apiService.requestPayout({ amount: Number(amount), campaignId: campaignId || undefined, message: notes || '' })
+      setShowModal(false)
+      setAmount('')
+      setCampaignId('')
+      setNotes('')
+      load(false)
+    } catch (err: any) {
+      handleApiError(err, 'Failed to request payout')
+    } finally { setSubmitting(false) }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid':
-      case 'completed':
-        return colors.success
-      case 'pending':
-        return colors.warning
-      case 'rejected':
-        return colors.error
-      default:
-        return colors.textMuted
-    }
-  }
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return 'Paid'
-      case 'completed':
-        return 'Completed'
-      case 'pending':
-        return 'Pending'
-      case 'rejected':
-        return 'Rejected'
-      default:
-        return status || 'Unknown'
-    }
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) return ''
-    return date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
-
-  const totalPaid = settlements
-    .filter((s) => s.status === 'paid' || s.status === 'completed')
-    .reduce((sum, s) => sum + (Number(s.amount) || 0), 0)
-  const totalPending = settlements
-    .filter((s) => s.status === 'pending')
-    .reduce((sum, s) => sum + (Number(s.amount) || 0), 0)
-
-  const renderSettlementItem = ({ item }: { item: Settlement }) => (
-    <Card style={styles.settlementCard}>
-      <View style={styles.settlementHeader}>
-        <View style={styles.settlementInfo}>
-          <Text style={styles.campaignTitle} numberOfLines={1}>
-            {item.campaign?.title || 'Campaign'}
-          </Text>
-          <Text style={styles.settlementDate}>{formatDate(item.createdAt)}</Text>
-        </View>
-        <View style={styles.amountContainer}>
-          <Text style={styles.amount}>₹{Number(item.amount || 0).toLocaleString()}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
-            <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-              {getStatusLabel(item.status)}
-            </Text>
+  const renderSettlement = ({ item, index }: { item: Settlement; index: number }) => {
+    const s = statusColor(item.status)
+    return (
+      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
+        <View style={styles.cardLeft}>
+          <View style={styles.cardIcon}>
+            <Ionicons name={item.status === 'paid' || item.status === 'completed' ? 'checkmark-circle' : 'time-outline'} size={18} color={item.status === 'paid' || item.status === 'completed' ? colors.success : colors.warning} />
+          </View>
+          <View>
+            <Text style={styles.cardTitle} numberOfLines={1}>{item.campaignTitle || `Campaign #${item.campaignId?.slice(-4) || '—'}`}</Text>
+            <Text style={styles.cardDate}>{formatDate(item.createdAt)}</Text>
           </View>
         </View>
-      </View>
-      {item.message && (
-        <Text style={styles.settlementMessage} numberOfLines={2}>
-          {item.message}
-        </Text>
-      )}
-    </Card>
-  )
-
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>💰</Text>
-      <Text style={styles.emptyTitle}>No earnings yet</Text>
-      <Text style={styles.emptySubtext}>
-        Your settlement history will appear here once you complete campaigns
-      </Text>
-    </View>
-  )
-
-  if (loading && !refreshing) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading earnings...</Text>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={styles.cardAmount}>₹{Number(item.amount || 0).toLocaleString()}</Text>
+          <View style={[styles.statusPill, { backgroundColor: s.bg }]}>
+            <Text style={[styles.statusText, { color: s.fg }]}>{item.status?.charAt(0).toUpperCase() + item.status?.slice(1)}</Text>
+          </View>
         </View>
-      </SafeAreaView>
+      </Animated.View>
     )
   }
 
+  if (loading) return (
+    <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
+      <ActivityIndicator size="large" color={colors.neon} />
+    </View>
+  )
+
   return (
-    <SafeAreaView style={styles.container}>
-      <FlatList
-        data={settlements}
-        renderItem={renderSettlementItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={settlements.length === 0 ? styles.emptyList : styles.listContainer}
-        ListEmptyComponent={renderEmptyState}
-        ListHeaderComponent={
-          <View>
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>Earnings</Text>
-              <Text style={styles.headerSubtitle}>Track your campaign earnings</Text>
-            </View>
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-            <View style={styles.statsContainer}>
-              <Card style={styles.statCard}>
-                <Text style={styles.statLabel}>Total Paid</Text>
-                <Text style={[styles.statValue, { color: colors.success }]}>₹{totalPaid.toLocaleString()}</Text>
-              </Card>
-              <Card style={styles.statCard}>
-                <Text style={styles.statLabel}>Pending</Text>
-                <Text style={[styles.statValue, { color: colors.warning }]}>₹{totalPending.toLocaleString()}</Text>
-              </Card>
-            </View>
-
-            <View style={styles.requestRow}>
-              <Button
-                title="Request Payout"
-                onPress={() => setRequestModal(true)}
-                size="sm"
-                fullWidth
-              />
-            </View>
-
-            {settlements.length > 0 && <Text style={styles.sectionTitle}>History</Text>}
-          </View>
-        }
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
-        }
-        showsVerticalScrollIndicator={false}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-      />
-
-      <Modal
-        visible={requestModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setRequestModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Request Payout</Text>
-            <Text style={styles.modalSubtitle}>
-              Submit a payout request for completed campaigns. Our team will review and disburse to your registered bank account.
-            </Text>
-
-            <Text style={styles.modalLabel}>Amount (₹) *</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="e.g. 5000"
-              placeholderTextColor={colors.textMuted}
-              value={requestForm.amount}
-              onChangeText={(v) => setRequestForm({ ...requestForm, amount: v })}
-              keyboardType="numeric"
-            />
-
-            <Text style={styles.modalLabel}>Campaign ID (optional)</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Associated campaign ID"
-              placeholderTextColor={colors.textMuted}
-              value={requestForm.campaignId}
-              onChangeText={(v) => setRequestForm({ ...requestForm, campaignId: v })}
-            />
-
-            <Text style={styles.modalLabel}>Notes</Text>
-            <TextInput
-              style={[styles.modalInput, styles.modalTextArea]}
-              placeholder="Provide any additional context..."
-              placeholderTextColor={colors.textMuted}
-              value={requestForm.message}
-              onChangeText={(v) => setRequestForm({ ...requestForm, message: v })}
-              multiline
-            />
-
-            <View style={styles.modalActions}>
-              <Button
-                title="Cancel"
-                variant="outline"
-                onPress={() => setRequestModal(false)}
-                style={styles.modalBtn}
-              />
-              <Button
-                title={submitting ? 'Submitting...' : 'Submit'}
-                onPress={handleSubmitPayout}
-                disabled={submitting}
-                loading={submitting}
-                style={styles.modalBtn}
-              />
-            </View>
-          </View>
+    <View style={styles.root}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <View style={styles.header}>
+          <Pressable hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Earnings</Text>
+          <View style={{ width: 40 }} />
         </View>
-      </Modal>
-    </SafeAreaView>
+
+        <FlatList
+          data={settlements}
+          renderItem={renderSettlement}
+          keyExtractor={s => s.id}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+          ListHeaderComponent={
+            <View>
+              {/* Stat cards */}
+              <View style={styles.statsRow}>
+                <Animated.View entering={FadeInDown.delay(0).duration(320)} style={[styles.statCard, { borderColor: 'rgba(34,197,94,0.3)' }]}>
+                  <View style={styles.statIconWrap}><Ionicons name="wallet-outline" size={18} color={colors.success} /></View>
+                  <Text style={[styles.statValue, { color: colors.success }]}>₹{totalPaid.toLocaleString()}</Text>
+                  <Text style={styles.statLabel}>Total Paid</Text>
+                </Animated.View>
+                <Animated.View entering={FadeInDown.delay(80).duration(320)} style={[styles.statCard, { borderColor: 'rgba(245,158,11,0.3)' }]}>
+                  <View style={[styles.statIconWrap, { backgroundColor: colors.warningSoft }]}><Ionicons name="time-outline" size={18} color={colors.warning} /></View>
+                  <Text style={[styles.statValue, { color: colors.warning }]}>₹{totalPending.toLocaleString()}</Text>
+                  <Text style={styles.statLabel}>Pending</Text>
+                </Animated.View>
+              </View>
+
+              <Pressable
+                onPress={() => setShowModal(true)}
+                style={({ pressed }) => [styles.requestBtn, pressed && { opacity: 0.85 }]}
+              >
+                <Ionicons name="cash-outline" size={18} color="#000" />
+                <Text style={styles.requestBtnText}>Request Payout</Text>
+              </Pressable>
+
+              <Text style={[styles.sectionTitle, { marginTop: spacing.xl, marginBottom: spacing.md }]}>History</Text>
+            </View>
+          }
+          ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <View style={styles.emptyIcon}><Ionicons name="wallet-outline" size={26} color={colors.textMuted} /></View>
+              <Text style={styles.emptyTitle}>No earnings yet</Text>
+              <Text style={styles.emptySub}>Complete campaigns to receive payouts here.</Text>
+            </View>
+          }
+        />
+
+        <Modal visible={showModal} animationType="slide" transparent>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+            <Pressable style={styles.overlay} onPress={() => setShowModal(false)} />
+            <View style={styles.sheet}>
+              <View style={styles.sheetHandle} />
+              <Text style={styles.sheetTitle}>Request Payout</Text>
+
+              <Text style={styles.sheetLabel}>Amount (₹)</Text>
+              <View style={styles.sheetInput}>
+                <Ionicons name="cash-outline" size={18} color={colors.textMuted} />
+                <TextInput value={amount} onChangeText={setAmount} placeholder="Enter amount" placeholderTextColor={colors.textSubtle} keyboardType="numeric" style={styles.sheetInputText} />
+              </View>
+
+              <Text style={styles.sheetLabel}>Campaign ID (optional)</Text>
+              <View style={styles.sheetInput}>
+                <Ionicons name="megaphone-outline" size={18} color={colors.textMuted} />
+                <TextInput value={campaignId} onChangeText={setCampaignId} placeholder="Campaign reference" placeholderTextColor={colors.textSubtle} style={styles.sheetInputText} />
+              </View>
+
+              <Text style={styles.sheetLabel}>Notes (optional)</Text>
+              <View style={[styles.sheetInput, { alignItems: 'flex-start', minHeight: 80, paddingTop: 14 }]}>
+                <TextInput value={notes} onChangeText={setNotes} placeholder="Additional notes…" placeholderTextColor={colors.textSubtle} multiline style={[styles.sheetInputText, { textAlignVertical: 'top' }]} />
+              </View>
+
+              <Pressable onPress={handleRequest} disabled={submitting || !amount.trim()} style={({ pressed }) => [styles.submitBtn, (!amount.trim() || submitting) && { opacity: 0.5 }, pressed && { opacity: 0.85 }]}>
+                <Text style={styles.submitBtnText}>{submitting ? 'Requesting…' : 'Request Payout'}</Text>
+              </Pressable>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+      </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: colors.textMuted,
-    marginTop: spacing.md,
-  },
-  errorText: {
-    color: colors.error,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  header: {
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  statCard: {
-    flex: 1,
-    padding: spacing.lg,
-    alignItems: 'center',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginBottom: spacing.sm,
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  requestRow: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  listContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  emptyList: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  settlementCard: {
-    marginBottom: spacing.md,
-    padding: spacing.md,
-  },
-  settlementHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  settlementInfo: {
-    flex: 1,
-    marginRight: spacing.md,
-  },
-  campaignTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  settlementDate: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  amountContainer: {
-    alignItems: 'flex-end',
-  },
-  amount: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  statusBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  settlementMessage: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-    lineHeight: 20,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: spacing.md,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginBottom: spacing.lg,
-    lineHeight: 20,
-  },
-  modalLabel: {
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-    marginTop: spacing.sm,
-  },
-  modalInput: {
-    backgroundColor: colors.surfaceLight,
-    borderRadius: 8,
-    padding: spacing.md,
-    color: colors.text,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  modalTextArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.lg,
-  },
-  modalBtn: {
-    flex: 1,
-  },
+  root: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
+  iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
+  headerTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
+  statsRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md, marginBottom: spacing.md },
+  statCard: { flex: 1, backgroundColor: colors.card, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm },
+  statIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.successSoft, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' },
+  statValue: { fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
+  statLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '500' },
+  requestBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 14 },
+  requestBtnText: { color: '#000', fontSize: 15, fontWeight: '700' },
+  sectionTitle: { color: colors.text, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
+  card: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg },
+  cardLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
+  cardIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center' },
+  cardTitle: { color: colors.text, fontSize: 14, fontWeight: '600', maxWidth: 160 },
+  cardDate: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  cardAmount: { color: colors.text, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
+  statusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, marginTop: 4 },
+  statusText: { fontSize: 10, fontWeight: '700' },
+  empty: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.sm },
+  emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  emptyTitle: { color: colors.text, fontSize: 15, fontWeight: '700', marginTop: spacing.sm },
+  emptySub: { color: colors.textMuted, fontSize: 13, textAlign: 'center', paddingHorizontal: spacing.xl },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  sheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.xl, paddingBottom: spacing.xxxl, borderWidth: 1, borderBottomWidth: 0, borderColor: colors.border },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: spacing.lg },
+  sheetTitle: { color: colors.text, fontSize: 18, fontWeight: '700', marginBottom: spacing.xl },
+  sheetLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: '600', letterSpacing: 0.4, marginBottom: 8, marginTop: spacing.md },
+  sheetInput: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.elevated, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 14 },
+  sheetInputText: { flex: 1, color: colors.text, fontSize: 15, padding: 0 },
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 16, marginTop: spacing.xl },
+  submitBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
 })
