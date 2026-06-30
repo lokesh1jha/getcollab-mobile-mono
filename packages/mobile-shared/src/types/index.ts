@@ -96,7 +96,6 @@ export type BidStatus = 'pending' | 'accepted' | 'rejected'
 export interface Bid {
   id: string
   pitch: string
-  coinsSpent: number
   status: BidStatus
   campaignId: string
   campaign?: Campaign

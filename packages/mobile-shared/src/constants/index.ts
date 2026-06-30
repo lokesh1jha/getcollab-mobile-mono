@@ -169,15 +169,6 @@ export const shadows = {
   },
 }
 
-// Coin Packages for purchase
-export const COIN_PACKAGES = [
-  { id: '1', coins: 10, price: 100, bonus: 0 },
-  { id: '2', coins: 50, price: 450, bonus: 5 },
-  { id: '3', coins: 100, price: 850, bonus: 15 },
-  { id: '4', coins: 500, price: 4000, bonus: 100 },
-  { id: '5', coins: 1000, price: 7500, bonus: 250 },
-]
-
 // Notification Types
 export const NOTIFICATION_TYPES = {
   NEW_BID: 'new_bid',
