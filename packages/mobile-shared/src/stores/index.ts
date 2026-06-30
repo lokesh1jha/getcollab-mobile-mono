@@ -1,4 +1,5 @@
 export { useAuthStore } from './auth-store'
+export { useReferenceDataStore, selectCategories, selectLanguages, selectIndustries, selectCampaignTypes, selectObjectives, selectRegions, selectDeliverables } from './reference-data-store'
 export { useCampaignStore } from './campaign-store'
 export { useChatStore } from './chat-store'
 export { useInfluencerStore } from './influencer-store'

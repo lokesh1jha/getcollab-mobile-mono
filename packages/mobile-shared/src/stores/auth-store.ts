@@ -68,7 +68,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await apiService.setRefreshToken(response.refreshToken)
       }
 
-      await apiService.updateRole(role)
       await get().fetchCurrentUser()
     } catch (error: any) {
       set({
@@ -113,7 +112,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   updateRole: async (role: 'brand' | 'influencer') => {
     set({ isLoading: true, error: null })
     try {
-      await apiService.updateRole(role)
+      // Role may already be set at registration — skip the API call to avoid 409.
+      if (get().user?.role !== role) {
+        await apiService.updateRole(role)
+      }
       await get().fetchCurrentUser()
     } catch (error: any) {
       set({

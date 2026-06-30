@@ -5,6 +5,7 @@ import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { colors, spacing } from '@/src/theme'
 import { useAuthStore } from '@shared/stores/auth-store'
+import { useReferenceDataStore } from '@shared/stores/reference-data-store'
 import { useChatStore } from '@shared/stores/chat-store'
 import { notificationService, navigationRef } from '@shared/services/notification-service'
 import { apiService } from '@shared/services/api'
@@ -65,6 +66,8 @@ export default function App() {
       setApiError(false)
 
       await initObservability()
+      // Fetch reference data early — public endpoint, no auth needed
+      useReferenceDataStore.getState().fetch()
       await fetchCurrentUser()
 
       const currentUser = useAuthStore.getState().user

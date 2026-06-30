@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, FlatList, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, spacing, CATEGORIES, REGIONS } from '@shared/constants'
+import { colors, spacing } from '@shared/constants'
 import { Button } from '@shared/components/ui/Button'
 import { Input } from '@shared/components/ui/Input'
 import { useAuthStore } from '@shared/stores/auth-store'
+import { useReferenceDataStore, selectCategories, selectIndustries, selectCampaignTypes, selectObjectives, selectRegions } from '@shared/stores/reference-data-store'
 import apiService, { handleApiError } from '@shared/services/api'
 import { onboardingPathToStep } from '@shared/lib/onboarding-target'
 
@@ -14,19 +15,16 @@ interface Props {
   route?: { params?: { initialStep?: number } }
 }
 
-const INDUSTRIES = [
-  'Fashion & Apparel', 'Technology', 'Beauty & Wellness', 'Food & Beverage',
-  'Gaming', 'Health & Fitness', 'Travel & Hospitality', 'Education',
-  'Finance', 'E-commerce', 'Entertainment', 'Real Estate', 'Automotive', 'Other',
-]
-
-const CAMPAIGN_TYPES = ['Sponsored Posts', 'Product Reviews', 'Brand Ambassador', 'Affiliate', 'UGC', 'Event Coverage']
 const AGE_RANGES = ['13-17', '18-24', '25-34', '35-44', '45-54', '55+']
 const GENDERS = ['Male', 'Female', 'Non-binary', 'All']
-const OBJECTIVES = ['Brand Awareness', 'Sales', 'Engagement', 'App Installs', 'Lead Gen', 'Content']
 
 export default function OnboardingScreen({ navigation, route }: Props) {
   const { user, fetchCurrentUser } = useAuthStore()
+  const categories = useReferenceDataStore(selectCategories)
+  const industries = useReferenceDataStore(selectIndustries)
+  const campaignTypes = useReferenceDataStore(selectCampaignTypes)
+  const objectives = useReferenceDataStore(selectObjectives)
+  const regions = useReferenceDataStore(selectRegions)
   const role = user?.role === 'brand' ? 'brand' : 'influencer'
   const totalSteps = role === 'brand' ? 3 : 2
   const [step, setStep] = useState(route?.params?.initialStep || 1)
@@ -301,7 +299,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
         {renderProgress()}
 
         <SectionLabel label="Campaign Types *" />
-        {renderChips(CAMPAIGN_TYPES, brandStep2.campaignTypes, (v) => setBrandStep2({ ...brandStep2, campaignTypes: toggle(brandStep2.campaignTypes, v) }))}
+        {renderChips(campaignTypes.map(t => t.label), brandStep2.campaignTypes, (v) => setBrandStep2({ ...brandStep2, campaignTypes: toggle(brandStep2.campaignTypes, v) }))}
 
         <SectionLabel label="Target Age Ranges *" />
         {renderChips(AGE_RANGES, brandStep2.ageRanges, (v) => setBrandStep2({ ...brandStep2, ageRanges: toggle(brandStep2.ageRanges, v) }))}
@@ -313,10 +311,10 @@ export default function OnboardingScreen({ navigation, route }: Props) {
         <Input value={brandStep2.location} onChangeText={(v) => setBrandStep2({ ...brandStep2, location: v })} placeholder="e.g. All India" />
 
         <SectionLabel label="Creator Categories *" />
-        {renderChips(CATEGORIES, brandStep2.creatorCategories, (v) => setBrandStep2({ ...brandStep2, creatorCategories: toggle(brandStep2.creatorCategories, v) }))}
+        {renderChips(categories, brandStep2.creatorCategories, (v) => setBrandStep2({ ...brandStep2, creatorCategories: toggle(brandStep2.creatorCategories, v) }))}
 
         <SectionLabel label="Objectives *" />
-        {renderChips(OBJECTIVES, brandStep2.objectives, (v) => setBrandStep2({ ...brandStep2, objectives: toggle(brandStep2.objectives, v) }))}
+        {renderChips(objectives.map(o => o.label), brandStep2.objectives, (v) => setBrandStep2({ ...brandStep2, objectives: toggle(brandStep2.objectives, v) }))}
 
         <View style={styles.actionRow}>
           <Button title="Back" variant="outline" onPress={() => setStep(1)} style={{ flex: 1 }} />
@@ -370,7 +368,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
         <Input label="Phone (optional)" value={infStep1.phoneNumber} onChangeText={(v) => setInfStep1({ ...infStep1, phoneNumber: v })} keyboardType="phone-pad" style={styles.input} />
 
         <SectionLabel label="Categories *" />
-        {renderChips(CATEGORIES, infStep1.categories, (v) => setInfStep1({ ...infStep1, categories: toggle(infStep1.categories, v) }))}
+        {renderChips(categories, infStep1.categories, (v) => setInfStep1({ ...infStep1, categories: toggle(infStep1.categories, v) }))}
 
         <Button title={submitting ? 'Saving...' : 'Continue'} onPress={handleInfStep1} loading={submitting} disabled={submitting} fullWidth style={{ marginTop: spacing.lg }} />
       </Wrapper>
@@ -455,7 +453,7 @@ function IndustryPicker({ value, onChange }: { value: string[]; onChange: (v: st
             </Pressable>
           </View>
           <FlatList
-            data={INDUSTRIES}
+            data={industries}
             keyExtractor={(item) => item}
             renderItem={({ item }) => {
               const selected = value.includes(item)

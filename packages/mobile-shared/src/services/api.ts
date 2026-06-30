@@ -218,6 +218,12 @@ class ApiService {
           if (newToken) {
             headers['Authorization'] = `Bearer ${newToken}`
             const retryResponse = await fetch(url, { ...config, headers })
+            // Intercept retry 401 here — prevents handleResponse from clearing tokens
+            // while other concurrent retries are still in-flight with the new token.
+            if (retryResponse.status === 401) {
+              await this.handleLogout()
+              throw new Error('UNAUTHORIZED')
+            }
             return await this.handleResponse<T>(retryResponse)
           }
         }
@@ -479,6 +485,10 @@ class ApiService {
   }
 
   // ------- Settings -------
+  async getReferenceData(): Promise<any> {
+    return this.request('/reference-data/all')
+  }
+
   async getSettings(): Promise<any> {
     return this.request('/settings')
   }
@@ -721,8 +731,10 @@ class ApiService {
 
       const response = await fetch(`${this.baseUrl}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${refreshToken}`,
+        },
       })
 
       if (!response.ok) return null

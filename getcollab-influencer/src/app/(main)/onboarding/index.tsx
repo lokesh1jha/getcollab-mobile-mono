@@ -1,23 +1,26 @@
 import React, { useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing, CATEGORIES, REGIONS, CONTENT_LANGUAGES } from '@shared/constants'
+import { colors, spacing } from '@shared/constants'
 import { Button } from '@shared/components/ui/Button'
 import { Input } from '@shared/components/ui/Input'
 import { useAuthStore } from '@shared/stores/auth-store'
+import { useReferenceDataStore, selectCategories, selectLanguages, selectCampaignTypes, selectObjectives } from '@shared/stores/reference-data-store'
 import apiService, { handleApiError } from '@shared/services/api'
 
 interface Props {
   navigation?: any
 }
 
-const CAMPAIGN_TYPES = ['Sponsored Posts', 'Product Reviews', 'Brand Ambassador', 'Affiliate', 'UGC', 'Event Coverage']
 const AGE_RANGES = ['13-17', '18-24', '25-34', '35-44', '45-54', '55+']
 const GENDERS = ['Male', 'Female', 'Non-binary', 'All']
-const OBJECTIVES = ['Brand Awareness', 'Sales', 'Engagement', 'App Installs', 'Lead Gen', 'Content']
 
 export default function OnboardingScreen({ navigation }: Props) {
   const { user, fetchCurrentUser } = useAuthStore()
+  const categories = useReferenceDataStore(selectCategories)
+  const languages = useReferenceDataStore(selectLanguages)
+  const campaignTypes = useReferenceDataStore(selectCampaignTypes)
+  const objectives = useReferenceDataStore(selectObjectives)
   const role = user?.role === 'brand' ? 'brand' : 'influencer'
   const totalSteps = role === 'brand' ? 3 : 2
   const [step, setStep] = useState(1)
@@ -232,7 +235,7 @@ export default function OnboardingScreen({ navigation }: Props) {
         {renderProgress()}
 
         <SectionLabel label="Campaign Types *" />
-        {renderChips(CAMPAIGN_TYPES, brandStep2.campaignTypes, (v) => setBrandStep2({ ...brandStep2, campaignTypes: toggle(brandStep2.campaignTypes, v) }))}
+        {renderChips(campaignTypes.map(t => t.label), brandStep2.campaignTypes, (v) => setBrandStep2({ ...brandStep2, campaignTypes: toggle(brandStep2.campaignTypes, v) }))}
 
         <SectionLabel label="Target Age Ranges *" />
         {renderChips(AGE_RANGES, brandStep2.ageRanges, (v) => setBrandStep2({ ...brandStep2, ageRanges: toggle(brandStep2.ageRanges, v) }))}
@@ -244,10 +247,10 @@ export default function OnboardingScreen({ navigation }: Props) {
         <Input value={brandStep2.location} onChangeText={(v) => setBrandStep2({ ...brandStep2, location: v })} placeholder="e.g. All India" />
 
         <SectionLabel label="Creator Categories *" />
-        {renderChips(CATEGORIES, brandStep2.creatorCategories, (v) => setBrandStep2({ ...brandStep2, creatorCategories: toggle(brandStep2.creatorCategories, v) }))}
+        {renderChips(categories, brandStep2.creatorCategories, (v) => setBrandStep2({ ...brandStep2, creatorCategories: toggle(brandStep2.creatorCategories, v) }))}
 
         <SectionLabel label="Objectives *" />
-        {renderChips(OBJECTIVES, brandStep2.objectives, (v) => setBrandStep2({ ...brandStep2, objectives: toggle(brandStep2.objectives, v) }))}
+        {renderChips(objectives.map(o => o.label), brandStep2.objectives, (v) => setBrandStep2({ ...brandStep2, objectives: toggle(brandStep2.objectives, v) }))}
 
         <View style={styles.actionRow}>
           <Button title="Back" variant="outline" onPress={() => setStep(1)} style={{ flex: 1 }} />
@@ -294,16 +297,16 @@ export default function OnboardingScreen({ navigation }: Props) {
         <Input label="Phone (optional)" value={infStep1.phoneNumber} onChangeText={(v) => setInfStep1({ ...infStep1, phoneNumber: v })} keyboardType="phone-pad" style={styles.input} />
 
         <SectionLabel label="Categories *" />
-        {renderChips(CATEGORIES, infStep1.categories, (v) => setInfStep1({ ...infStep1, categories: toggle(infStep1.categories, v) }))}
+        {renderChips(categories, infStep1.categories, (v) => setInfStep1({ ...infStep1, categories: toggle(infStep1.categories, v) }))}
 
         <SectionLabel label="Content Languages *" />
         {renderChips(
-          CONTENT_LANGUAGES.map((l) => l.label),
-          CONTENT_LANGUAGES.filter((l) => infStep1.languages.includes(l.code)).map((l) => l.label),
+          languages.map((l) => l.label),
+          languages.filter((l) => infStep1.languages.includes(l.slug)).map((l) => l.label),
           (label) => {
-            const lang = CONTENT_LANGUAGES.find((l) => l.label === label)
+            const lang = languages.find((l) => l.label === label)
             if (!lang) return
-            setInfStep1({ ...infStep1, languages: toggle(infStep1.languages, lang.code) })
+            setInfStep1({ ...infStep1, languages: toggle(infStep1.languages, lang.slug) })
           },
         )}
 

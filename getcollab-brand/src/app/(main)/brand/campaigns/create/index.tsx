@@ -3,10 +3,11 @@ import { View, Text, StyleSheet, ScrollView, Alert, TextInput, TouchableOpacity,
 import { SafeAreaView } from 'react-native-safe-area-context'
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import * as ImagePickerLib from 'expo-image-picker'
-import { colors, spacing, CATEGORIES, REGIONS, DELIVERABLES } from '@shared/constants'
+import { colors, spacing } from '@shared/constants'
 import { Button } from '@shared/components/ui/Button'
 import { Input } from '@shared/components/ui/Input'
 import { apiService, handleApiError } from '@shared/services/api'
+import { useReferenceDataStore, selectCategories, selectRegions, selectDeliverables } from '@shared/stores/reference-data-store'
 import { TrialGuard } from '../../../../../components/TrialGuard'
 
 interface CreateCampaignScreenProps {
@@ -23,10 +24,13 @@ const toIsoDate = (value: string): string | null => {
 }
 
 export default function CreateCampaignScreen({ navigation }: CreateCampaignScreenProps) {
+  const categories = useReferenceDataStore(selectCategories)
+  const regions = useReferenceDataStore(selectRegions)
+  const deliverables = useReferenceDataStore(selectDeliverables)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    region: REGIONS[0],
+    region: '',
     budget: '',
     startDate: '',
     endDate: '',
@@ -309,7 +313,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
           <View style={styles.categoryContainer}>
             <Text style={styles.label}>Region</Text>
             <View style={styles.categoryGrid}>
-              {REGIONS.map((region) => (
+              {regions.map((region) => (
                 <TouchableOpacity
                   key={region}
                   style={[styles.categoryButton, formData.region === region && styles.selectedCategory]}
@@ -326,7 +330,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
           <View style={styles.categoryContainer}>
             <Text style={styles.label}>Categories</Text>
             <View style={styles.categoryGrid}>
-              {CATEGORIES.map((category) => (
+              {categories.map((category) => (
                 <TouchableOpacity
                   key={category}
                   style={[
@@ -352,7 +356,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
           <View style={styles.categoryContainer}>
             <Text style={styles.label}>Deliverables</Text>
             <View style={styles.categoryGrid}>
-              {DELIVERABLES.map((deliverable) => (
+              {deliverables.map((deliverable) => (
                 <TouchableOpacity
                   key={deliverable}
                   style={[
