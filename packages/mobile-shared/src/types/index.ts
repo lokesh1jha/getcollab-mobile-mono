@@ -135,6 +135,17 @@ export interface ChatRoom {
   createdAt: string
 }
 
+export type ChatAttachmentType = 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'ARCHIVE' | 'CODE' | 'OTHER'
+
+export interface ChatAttachment {
+  id: string
+  type: ChatAttachmentType
+  url: string
+  fileName: string
+  mimeType: string
+  fileSize: number
+}
+
 export interface Message {
   id: string
   content: string
@@ -143,6 +154,7 @@ export interface Message {
   createdAt: string
   type?: 'text' | 'image' | 'file'
   attachmentUrl?: string
+  attachments?: ChatAttachment[]
 }
 
 // Influencer Discovery

@@ -4,6 +4,13 @@ import apiService from '../services/api'
 import { logger } from '../services/logger'
 import type { ChatRoom, Message } from '../types'
 
+export interface PendingAttachmentFile {
+  uri: string
+  fileName: string
+  mimeType: string
+  fileSize: number
+}
+
 const getSocketUrl = (): string => {
   const baseUrl = apiService.getBaseUrl?.() || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'
   return baseUrl.replace(/\/api\/v\d+$/, '')
@@ -35,6 +42,7 @@ interface ChatState {
   fetchMessages: (roomId: string, params?: { before?: string }) => Promise<void>
   sendMessage: (roomId: string, content: string, type?: string, attachmentUrl?: string) => Promise<void>
   sendImage: (roomId: string, base64: string) => Promise<void>
+  sendAttachments: (roomId: string, files: PendingAttachmentFile[], caption?: string) => Promise<void>
   addMessage: (message: Message) => void
   markRoomRead: (roomId: string) => void
   setTyping: (roomId: string, isTyping: boolean) => void
@@ -237,6 +245,61 @@ export const useChatStore = create<ChatState>((set, get) => ({
       await get().sendMessage(roomId, imageUrl, 'image', imageUrl)
     } catch (error: any) {
       set({ error: error?.message || 'Failed to send image', isSending: false })
+      throw error
+    }
+  },
+
+  sendAttachments: async (roomId: string, files: PendingAttachmentFile[], caption = '') => {
+    set({ isSending: true, error: null })
+    try {
+      const presignRes = await apiService.presignChatAttachments(
+        roomId,
+        files.map((f) => ({ fileName: f.fileName, mimeType: f.mimeType, fileSize: f.fileSize })),
+      )
+      const uploads: { s3Key: string; uploadUrl: string; fileName: string }[] =
+        presignRes?.uploads || presignRes?.data?.uploads || []
+
+      await Promise.all(uploads.map(async (upload, i) => {
+        const file = files[i]
+        const blob = await (await fetch(file.uri)).blob()
+        const putRes = await fetch(upload.uploadUrl, {
+          method: 'PUT',
+          body: blob,
+          headers: { 'Content-Type': file.mimeType },
+        })
+        if (!putRes.ok) throw new Error(`Upload failed for ${file.fileName}`)
+      }))
+
+      const attachments = uploads.map((upload, i) => ({
+        s3Key: upload.s3Key,
+        fileName: files[i].fileName,
+        mimeType: files[i].mimeType,
+        fileSize: files[i].fileSize,
+      }))
+
+      const response = await apiService.sendChatMessageWithAttachments(roomId, caption, attachments)
+      const created = response?.message || response?.data?.message
+      if (created) {
+        const message: Message = {
+          id: created.id,
+          content: created.message ?? caption,
+          senderId: created.senderId,
+          roomId,
+          createdAt: created.createdAt,
+          type: 'file',
+          attachments: created.attachments,
+        }
+        set((state) => ({ messages: [...state.messages, message], isSending: false }))
+      } else {
+        set({ isSending: false })
+      }
+
+      const socket = get().socket
+      if (socket && socket.connected) {
+        socket.emit('sendMessage', { roomId, content: caption, type: 'file' })
+      }
+    } catch (error: any) {
+      set({ error: error?.message || 'Failed to send attachments', isSending: false })
       throw error
     }
   },

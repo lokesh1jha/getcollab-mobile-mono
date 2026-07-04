@@ -355,6 +355,27 @@ class ApiService {
     })
   }
 
+  async presignChatAttachments(
+    roomId: string,
+    files: { fileName: string; mimeType: string; fileSize: number }[],
+  ): Promise<any> {
+    return this.request('/chat/attachments/presign', {
+      method: 'POST',
+      body: JSON.stringify({ roomId, files }),
+    })
+  }
+
+  async sendChatMessageWithAttachments(
+    roomId: string,
+    message: string,
+    attachments: { s3Key: string; fileName: string; mimeType: string; fileSize: number }[],
+  ): Promise<any> {
+    return this.request('/chat/messages', {
+      method: 'POST',
+      body: JSON.stringify({ roomId, message, attachments }),
+    })
+  }
+
   async createDirectChat(influencerId: string, campaignId?: string): Promise<any> {
     return this.request('/chat/direct', {
       method: 'POST',

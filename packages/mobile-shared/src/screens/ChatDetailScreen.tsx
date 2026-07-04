@@ -11,14 +11,22 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePickerLib from 'expo-image-picker'
+import * as DocumentPickerLib from 'expo-document-picker'
 import { colors, spacing } from '@shared/constants'
 import { useChatStore } from '@shared/stores/chat-store'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { handleApiError } from '@shared/services/api'
-import type { Message } from '@shared/types'
+import type { Message, ChatAttachment } from '@shared/types'
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 interface ChatDetailScreenProps {
   navigation?: any
@@ -35,6 +43,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     fetchMessages,
     sendMessage,
     sendImage,
+    sendAttachments,
     isLoading,
     isSending,
     markRoomRead,
@@ -84,14 +93,43 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     }
     try {
       const result = await ImagePickerLib.launchImageLibraryAsync({
-        mediaTypes: ImagePickerLib.MediaTypeOptions.Images,
+        mediaTypes: ['images', 'videos'],
         quality: 0.7,
         base64: true,
       })
-      if (result.canceled || !result.assets[0]?.base64) return
-      await sendImage(roomId, `data:image/jpeg;base64,${result.assets[0].base64}`)
+      if (result.canceled || !result.assets[0]) return
+      const asset = result.assets[0]
+
+      if (asset.type === 'video') {
+        await sendAttachments(roomId, [{
+          uri: asset.uri,
+          fileName: asset.fileName || 'video.mp4',
+          mimeType: asset.mimeType || 'video/mp4',
+          fileSize: asset.fileSize || 0,
+        }])
+        return
+      }
+
+      if (!asset.base64) return
+      await sendImage(roomId, `data:image/jpeg;base64,${asset.base64}`)
     } catch (err) {
-      handleApiError(err, 'Image send failed')
+      handleApiError(err, 'Attachment send failed')
+    }
+  }
+
+  const handleAttachDocument = async () => {
+    try {
+      const result = await DocumentPickerLib.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true })
+      if (result.canceled || !result.assets[0]) return
+      const asset = result.assets[0]
+      await sendAttachments(roomId, [{
+        uri: asset.uri,
+        fileName: asset.name,
+        mimeType: asset.mimeType || 'application/octet-stream',
+        fileSize: asset.size || 0,
+      }])
+    } catch (err) {
+      handleApiError(err, 'Document send failed')
     }
   }
 
@@ -112,19 +150,45 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     return messages.filter((m) => m.content?.toLowerCase().includes(q))
   }, [messages, searchQuery])
 
+  const renderAttachment = (attachment: ChatAttachment) => {
+    if (attachment.type === 'IMAGE') {
+      return <Image key={attachment.id} source={{ uri: attachment.url }} style={styles.bubbleImage} />
+    }
+    return (
+      <TouchableOpacity
+        key={attachment.id}
+        style={styles.attachmentFile}
+        onPress={() => Linking.openURL(attachment.url)}
+      >
+        <Text style={styles.attachmentFileIcon}>
+          {attachment.type === 'VIDEO' ? '🎬' : attachment.type === 'AUDIO' ? '🎵' : '📄'}
+        </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.attachmentFileName} numberOfLines={1}>{attachment.fileName}</Text>
+          <Text style={styles.attachmentFileSize}>{formatFileSize(attachment.fileSize)}</Text>
+        </View>
+      </TouchableOpacity>
+    )
+  }
+
   const renderMessage = ({ item }: { item: Message }) => {
     const isMe = item.senderId === user?.id
-    const isImage = item.type === 'image' || item.attachmentUrl
+    const isLegacyImage = !item.attachments?.length && (item.type === 'image' || item.attachmentUrl)
     return (
       <View style={[styles.bubbleRow, isMe ? styles.bubbleRowMe : styles.bubbleRowOther]}>
         <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}>
-          {isImage ? (
+          {item.attachments && item.attachments.length > 0 && (
+            <View style={{ gap: spacing.xs, marginBottom: item.content ? spacing.xs : 0 }}>
+              {item.attachments.map(renderAttachment)}
+            </View>
+          )}
+          {isLegacyImage ? (
             <Image source={{ uri: item.attachmentUrl || item.content }} style={styles.bubbleImage} />
-          ) : (
+          ) : item.content ? (
             <Text style={[styles.bubbleText, isMe ? styles.bubbleTextMe : styles.bubbleTextOther]}>
               {item.content}
             </Text>
-          )}
+          ) : null}
           <Text style={[styles.bubbleTime, isMe ? styles.bubbleTimeMe : styles.bubbleTimeOther]}>
             {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             {isMe ? ' · ✓' : ''}
@@ -198,6 +262,9 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
 
         <View style={styles.inputBar}>
           <TouchableOpacity style={styles.attachBtn} onPress={handleAttach}>
+            <Text style={styles.attachText}>🖼️</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.attachBtn} onPress={handleAttachDocument}>
             <Text style={styles.attachText}>📎</Text>
           </TouchableOpacity>
           <TextInput
@@ -261,6 +328,18 @@ const styles = StyleSheet.create({
   bubbleTimeMe: { color: 'rgba(255,255,255,0.7)', textAlign: 'right' },
   bubbleTimeOther: { color: colors.textMuted },
   bubbleImage: { width: 200, height: 200, borderRadius: 12 },
+  attachmentFile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+    borderRadius: 12,
+    padding: spacing.sm,
+    minWidth: 180,
+  },
+  attachmentFileIcon: { fontSize: 22 },
+  attachmentFileName: { color: colors.text, fontSize: 13, fontWeight: '600' },
+  attachmentFileSize: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
   typingHint: { paddingHorizontal: spacing.md, paddingBottom: spacing.xs },
   typingHintText: { color: colors.textMuted, fontStyle: 'italic', fontSize: 12 },
   inputBar: {
