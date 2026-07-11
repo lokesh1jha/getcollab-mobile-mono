@@ -406,6 +406,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
 }
 
 function IndustryPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const industries = useReferenceDataStore(selectIndustries)
   const [open, setOpen] = useState(false)
 
   const toggle = (item: string) =>
