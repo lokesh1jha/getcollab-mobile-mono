@@ -27,7 +27,6 @@ import ChangePasswordScreen from '../app/(main)/change-password'
 import OnboardingScreen from '../app/(main)/onboarding'
 import ProfilePreviewScreen from '../app/(main)/profile-preview'
 import { AuthGate } from './AuthGate'
-import { useAuthRedirect } from './useAuthRedirect'
 import { useSubscriptionBackgroundRefresh } from '../stores/subscription-store'
 
 const Tab = createBottomTabNavigator()
@@ -78,7 +77,6 @@ function ActiveTabIndicator() {
 }
 
 function MainTabsNavigator() {
-  useAuthRedirect()
   const unreadByRoom = useChatStore((s) => s.unreadByRoom)
   const totalUnread = Object.values(unreadByRoom).reduce((sum, n) => sum + n, 0)
 

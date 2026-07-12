@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { io, Socket } from 'socket.io-client'
 import apiService from '../services/api'
 import { logger } from '../services/logger'
+import { unwrapArray } from '../utils/unwrap-api'
 import type { ChatRoom, Message } from '../types'
 
 export interface PendingAttachmentFile {
@@ -177,7 +178,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const response = await apiService.getChatRooms()
-      const rooms = response?.data || response?.rooms || (Array.isArray(response) ? response : [])
+      const rooms = unwrapArray(response, ['data', 'rooms']) as ChatRoom[]
       const unreadByRoom: Record<string, number> = {}
       rooms.forEach((r: any) => {
         if (r.unreadCount) unreadByRoom[r.id] = r.unreadCount
@@ -200,10 +201,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const response = await apiService.getChatMessages(roomId, { before: params?.before, limit: 50 })
-      const incoming = response?.data || response?.messages || []
+      const incoming = [...unwrapArray(response, ['data', 'messages'])] as Message[]
+      incoming.reverse()
       const currentMessages = get().messages
       set({
-        messages: [...incoming.reverse(), ...currentMessages],
+        messages: [...incoming, ...currentMessages],
         hasMoreMessages: !!response?.hasMore,
         isLoading: false,
       })

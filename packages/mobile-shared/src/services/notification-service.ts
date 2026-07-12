@@ -7,10 +7,9 @@ export const navigationRef = createNavigationContainerRef<any>()
 
 const isExpoGo = Constants.appOwnership === 'expo'
 
-function navigate(name: string, params?: any) {
-  if (navigationRef.isReady()) {
-    navigationRef.navigate(name, params)
-  }
+function navigateNested(screen: string, params?: Record<string, unknown>) {
+  if (!navigationRef.isReady()) return
+  navigationRef.navigate('Main', { screen, params })
 }
 
 // Configure notification handler (dev builds only — push is unavailable in Expo Go)
@@ -30,11 +29,10 @@ class NotificationService {
   private pushToken: string | null = null
   private notificationSubscription: { remove: () => void } | null = null
   private responseSubscription: { remove: () => void } | null = null
+  private initialized = false
 
-  /**
-   * Initialize notifications and request permissions on first launch
-   */
   async initialize(): Promise<void> {
+    if (this.initialized) return
     if (isExpoGo) {
       if (__DEV__) console.log('[notifications] Skipping push setup in Expo Go — use a dev build')
       return
@@ -62,6 +60,7 @@ class NotificationService {
 
       // Set up notification listeners
       this.setupListeners()
+      this.initialized = true
     } catch (error) {
       console.error('Failed to initialize notifications:', error)
     }
@@ -122,13 +121,13 @@ class NotificationService {
     const data = (notification.request.content.data || {}) as Record<string, any>
 
     if (data.type === 'chat' && data.roomId) {
-      navigate('ChatDetail', { id: data.roomId, roomId: data.roomId, chat: data.chat })
+      navigateNested('ChatDetail', { id: data.roomId, roomId: data.roomId, chat: data.chat })
     } else if (data.type === 'campaign' && data.campaignId) {
-      navigate('CampaignDetails', { id: data.campaignId })
+      navigateNested('CampaignDetails', { id: data.campaignId })
     } else if (data.type === 'bid' && data.bidId) {
-      navigate('Bids', { bidId: data.bidId })
+      navigateNested('Bids', { bidId: data.bidId })
     } else if (data.type === 'subscription') {
-      navigate('Subscription')
+      navigateNested('Subscription')
     }
   }
 
@@ -159,6 +158,7 @@ class NotificationService {
       this.responseSubscription.remove()
       this.responseSubscription = null
     }
+    this.initialized = false
   }
 
   /**

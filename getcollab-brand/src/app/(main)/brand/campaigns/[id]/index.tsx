@@ -69,7 +69,7 @@ export default function BrandCampaignDetailsScreen() {
 
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Campaign Details</Text>
-            <View style={styles.detailRow}><Text style={styles.label}>Budget</Text><Text style={styles.value}>₹{campaign.budget.toLocaleString()}</Text></View>
+            <View style={styles.detailRow}><Text style={styles.label}>Budget</Text><Text style={styles.value}>₹{(campaign.budget ?? 0).toLocaleString()}</Text></View>
             <View style={styles.detailRow}><Text style={styles.label}>Bids</Text><Text style={styles.value}>{campaign.bidCount}</Text></View>
             <View style={styles.detailRow}><Text style={styles.label}>Region</Text><Text style={styles.value}>{campaign.region}</Text></View>
             <View style={[styles.detailRow, { borderBottomWidth: 0 }]}><Text style={styles.label}>Created</Text><Text style={styles.value}>{new Date(campaign.createdAt).toLocaleDateString()}</Text></View>

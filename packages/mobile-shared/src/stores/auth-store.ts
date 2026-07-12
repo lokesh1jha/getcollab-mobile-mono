@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import apiService, { isUnauthorizedError } from '../services/api'
 import { notificationService } from '../services/notification-service'
+import { unwrapUser } from '../utils/unwrap-api'
 import type { User } from '../types'
 import { useChatStore } from './chat-store'
 import { useCampaignStore } from './campaign-store'
@@ -169,13 +170,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     try {
-      const user = await apiService.getCurrentUser()
+      const response = await apiService.getCurrentUser()
+      const raw = unwrapUser(response)
       set({
-        user: user ? {
-          ...user,
-          phoneNumbers: user.phoneNumbers ?? []
+        user: raw ? {
+          ...raw,
+          phoneNumbers: (raw.phoneNumbers as string[] | undefined) ?? []
         } as User : null,
-        isAuthenticated: true,
+        isAuthenticated: !!raw?.id,
         isLoading: false,
       })
     } catch (error: any) {

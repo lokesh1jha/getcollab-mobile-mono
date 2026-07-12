@@ -53,7 +53,7 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
     try {
       const room = await apiService.createDirectChat(influencerId, bid.campaign?.id || bid.campaignId)
       const roomId = room?.id || room?.data?.id
-      if (roomId) navigation?.navigate('Chat', { roomId })
+      if (roomId) navigation?.navigate('ChatDetail', { roomId, id: roomId })
     } catch (error) { handleApiError(error, 'Failed to open chat') }
   }
 
@@ -117,7 +117,7 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
                       <Text style={styles.campaignTitle}>{campaignTitle}</Text>
                     </View>
                     <View style={[styles.statusPill, { backgroundColor: s.bg }]}>
-                      <Text style={[styles.statusText, { color: s.fg }]}>{item.status.charAt(0).toUpperCase() + item.status.slice(1)}</Text>
+                      <Text style={[styles.statusText, { color: s.fg }]}>{(item.status ?? 'pending').charAt(0).toUpperCase() + (item.status ?? 'pending').slice(1)}</Text>
                     </View>
                   </View>
 
