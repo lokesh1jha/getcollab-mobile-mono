@@ -4,7 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, radius, spacing } from '@/src/theme'
-import { handleApiError } from '@shared/services/api'
+import { showSignInError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 
 interface Props { navigation?: any }
@@ -32,7 +32,7 @@ export default function SignInScreen({ navigation }: Props) {
     try {
       await useAuthStore.getState().signIn(email, password)
     } catch (error: any) {
-      handleApiError(error, 'Failed to sign in. Please try again.')
+      showSignInError(error, () => navigation?.navigate('SignUp'))
     } finally { setLoading(false) }
   }
 
@@ -96,7 +96,7 @@ export default function SignInScreen({ navigation }: Props) {
                 <Text style={styles.forgotText}>Forgot password?</Text>
               </Pressable>
 
-              <Pressable onPress={handleSignIn} disabled={loading} style={({ pressed }) => [styles.primaryBtn, pressed && !loading && { opacity: 0.85 }]}>
+              <Pressable onPress={handleSignIn} disabled={loading} style={({ pressed }) => [styles.primaryBtn, (pressed && !loading) && { opacity: 0.85 }, loading && { opacity: 0.6 }]}>
                 <View style={styles.primaryInner}>
                   <Text style={styles.primaryBtnText}>{loading ? 'Signing in…' : 'Sign In'}</Text>
                   {!loading && <Ionicons name="arrow-forward" size={18} color="#000" />}

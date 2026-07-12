@@ -14,9 +14,9 @@ import { logger } from '@shared/services/logger'
 import { ErrorBoundary } from '@shared/components/ErrorBoundary'
 import { NetworkBanner } from '@shared/components/NetworkBanner'
 
-import LandingScreen from './src/app/(public)/landing'
-import SignInScreen from './src/app/(auth)/signin'
-import SignUpScreen from './src/app/(auth)/signup'
+import LandingScreen from './src/screens/(public)/landing'
+import SignInScreen from './src/screens/(auth)/signin'
+import SignUpScreen from './src/screens/(auth)/signup'
 import MainTabs from './src/navigation/MainTabs'
 import MaintenanceScreen from '@shared/screens/MaintenanceScreen'
 
@@ -119,8 +119,8 @@ export default function App() {
                 <Stack.Screen name="Landing" component={LandingScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="SignIn" component={SignInScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-                <Stack.Screen name="ForgotPassword" getComponent={() => require('./src/app/(auth)/forgot-password').default} options={{ headerShown: false }} />
-                <Stack.Screen name="ResetPassword" getComponent={() => require('./src/app/(auth)/reset-password').default} options={{ headerShown: false }} />
+                <Stack.Screen name="ForgotPassword" getComponent={() => require('./src/screens/(auth)/forgot-password').default} options={{ headerShown: false }} />
+                <Stack.Screen name="ResetPassword" getComponent={() => require('./src/screens/(auth)/reset-password').default} options={{ headerShown: false }} />
               </>
             ) : (
               <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />

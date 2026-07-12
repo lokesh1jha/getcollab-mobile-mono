@@ -1,9 +1,20 @@
 import { Alert } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
+import { resolveApiBaseUrl } from '../utils/api-url'
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api/v1'
+const API_BASE_URL = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api/v1')
 const TOKEN_KEY = 'getcollab_auth_token'
 const REFRESH_TOKEN_KEY = 'getcollab_refresh_token'
+const CREDENTIAL_AUTH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/signin']
+
+function isCredentialAuthEndpoint(endpoint: string): boolean {
+  return CREDENTIAL_AUTH_ENDPOINTS.some((path) => endpoint.includes(path))
+}
+
+export function isUnauthorizedError(message?: string): boolean {
+  if (!message) return false
+  return message === 'UNAUTHORIZED' || /unauthorized/i.test(message) || message.includes('401')
+}
 
 interface ApiResponse<T> {
   success?: boolean
@@ -41,6 +52,7 @@ class ApiService {
 
   constructor() {
     this.baseUrl = API_BASE_URL
+    if (__DEV__) console.log('[api] baseUrl:', this.baseUrl)
   }
 
   getBaseUrl(): string {
@@ -132,7 +144,7 @@ class ApiService {
     return value
   }
 
-  private async handleResponse<T>(response: Response): Promise<T> {
+  private async handleResponse<T>(response: Response, opts?: { surfaceCredentialError?: boolean }): Promise<T> {
     const contentType = response.headers.get('content-type')
 
     if (!contentType || !contentType.includes('application/json')) {
@@ -149,11 +161,20 @@ class ApiService {
 
     if (!response.ok) {
       if (response.status === 401) {
+        const errorMessage = data.error || data.message || 'Invalid email or password'
+        if (opts?.surfaceCredentialError) {
+          throw new Error(errorMessage)
+        }
         await this.clearTokens()
         if (this.onUnauthorized) {
           this.onUnauthorized()
         }
         throw new Error('UNAUTHORIZED')
+      }
+
+      if (response.status === 429) {
+        const lockoutMessage = data.message || data.error || 'Too many requests. Please try again later.'
+        throw new Error(lockoutMessage)
       }
 
       const errorMessage = data.error || data.message || 'Something went wrong'
@@ -200,6 +221,10 @@ class ApiService {
     const timeoutId = setTimeout(() => controller.abort(), 10000)
     try {
       response = await fetch(url, { ...config, signal: controller.signal })
+      try {
+        const { networkBanner } = await import('../components/NetworkBanner')
+        networkBanner.hide()
+      } catch {}
     } catch (networkErr: any) {
       try {
         const { networkBanner } = await import('../components/NetworkBanner')
@@ -227,13 +252,20 @@ class ApiService {
             return await this.handleResponse<T>(retryResponse)
           }
         }
-        await this.handleLogout()
+        // No refreshable session on login/register — surface wrong-password errors.
+        if (isCredentialAuthEndpoint(endpoint)) {
+          return await this.handleResponse<T>(response, { surfaceCredentialError: true })
+        }
+        await this.clearTokens()
+        if (this.onUnauthorized) {
+          this.onUnauthorized()
+        }
         throw new Error('UNAUTHORIZED')
       }
 
       return await this.handleResponse<T>(response)
     } catch (error) {
-      if (error instanceof Error && error.message !== 'UNAUTHORIZED') {
+      if (error instanceof Error && !isUnauthorizedError(error.message)) {
         try {
           const { logger } = await import('./logger')
           logger.error(`API ${options.method || 'GET'} ${endpoint}`, error, { url })
@@ -789,12 +821,34 @@ class ApiService {
 export const apiService = new ApiService()
 
 export const handleApiError = (error: any, defaultMessage: string = 'An error occurred') => {
-  if (error?.message === 'UNAUTHORIZED') {
+  if (isUnauthorizedError(error?.message)) {
     return 'UNAUTHORIZED'
   }
   const message = error?.message || defaultMessage
   Alert.alert('Error', message)
   return message
+}
+
+export const showSignInError = (error: any, onSignUp: () => void) => {
+  if (isUnauthorizedError(error?.message)) {
+    Alert.alert('Session expired', 'Please sign in again.')
+    return
+  }
+
+  const message = error?.message || ''
+  const isLockout = message.toLowerCase().includes('too many') || message.toLowerCase().includes('locked')
+  if (isLockout) {
+    Alert.alert('Sign in blocked', message)
+    return
+  }
+
+  Alert.alert(
+    'Account not found',
+    'No account exists with this email, or the password is incorrect. Please register first.',
+    [
+      { text: 'OK', onPress: onSignUp },
+    ],
+  )
 }
 
 export const showSuccessMessage = (message: string) => {

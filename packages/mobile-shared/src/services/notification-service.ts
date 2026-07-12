@@ -1,8 +1,11 @@
 import * as Notifications from 'expo-notifications'
+import Constants from 'expo-constants'
 import { createNavigationContainerRef } from '@react-navigation/native'
 import apiService from './api'
 
 export const navigationRef = createNavigationContainerRef<any>()
+
+const isExpoGo = Constants.appOwnership === 'expo'
 
 function navigate(name: string, params?: any) {
   if (navigationRef.isReady()) {
@@ -10,16 +13,18 @@ function navigate(name: string, params?: any) {
   }
 }
 
-// Configure notification handler
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-})
+// Configure notification handler (dev builds only — push is unavailable in Expo Go)
+if (!isExpoGo) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  })
+}
 
 class NotificationService {
   private pushToken: string | null = null
@@ -30,6 +35,11 @@ class NotificationService {
    * Initialize notifications and request permissions on first launch
    */
   async initialize(): Promise<void> {
+    if (isExpoGo) {
+      if (__DEV__) console.log('[notifications] Skipping push setup in Expo Go — use a dev build')
+      return
+    }
+
     try {
       // Request notification permissions
       const { status } = await Notifications.requestPermissionsAsync()
