@@ -65,7 +65,7 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
           <View style={styles.cardTop}>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardName} numberOfLines={1}>{item.title}</Text>
-              <Text style={styles.cardBudget}>₹{item.budget.toLocaleString()} budget</Text>
+              <Text style={styles.cardBudget}>₹{(item.budget ?? 0).toLocaleString()} budget</Text>
             </View>
             <View style={[styles.statusPill, { backgroundColor: s.bg }]}>
               <View style={[styles.statusDot, { backgroundColor: s.dot }]} />

@@ -249,7 +249,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
           ref={listRef}
           data={filteredMessages}
           renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => item.id ?? String(index)}
           contentContainerStyle={styles.messagesList}
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
         />

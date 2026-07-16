@@ -1,22 +1,21 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect } from 'react'
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { colors, spacing } from '@/src/theme'
 import { useAuthStore } from '@shared/stores/auth-store'
-import { useReferenceDataStore } from '@shared/stores/reference-data-store'
 import { useChatStore } from '@shared/stores/chat-store'
 import { notificationService, navigationRef } from '@shared/services/notification-service'
 import { apiService } from '@shared/services/api'
-import { initObservability } from '@shared/services/observability'
-import { logger } from '@shared/services/logger'
+import { useAppInit } from '@shared/hooks/useAppInit'
 import { ErrorBoundary } from '@shared/components/ErrorBoundary'
 import { NetworkBanner } from '@shared/components/NetworkBanner'
 
-import LandingScreen from './src/app/(public)/landing'
-import SignInScreen from './src/app/(auth)/signin'
-import SignUpScreen from './src/app/(auth)/signup'
+import LandingScreen from './src/screens/(public)/landing'
+import SignInScreen from './src/screens/(auth)/signin'
+import SignUpScreen from './src/screens/(auth)/signup'
 import MainTabs from './src/navigation/MainTabs'
 import MaintenanceScreen from '@shared/screens/MaintenanceScreen'
 
@@ -55,81 +54,54 @@ function SplashScreen() {
 }
 
 export default function App() {
-  const [appReady, setAppReady] = useState(false)
-  const [apiError, setApiError] = useState(false)
-  const { isAuthenticated, user, fetchCurrentUser } = useAuthStore()
-  const splashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const initializeApp = async () => {
-    try {
-      setApiError(false)
-      await initObservability()
-      useReferenceDataStore.getState().fetch()
-      await fetchCurrentUser()
-      const currentUser = useAuthStore.getState().user
-      if (currentUser) {
-        logger.identify(currentUser.id, { role: currentUser.role, email: currentUser.email })
-        await notificationService.initialize()
-      }
-    } catch (error: any) {
-      logger.error('API Error during initialization', error)
-      setApiError(true)
-    } finally {
-      splashTimeoutRef.current = setTimeout(() => setAppReady(true), 1500)
-    }
-  }
+  const { appReady, apiError, initializeApp } = useAppInit({ splashDelayMs: 1500 })
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   useEffect(() => {
     apiService.setOnUnauthorizedCallback(() => useAuthStore.getState().signOut())
   }, [])
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      notificationService.initialize().catch((e) => logger.warn('Notification init failed', { error: e?.message }))
-    }
-  }, [isAuthenticated, user?.id])
-
-  useEffect(() => {
-    initializeApp()
     return () => {
-      if (splashTimeoutRef.current) clearTimeout(splashTimeoutRef.current)
       notificationService.cleanup()
       const chatStore = useChatStore.getState()
       if (chatStore.socket) chatStore.disconnectSocket()
     }
-  }, [fetchCurrentUser])
+  }, [])
 
   if (!appReady) return <SplashScreen />
   if (apiError) return <MaintenanceScreen onRetry={initializeApp} logo={require('./assets/icon.png')} />
 
   return (
-    <SafeAreaProvider>
-      <ErrorBoundary>
-        <NavigationContainer ref={navigationRef} theme={navigationTheme}>
-          <Stack.Navigator
-            screenOptions={{
-              headerStyle: { backgroundColor: colors.bg },
-              headerTintColor: colors.text,
-              headerTitleStyle: { fontSize: 15, fontWeight: '700' },
-              contentStyle: { backgroundColor: colors.bg },
-            }}
-          >
-            {!isAuthenticated ? (
-              <>
-                <Stack.Screen name="Landing" component={LandingScreen} options={{ headerShown: false }} />
-                <Stack.Screen name="SignIn" component={SignInScreen} options={{ headerShown: false }} />
-                <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-                <Stack.Screen name="ForgotPassword" getComponent={() => require('./src/app/(auth)/forgot-password').default} options={{ headerShown: false }} />
-                <Stack.Screen name="ResetPassword" getComponent={() => require('./src/app/(auth)/reset-password').default} options={{ headerShown: false }} />
-              </>
-            ) : (
-              <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
-            )}
-          </Stack.Navigator>
-        </NavigationContainer>
-        <NetworkBanner />
-      </ErrorBoundary>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+            <Stack.Navigator
+              screenOptions={{
+                headerStyle: { backgroundColor: colors.bg },
+                headerTintColor: colors.text,
+                headerTitleStyle: { fontSize: 15, fontWeight: '700' },
+                contentStyle: { backgroundColor: colors.bg },
+              }}
+            >
+              {!isAuthenticated ? (
+                <>
+                  <Stack.Screen name="Landing" component={LandingScreen} options={{ headerShown: false }} />
+                  <Stack.Screen name="SignIn" component={SignInScreen} options={{ headerShown: false }} />
+                  <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+                  <Stack.Screen name="ForgotPassword" getComponent={() => require('./src/screens/(auth)/forgot-password').default} options={{ headerShown: false }} />
+                  <Stack.Screen name="ResetPassword" getComponent={() => require('./src/screens/(auth)/reset-password').default} options={{ headerShown: false }} />
+                </>
+              ) : (
+                <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+              )}
+            </Stack.Navigator>
+          </NavigationContainer>
+          <NetworkBanner />
+        </ErrorBoundary>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   )
 }
 
