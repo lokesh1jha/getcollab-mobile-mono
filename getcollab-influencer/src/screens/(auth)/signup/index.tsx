@@ -36,6 +36,11 @@ export default function SignUpScreen({ navigation, route }: Props) {
     } finally { setLoading(false) }
   }
 
+  const handleSocialSignUp = async (provider: 'google' | 'facebook' | 'instagram') => {
+    // TODO: wire up to your OAuth flow, e.g. useAuthStore.getState().signUpWithProvider(provider)
+    console.log(`Sign up with ${provider}`)
+  }
+
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
@@ -77,6 +82,24 @@ export default function SignUpScreen({ navigation, route }: Props) {
                   {!loading && <Ionicons name="arrow-forward" size={18} color="#000" />}
                 </View>
               </Pressable>
+
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>Or continue with</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <View style={styles.socialRow}>
+                <Pressable onPress={() => handleSocialSignUp('google')} style={({ pressed }) => [styles.socialBtn, pressed && { opacity: 0.7 }]}>
+                  <Ionicons name="logo-google" size={20} color={colors.text} />
+                </Pressable>
+                <Pressable onPress={() => handleSocialSignUp('facebook')} style={({ pressed }) => [styles.socialBtn, pressed && { opacity: 0.7 }]}>
+                  <Ionicons name="logo-facebook" size={20} color="#1877F2" />
+                </Pressable>
+                <Pressable onPress={() => handleSocialSignUp('instagram')} style={({ pressed }) => [styles.socialBtn, pressed && { opacity: 0.7 }]}>
+                  <Ionicons name="logo-instagram" size={20} color="#E1306C" />
+                </Pressable>
+              </View>
 
               <View style={styles.bottomRow}>
                 <Text style={styles.bottomText}>Already a creator? </Text>
@@ -143,6 +166,11 @@ const styles = StyleSheet.create({
   primaryBtn: { borderRadius: radius.pill, overflow: 'hidden', marginTop: spacing.xl },
   primaryInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, backgroundColor: colors.neon },
   primaryBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: spacing.xl },
+  dividerLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
+  dividerText: { color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' },
+  socialRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
+  socialBtn: { flex: 1, height: 52, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   bottomRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xxl },
   bottomText: { color: 'rgba(255,255,255,0.5)', fontSize: 13 },
   bottomLink: { color: colors.neon, fontSize: 13, fontWeight: '700' },

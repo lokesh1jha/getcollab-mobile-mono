@@ -18,27 +18,47 @@ export default function LandingScreen({ navigation }: any) {
   return (
     <View style={styles.root}>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        {/* Decorative neon dots */}
+        {/* Decorative grid + scan line */}
         <View style={styles.gridBg} pointerEvents="none">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <View key={i} style={[styles.dot, { top: 60 + i * 48, left: (i * 67) % (width - 60) }]} />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <View key={`h-${i}`} style={[styles.gridLineH, { top: 90 + i * 90 }]} />
           ))}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <View key={`v-${i}`} style={[styles.gridLineV, { left: (width / 4) * i }]} />
+          ))}
+          {Array.from({ length: 8 }).map((_, i) => (
+            <View
+              key={`d-${i}`}
+              style={[
+                styles.dot,
+                { top: 70 + i * 62, left: (i * 83) % (width - 60) },
+              ]}
+            />
+          ))}
+          <View style={styles.cornerTL} />
+          <View style={styles.cornerBR} />
         </View>
 
         {/* Hero */}
         <View style={styles.hero}>
           <Animated.View entering={FadeIn.duration(400)} style={styles.logoWrap}>
-            <Image source={require('../../../../assets/icon.png')} style={styles.logoImg} resizeMode="contain" />
+            <View style={styles.logoBox}>
+              <Image source={require('../../../../assets/icon.png')} style={styles.logoImg} resizeMode="contain" />
+            </View>
             <Text style={styles.logoText}>
-              <Text style={styles.logoGet}>Get</Text>
-              <Text style={styles.logoCollab}>Collab</Text>
+              <Text style={styles.logoGet}>GET</Text>
+              <Text style={styles.logoCollab}>COLLAB</Text>
             </Text>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(150).duration(500)} style={styles.headingWrap}>
-            <Text style={styles.eyebrow}>FOR CREATORS & INFLUENCERS</Text>
+            <View style={styles.eyebrowRow}>
+              <View style={styles.eyebrowDash} />
+              <Text style={styles.eyebrow}>FOR CREATORS & INFLUENCERS</Text>
+            </View>
             <Text style={styles.heading}>
-              Turn your{'\n'}audience into{'\n'}<Text style={styles.headingAccent}>income.</Text>
+              Turn your{'\n'}audience into{'\n'}
+              <Text style={styles.headingAccent}>income.</Text>
             </Text>
             <Text style={styles.subheading}>
               Discover brand campaigns, apply in seconds, and get paid — all in one place.
@@ -61,7 +81,7 @@ export default function LandingScreen({ navigation }: any) {
             onPress={() => navigation.navigate('SignUp')}
             style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
           >
-            <View style={styles.primaryGradient}>
+            <View style={styles.primaryInner}>
               <Ionicons name="flash" size={18} color="#000" />
               <Text style={styles.primaryBtnText}>Start as Creator</Text>
               <Ionicons name="arrow-forward" size={18} color="#000" />
@@ -91,43 +111,60 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: '#000000' },
   safe: { flex: 1, justifyContent: 'space-between' },
+
   gridBg: { position: 'absolute', inset: 0 },
-  dot: { position: 'absolute', width: 4, height: 4, borderRadius: 2, backgroundColor: colors.neonSoft },
+  gridLineH: { position: 'absolute', left: 0, right: 0, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.06)' },
+  gridLineV: { position: 'absolute', top: 0, bottom: 0, width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.05)' },
+  dot: { position: 'absolute', width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,255,255,0.35)' },
+  cornerTL: {
+    position: 'absolute', top: 24, left: spacing.xl, width: 18, height: 18,
+    borderTopWidth: 1.5, borderLeftWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)',
+  },
+  cornerBR: {
+    position: 'absolute', bottom: 24, right: spacing.xl, width: 18, height: 18,
+    borderBottomWidth: 1.5, borderRightWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)',
+  },
 
   hero: { flex: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
   logoWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
-  logoImg: { width: 32, height: 32 },
-  logoText: { fontSize: 20, fontWeight: '800', letterSpacing: -0.4 },
-  logoGet: { color: colors.text },
-  logoCollab: { color: colors.neon },
+  logoBox: {
+    width: 38, height: 38, borderRadius: radius.sm, backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center',
+  },
+  logoImg: { width: 22, height: 22 },
+  logoText: { fontSize: 19, fontWeight: '800', letterSpacing: 1.2 },
+  logoGet: { color: 'rgba(255,255,255,0.5)' },
+  logoCollab: { color: '#FFFFFF' },
 
   headingWrap: { marginTop: spacing.xxxl },
-  eyebrow: { color: colors.neon, fontSize: 11, fontWeight: '700', letterSpacing: 1.4, marginBottom: spacing.md },
-  heading: { color: colors.text, fontSize: 44, fontWeight: '800', lineHeight: 50, letterSpacing: -1.5 },
-  headingAccent: { color: colors.neon },
-  subheading: { color: 'rgba(255,255,255,0.6)', fontSize: 15, lineHeight: 22, marginTop: spacing.lg, maxWidth: 320 },
+  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: spacing.md },
+  eyebrowDash: { width: 20, height: 2, backgroundColor: '#FFFFFF' },
+  eyebrow: { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: '700', letterSpacing: 2 },
+  heading: { color: '#FFFFFF', fontSize: 44, fontWeight: '800', lineHeight: 50, letterSpacing: -1.5 },
+  headingAccent: { color: 'rgba(255,255,255,0.4)' },
+  subheading: { color: 'rgba(255,255,255,0.5)', fontSize: 15, lineHeight: 22, marginTop: spacing.lg, maxWidth: 320 },
 
   footer: { paddingHorizontal: spacing.xl, paddingBottom: spacing.lg, gap: spacing.md },
   statsRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
     borderRadius: radius.lg, paddingVertical: spacing.lg, paddingHorizontal: spacing.lg,
     marginBottom: spacing.sm,
   },
   stat: { flex: 1, alignItems: 'center' },
-  statDivider: { width: 1, height: 28, backgroundColor: colors.border },
-  statValue: { color: colors.text, fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
-  statLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 2, letterSpacing: 0.4 },
+  statDivider: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.15)' },
+  statValue: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
+  statLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 2, letterSpacing: 0.4 },
 
-  primaryBtn: { borderRadius: radius.pill, overflow: 'hidden' },
-  primaryGradient: {
+  primaryBtn: { borderRadius: radius.pill, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  primaryInner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    paddingVertical: 18, backgroundColor: colors.neon,
+    paddingVertical: 18, backgroundColor: '#FFFFFF',
   },
-  primaryBtnText: { color: '#000', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+  primaryBtnText: { color: '#000000', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
 
   secondaryBtn: { alignItems: 'center', paddingVertical: spacing.md },
-  secondaryBtnText: { color: 'rgba(255,255,255,0.6)', fontSize: 14, fontWeight: '500' },
+  secondaryBtnText: { color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: '500' },
 })

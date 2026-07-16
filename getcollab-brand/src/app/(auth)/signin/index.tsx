@@ -4,7 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, radius, spacing } from '@/src/theme'
-import { handleApiError } from '@shared/services/api'
+import { showSignInError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 
 interface ScreenProps { navigation?: any }
@@ -32,7 +32,7 @@ export default function SignInScreen({ navigation }: ScreenProps) {
     try {
       await useAuthStore.getState().signIn(email, password)
     } catch (error: any) {
-      handleApiError(error, 'Failed to sign in. Please try again.')
+      showSignInError(error, () => navigation?.navigate('SignUp'))
     } finally { setLoading(false) }
   }
 

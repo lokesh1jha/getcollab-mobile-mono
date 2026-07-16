@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import apiService from '../services/api'
+import apiService, { isUnauthorizedError } from '../services/api'
 import { notificationService } from '../services/notification-service'
+import { unwrapUser } from '../utils/unwrap-api'
 import type { User } from '../types'
 import { useChatStore } from './chat-store'
 import { useCampaignStore } from './campaign-store'
@@ -157,36 +158,62 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   fetchCurrentUser: async () => {
     set({ isLoading: true, error: null })
-    try {
-      const user = await apiService.getCurrentUser()
+    const token = await apiService.getToken()
+    if (!token) {
       set({
-        user: user ? {
-          ...user,
-          phoneNumbers: user.phoneNumbers ?? []
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      })
+      return
+    }
+
+    try {
+      const response = await apiService.getCurrentUser()
+      const raw = unwrapUser(response)
+      set({
+        user: raw ? {
+          ...raw,
+          phoneNumbers: (raw.phoneNumbers as string[] | undefined) ?? []
         } as User : null,
-        isAuthenticated: true,
+        isAuthenticated: !!raw?.id,
         isLoading: false,
       })
     } catch (error: any) {
-      // Handle UNAUTHORIZED error specifically - user is not logged in (don't throw, just reset state)
-      if (error.message === 'UNAUTHORIZED' || error.message?.includes('401')) {
+      // Not logged in or session expired — show public auth screens.
+      if (isUnauthorizedError(error?.message)) {
         set({
           user: null,
           isAuthenticated: false,
           isLoading: false,
-          error: null // Don't show error for unauthorized - it's expected when not logged in
+          error: null,
         })
-        // Don't rethrow - this is normal when user is not authenticated
         return
       }
-      // Handle other errors
+
+      const isNetworkError =
+        error?.message === 'Network request failed' ||
+        error?.name === 'AbortError' ||
+        error?.message?.includes('Network')
+
+      // Session exists but API unreachable: still show login, not maintenance.
+      if (isNetworkError) {
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        })
+        return
+      }
+
       set({
         user: null,
         isAuthenticated: false,
         isLoading: false,
         error: error.message || 'Failed to fetch user data'
       })
-      // Rethrow for non-auth errors
       throw error
     }
   },

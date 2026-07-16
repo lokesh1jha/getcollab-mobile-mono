@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import apiService from '../services/api'
 import { extractCampaigns } from '../lib/campaign-utils'
+import { unwrapEntity } from '../utils/unwrap-api'
 import type { Campaign, CampaignWithBids, Bid } from '../types'
 
 interface CampaignState {
@@ -80,7 +81,8 @@ export const useCampaignStore = create<CampaignState>((set, get) => ({
   fetchCampaign: async (id: string) => {
     set({ isLoading: true, error: null })
     try {
-      const campaign = await apiService.getCampaign(id)
+      const response = await apiService.getCampaign(id)
+      const campaign = unwrapEntity(response, ['data', 'campaign']) as CampaignWithBids
       set({ currentCampaign: campaign, isLoading: false })
     } catch (error: any) {
       set({

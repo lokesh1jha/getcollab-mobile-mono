@@ -36,7 +36,7 @@ export default function InfluencerCampaignDetailsScreen() {
   }
 
   const handleApplyBid = () => {
-    ;(navigation as any).navigate('SubmitBid', { campaignId: id })
+    ;(navigation as any).navigate('MainTabs', { screen: 'Discover' })
   }
 
   if (isLoading && !campaign) {
@@ -68,7 +68,7 @@ export default function InfluencerCampaignDetailsScreen() {
           <Text style={styles.brandName}>by {campaign.brand?.name || 'Brand'}</Text>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(campaign.status) + '20' }]}>
             <Text style={[styles.statusText, { color: getStatusColor(campaign.status) }]}>
-              {campaign.status.toUpperCase()}
+              {(campaign.status ?? 'draft').toUpperCase()}
             </Text>
           </View>
         </View>
@@ -80,7 +80,7 @@ export default function InfluencerCampaignDetailsScreen() {
 
         <Card style={styles.section}>
           <Text style={styles.sectionTitle}>Budget</Text>
-          <Text style={styles.budget}>${campaign.budget.toLocaleString()}</Text>
+          <Text style={styles.budget}>${(campaign.budget ?? 0).toLocaleString()}</Text>
           <Text style={styles.budgetSubtext}>Total campaign budget</Text>
         </Card>
 
