@@ -27,14 +27,25 @@ export default function SignUpScreen({ navigation, route }: Props) {
   }
 
   const handleSignUp = async () => {
-    if (!validate()) return
-    setLoading(true)
-    try {
-      await useAuthStore.getState().signUp(name, email, password, 'influencer')
-    } catch (error: any) {
-      handleApiError(error, 'Failed to create account. Please try again.')
-    } finally { setLoading(false) }
+  if (!validate()) return;
+
+  setLoading(true);
+
+  try {
+    await useAuthStore.getState().signUp(
+      name,
+      email,
+      password,
+      "influencer"
+    );
+
+    navigation.replace("Onboarding");
+  } catch (error: any) {
+    handleApiError(error, "Failed to create account. Please try again.");
+  } finally {
+    setLoading(false);
   }
+};
 
   return (
     <View style={styles.root}>
