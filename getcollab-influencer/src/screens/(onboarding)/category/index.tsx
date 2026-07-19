@@ -6,12 +6,14 @@ import {
   Platform,
   StyleSheet,
 } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import OnboardingHeader from "@/src/components/OnboardingHeader";
 import { colors, spacing } from "@/src/theme";
+import CategorySelector from "@/src/components/CategorySelector";
 
 export default function CategoryScreen({ navigation }: any) {
+  const [categories, setCategories] = useState<string[]>([]);
   return (
     <ScrollView style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={["top", "bottom"]}>
@@ -24,9 +26,15 @@ export default function CategoryScreen({ navigation }: any) {
             totalSteps={3}
             onBack={() => navigation.goBack()}
             onSkip={() => navigation.navigate("ReviewProfile")}
+            heading="Tell us what you create"
+            subheading="Help us personalize your dashboard by selecting your niche and connecting your socials."
           />
           <View style={styles.body}>
-            <Text>CategoryScreen</Text>
+            <CategorySelector
+              value={categories}
+              onChange={setCategories}
+              maxSelection={5}
+            />
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
