@@ -91,7 +91,7 @@ export default function CategoryScreen({ navigation }: any) {
             />
             <Button
               title="Continue"
-              onPress={() => navigation.navigate("ReviewProfile")}
+              onPress={() => navigation.navigate("AcceptTerms")}
               rightIcon={
                 <Ionicons name="arrow-forward" size={18} color="white" />
               }
