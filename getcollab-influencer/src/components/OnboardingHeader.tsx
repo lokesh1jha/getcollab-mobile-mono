@@ -1,20 +1,19 @@
-import React from 'react'
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
-import { colors, spacing } from '@/src/theme'
+import React from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { colors, spacing } from "@/src/theme";
 
 interface Props {
-  currentStep: number
-  totalSteps?: number
-  onBack?: () => void
-  onSkip?: () => void
-  showSkip?: boolean
-  showBack?: boolean
+  currentStep: number;
+  totalSteps?: number;
+  onBack?: () => void;
+  onSkip?: () => void;
+  showSkip?: boolean;
+  showBack?: boolean;
+
+  // Optional
+  heading?: string;
+  subheading?: string;
 }
 
 const OnboardingHeader = ({
@@ -24,85 +23,103 @@ const OnboardingHeader = ({
   onSkip,
   showSkip = true,
   showBack = true,
+  heading,
+  subheading,
 }: Props) => {
-  const progress = (currentStep / totalSteps) * 100
+  const progress = (currentStep / totalSteps) * 100;
 
   return (
     <>
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
-        <View
-          style={[
-            styles.progressFill,
-            { width: `${progress}%` },
-          ]}
-        />
+        <View style={[styles.progressFill, { width: `${progress}%` }]} />
       </View>
 
-      {/* Header */}
+      {/* Top Navigation */}
       <View style={styles.container}>
         {showBack ? (
           <TouchableOpacity onPress={onBack} style={styles.side}>
-            <Ionicons
-              name="arrow-back"
-              size={24}
-              color="#5E6AD2"
-          />
-        </TouchableOpacity>
+            <Ionicons name="arrow-back" size={24} color="#5E6AD2" />
+          </TouchableOpacity>
         ) : (
           <View style={styles.side} />
         )}
-        {/* <Text style={styles.title}>
-          Step {currentStep} of {totalSteps}
-        </Text> */}
 
         {showSkip ? (
-          <TouchableOpacity
-            onPress={onSkip}
-            style={styles.side}
-          >
+          <TouchableOpacity onPress={onSkip} style={styles.side}>
             <Text style={styles.skip}>Skip</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.side} />
         )}
       </View>
-    </>
-  )
-}
 
-export default OnboardingHeader
+      {/* Optional Heading */}
+      {(heading || subheading) && (
+        <View style={styles.textContainer}>
+          {heading && <Text style={styles.heading}>{heading}</Text>}
+
+          {subheading && <Text style={styles.sub}>{subheading}</Text>}
+        </View>
+      )}
+    </>
+  );
+};
+
+export default OnboardingHeader;
 
 const styles = StyleSheet.create({
   progressContainer: {
     height: 4,
-    width: '100%',
-   
+    width: "100%",
   },
+
   progressFill: {
-    height: '100%',
-    backgroundColor: '#5E6AD2',
+    height: "100%",
+    backgroundColor: "#5E6AD2",
     borderRadius: 2,
   },
+
   container: {
     height: 60,
     paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: colors.bg,
   },
+
   side: {
     width: 60,
   },
-  title: {
-  color: colors.text,fontWeight: '600', fontSize: 16, marginTop: spacing.sm
-  },
+
   skip: {
-    textAlign: 'right',
+    textAlign: "right",
     fontSize: 16,
-    fontWeight: '600',
-    color: '#5E6AD2',
+    fontWeight: "600",
+    color: "#5E6AD2",
     letterSpacing: 1,
   },
-})
+
+  textContainer: {
+    paddingHorizontal: 20,
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+
+  heading: {
+    color: colors.text,
+    fontSize: 30,
+    fontWeight: "800",
+    lineHeight: 36,
+    letterSpacing: -1,
+    marginTop: spacing.md,
+  },
+
+  sub: {
+    color: "rgba(255,255,255,0.55)",
+    fontSize: 14,
+    marginTop: spacing.sm,
+    lineHeight: 22,
+  },
+});
