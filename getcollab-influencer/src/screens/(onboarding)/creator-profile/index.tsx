@@ -27,7 +27,7 @@ export default function CreatorProfileScreen({ navigation }: any) {
           <OnboardingHeader
             currentStep={1}
             totalSteps={3}
-            // showBack={false}
+            showBack={false}
             onSkip={() => navigation.navigate("Category")}
           />
           <View style={styles.body}>

@@ -55,12 +55,12 @@ const ProfileImagePicker = ({ onImageSelected }: Props) => {
           <Image source={{ uri: imageUri }} style={styles.image} />
         ) : (
           <View style={styles.placeholder}>
-            <Ionicons name="person-add-outline" size={40} color="#6B7280" />
+            <Ionicons name="person-outline" size={80} color="#5E6AD2" />
           </View>
         )}
 
         <View style={styles.editButton}>
-          <Ionicons name="pencil" size={18} color="#FFFFFF" />
+          <Ionicons name="pencil" size={16} color="#FFFFFF" />
         </View>
       </Pressable>
     </View>
@@ -82,6 +82,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: "visible",
+    borderWidth: 2,
+    borderColor: "#5E6AD2",
   },
 
   placeholder: {
@@ -91,8 +93,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderWidth: 2,
+    borderColor: "#5E6AD2",
   },
 
   image: {
@@ -103,15 +105,15 @@ const styles = StyleSheet.create({
 
   editButton: {
     position: "absolute",
-    bottom: -2,
-    right: -2,
-    width: 34,
-    height: 34,
+    bottom: -1,
+    right: -1,
+    width: 30,
+    height: 30,
     borderRadius: 17,
     backgroundColor: "#5E6AD2",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: "#FFFFFF",
   },
 });
