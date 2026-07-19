@@ -29,6 +29,7 @@ const EXTRA_CATEGORIES = [
   "Photography",
   "Music",
   "Sports",
+  "Other",
 ];
 
 export default function CategorySelector({
@@ -133,8 +134,8 @@ const styles = StyleSheet.create({
   },
 
   selectedChip: {
-    backgroundColor: "#5E6AD2",
-    borderColor: "#5E6AD2",
+    backgroundColor: "#3B82F6",
+    borderColor: "#3B82F6",
   },
 
   chipText: {

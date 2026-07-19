@@ -11,42 +11,118 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import OnboardingHeader from "@/src/components/OnboardingHeader";
 import { colors, spacing } from "@/src/theme";
 import CategorySelector from "@/src/components/CategorySelector";
+import SocialConnectCard from "@/src/components/SocialConnectCard";
+import { Button } from "@shared/components/ui/Button";
+import { Ionicons } from "@expo/vector-icons";
+import ContentLanguageSelector from "@/src/components/ContentLanguageSelector";
 
 export default function CategoryScreen({ navigation }: any) {
   const [categories, setCategories] = useState<string[]>([]);
+  const [language, setLanguage] = useState("English");
+  const [socialAccounts, setSocialAccounts] = useState({
+    instagram: "",
+    youtube: "",
+    facebook: "",
+  });
+
+  const updateSocial = (
+    platform: keyof typeof socialAccounts,
+    value: string,
+  ) => {
+    setSocialAccounts((prev) => ({
+      ...prev,
+      [platform]: value,
+    }));
+  };
   return (
-    <ScrollView style={styles.root}>
-      <SafeAreaView style={{ flex: 1 }} edges={["top", "bottom"]}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
+    <SafeAreaView style={styles.root} edges={["top", "bottom"]}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <OnboardingHeader
+          currentStep={2}
+          totalSteps={3}
+          onBack={() => navigation.goBack()}
+          onSkip={() => navigation.navigate("ReviewProfile")}
+          heading="Tell us what you create"
+          subheading="Help us personalize your dashboard by selecting your niche and connecting your socials."
+        />
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <OnboardingHeader
-            currentStep={2}
-            totalSteps={3}
-            onBack={() => navigation.goBack()}
-            onSkip={() => navigation.navigate("ReviewProfile")}
-            heading="Tell us what you create"
-            subheading="Help us personalize your dashboard by selecting your niche and connecting your socials."
-          />
           <View style={styles.body}>
             <CategorySelector
               value={categories}
               onChange={setCategories}
               maxSelection={5}
             />
+            <Text style={styles.title}>Content Language</Text>
+
+            <ContentLanguageSelector value={language} onChange={setLanguage} />
+            <Text style={styles.title}>Connect Platforms</Text>
+            <SocialConnectCard
+              icon="logo-instagram"
+              iconColor="#E1306C"
+              title="Instagram"
+              subtitle="Personal or Creator"
+              value={socialAccounts.instagram}
+              onSave={(value) => updateSocial("instagram", value)}
+            />
+
+            <SocialConnectCard
+              icon="logo-youtube"
+              iconColor="#FF0000"
+              title="YouTube"
+              subtitle="Channel analytics"
+              value={socialAccounts.youtube}
+              onSave={(value) => updateSocial("youtube", value)}
+            />
+
+            <SocialConnectCard
+              icon="logo-facebook"
+              iconColor="#1877F2"
+              title="Facebook"
+              subtitle="Personal or Business"
+              value={socialAccounts.facebook}
+              onSave={(value) => updateSocial("facebook", value)}
+            />
+            <Button
+              title="Continue"
+              onPress={() => navigation.navigate("ReviewProfile")}
+              rightIcon={
+                <Ionicons name="arrow-forward" size={18} color="white" />
+              }
+              fullWidth
+            />
           </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: {
+    flex: 1,
+    backgroundColor: colors.bg,
+  },
+
+  content: {
+    paddingBottom: spacing.xxxl, // or 80
+  },
+
   body: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xs,
     paddingBottom: spacing.xxl,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.text,
+    marginVertical: spacing.lg,
   },
 });
