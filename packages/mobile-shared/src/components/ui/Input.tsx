@@ -1,22 +1,23 @@
-import React from 'react'
-import { View, TextInput, StyleSheet, Text } from 'react-native'
-import { colors, spacing, borderRadius } from '../../constants'
+import React from "react";
+import { View, TextInput, StyleSheet, Text } from "react-native";
+import { colors, spacing, borderRadius } from "../../constants";
 
 interface InputProps {
-  label?: string
-  placeholder?: string
-  value?: string
-  onChangeText?: (text: string) => void
-  secureTextEntry?: boolean
-  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad'
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters'
-  error?: string
-  style?: object
-  editable?: boolean
-  multiline?: boolean
-  numberOfLines?: number
-  returnKeyType?: 'done' | 'go' | 'next' | 'search' | 'send'
-  onSubmitEditing?: () => void
+  label?: string;
+  placeholder?: string;
+  value?: string;
+  onChangeText?: (text: string) => void;
+  secureTextEntry?: boolean;
+  keyboardType?: "default" | "email-address" | "numeric" | "phone-pad";
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  error?: string;
+  style?: object;
+  editable?: boolean;
+  multiline?: boolean;
+  numberOfLines?: number;
+  returnKeyType?: "done" | "go" | "next" | "search" | "send";
+  onSubmitEditing?: () => void;
+  maxLength?: number;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -25,8 +26,8 @@ export const Input: React.FC<InputProps> = ({
   value,
   onChangeText,
   secureTextEntry = false,
-  keyboardType = 'default',
-  autoCapitalize = 'none',
+  keyboardType = "default",
+  autoCapitalize = "none",
   error,
   style,
   editable = true,
@@ -34,15 +35,18 @@ export const Input: React.FC<InputProps> = ({
   numberOfLines = 1,
   returnKeyType,
   onSubmitEditing,
+  maxLength,
 }) => {
   return (
     <View style={style}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <View style={[
-        styles.inputContainer,
-        error && styles.inputContainerError,
-        !editable && styles.inputContainerDisabled,
-      ]}>
+      <View
+        style={[
+          styles.inputContainer,
+          error && styles.inputContainerError,
+          !editable && styles.inputContainerDisabled,
+        ]}
+      >
         <TextInput
           style={[styles.input, multiline && styles.multilineInput]}
           placeholder={placeholder}
@@ -59,19 +63,22 @@ export const Input: React.FC<InputProps> = ({
           onSubmitEditing={onSubmitEditing}
           accessibilityLabel={label}
           accessibilityHint={placeholder}
+          maxLength={maxLength}
         />
       </View>
       {error && (
-        <Text style={styles.errorText} accessibilityRole="alert">{error}</Text>
+        <Text style={styles.errorText} accessibilityRole="alert">
+          {error}
+        </Text>
       )}
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   label: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     color: colors.textMuted,
     marginBottom: spacing.xs,
     letterSpacing: 0.1,
@@ -98,7 +105,7 @@ const styles = StyleSheet.create({
   },
   multilineInput: {
     minHeight: 100,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     paddingTop: spacing.sm,
   },
   errorText: {
@@ -106,4 +113,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: spacing.xs,
   },
-})
+});

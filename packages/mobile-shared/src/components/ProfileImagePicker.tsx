@@ -72,6 +72,7 @@ export default ProfileImagePicker;
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
+    marginVertical: 20,
   },
 
   imageContainer: {

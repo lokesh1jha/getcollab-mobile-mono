@@ -6,12 +6,28 @@ import {
   Text,
   ScrollView,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, radius, spacing } from "@/src/theme";
 import OnboardingHeader from "../../../components/OnboardingHeader";
 import ProfileImagePicker from "@shared/components/ProfileImagePicker";
+import { Button, Input } from "@shared/components/ui";
+import CountryPickerField from "@shared/components/CountryPickerField";
+import { Ionicons } from "@expo/vector-icons";
+import { useAuthStore } from "@/src/stores";
 export default function CreatorProfileScreen({ navigation }: any) {
+  const user = useAuthStore((state) => state.user);
+
+  const [name, setName] = useState(user?.name ?? "");
+  const [bio, setBio] = useState("");
+  const [country, setCountry] = useState("");
+
+  useEffect(() => {
+    if (user?.name) {
+      setName(user.name);
+    }
+  }, [user]);
+
   const handleImage = (uri: string) => {
     console.log(uri);
 
@@ -37,6 +53,45 @@ export default function CreatorProfileScreen({ navigation }: any) {
               journey.
             </Text>
             <ProfileImagePicker onImageSelected={handleImage} />
+            <Input
+              label="Full Name"
+              placeholder="Enter your full name"
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              returnKeyType="next"
+            />
+            <View style={{ marginTop: spacing.lg }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: spacing.xs,
+                }}
+              >
+                <Text style={styles.label}>Bio</Text>
+                <Text style={styles.count}>{bio.length}/150</Text>
+              </View>
+
+              <Input
+                placeholder="Tell brands about yourself..."
+                value={bio}
+                onChangeText={setBio}
+                multiline
+                numberOfLines={4}
+                maxLength={150}
+              />
+            </View>
+            <CountryPickerField value={country} onChange={setCountry} />
+            <Button
+              title="Continue"
+              onPress={() => navigation.navigate("Category")}
+              rightIcon={
+                <Ionicons name="arrow-forward" size={18} color="white" />
+              }
+              fullWidth
+            />
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -65,5 +120,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xs,
     paddingBottom: spacing.xxl,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.textMuted,
+  },
+  count: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  button: {
+    marginTop: spacing.xl,
   },
 });
