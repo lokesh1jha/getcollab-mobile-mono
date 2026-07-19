@@ -63,7 +63,7 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 999,
+    borderRadius: borderRadius.full,
     overflow: "hidden",
     marginTop: spacing.xl,
     backgroundColor: colors.primary,

@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, spacing } from "@/src/theme";
+import { colors, borderRadius, spacing } from "@shared/constants";
 
 interface Props {
   value?: string;
@@ -81,7 +81,7 @@ export default function ContentLanguageSelector({
                     <Ionicons
                       name="checkmark-circle"
                       size={22}
-                      color={colors.neon}
+                      color={colors.primary}
                     />
                   )}
                 </Pressable>
@@ -99,8 +99,8 @@ const styles = StyleSheet.create({
     height: 54,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
-    backgroundColor: colors.card,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.backgroundLight,
     paddingHorizontal: spacing.lg,
     flexDirection: "row",
     alignItems: "center",
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
 
   sheet: {
-    backgroundColor: colors.bg,
+    backgroundColor: colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: spacing.xl,

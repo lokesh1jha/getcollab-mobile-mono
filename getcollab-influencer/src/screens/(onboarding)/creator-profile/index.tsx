@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, radius, spacing } from "@/src/theme";
+import { colors, spacing } from "@shared/constants";
 import OnboardingHeader from "../../../components/OnboardingHeader";
 import ProfileImagePicker from "@shared/components/ProfileImagePicker";
 import { Button, Input } from "@shared/components/ui";
@@ -98,10 +98,10 @@ export default function CreatorProfileScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: colors.background },
 
   body: {
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     paddingTop: spacing.xs,
     paddingBottom: spacing.xxl,
   },

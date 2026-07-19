@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, spacing } from "@/src/theme";
+import { colors, spacing } from "@shared/constants";
 
 interface Props {
   currentStep: number;
@@ -39,7 +39,7 @@ const OnboardingHeader = ({
       <View style={styles.container}>
         {showBack ? (
           <TouchableOpacity onPress={onBack} style={styles.side}>
-            <Ionicons name="arrow-back" size={24} color="#5E6AD2" />
+            <Ionicons name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
         ) : (
           <View style={styles.side} />
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
 
   progressFill: {
     height: "100%",
-    backgroundColor: "#5E6AD2",
+    backgroundColor: colors.primary,
     borderRadius: 2,
   },
 
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: colors.bg,
+    backgroundColor: colors.background,
   },
 
   side: {
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontSize: 16,
     fontWeight: "600",
-    color: "#5E6AD2",
+    color: colors.primary,
     letterSpacing: 1,
   },
 
@@ -113,11 +113,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     lineHeight: 36,
     letterSpacing: -1,
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
   },
 
   sub: {
-    color: "rgba(255,255,255,0.55)",
+    color: colors.textMuted,
     fontSize: 14,
     marginTop: spacing.sm,
     lineHeight: 22,

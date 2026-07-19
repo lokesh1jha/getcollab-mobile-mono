@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { colors, radius, spacing } from "@/src/theme";
+import { colors, borderRadius, spacing } from "@shared/constants";
 
 interface Props {
   icon: keyof typeof Ionicons.glyphMap;
@@ -15,7 +15,7 @@ interface Props {
 
 export default function SocialConnectCard({
   icon,
-  iconColor = colors.neon,
+  iconColor = colors.primary,
   title,
   subtitle,
   value,
@@ -72,7 +72,7 @@ export default function SocialConnectCard({
             <Ionicons
               name="checkmark"
               size={16}
-              color={colors.neon}
+              color={colors.primary}
               style={{ marginRight: 4 }}
             />
             <Text style={styles.buttonText}>Save</Text>
@@ -97,9 +97,9 @@ export default function SocialConnectCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
+    backgroundColor: colors.backgroundLight,
+    borderRadius: borderRadius.xl,
+    padding: spacing.md,
     marginBottom: spacing.md,
   },
 
@@ -139,8 +139,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: colors.neon,
-    borderRadius: radius.pill,
+    borderColor: colors.primary,
+    borderRadius: borderRadius.full,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: colors.neon,
+    color: colors.primary,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: 12,
     color: colors.text,

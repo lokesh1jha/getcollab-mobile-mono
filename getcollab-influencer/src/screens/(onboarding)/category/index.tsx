@@ -9,7 +9,7 @@ import {
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import OnboardingHeader from "@/src/components/OnboardingHeader";
-import { colors, spacing } from "@/src/theme";
+import { colors, spacing } from "@shared/constants";
 import CategorySelector from "@/src/components/CategorySelector";
 import SocialConnectCard from "@/src/components/SocialConnectCard";
 import { Button } from "@shared/components/ui/Button";
@@ -76,7 +76,7 @@ export default function CategoryScreen({ navigation }: any) {
               icon="logo-youtube"
               iconColor="#FF0000"
               title="YouTube"
-              subtitle="Channel analytics"
+              subtitle="Channel Handle or URL"
               value={socialAccounts.youtube}
               onSave={(value) => updateSocial("youtube", value)}
             />
@@ -85,7 +85,7 @@ export default function CategoryScreen({ navigation }: any) {
               icon="logo-facebook"
               iconColor="#1877F2"
               title="Facebook"
-              subtitle="Personal or Business"
+              subtitle="Creator Page or Profile"
               value={socialAccounts.facebook}
               onSave={(value) => updateSocial("facebook", value)}
             />
@@ -107,15 +107,15 @@ export default function CategoryScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.background,
   },
 
   content: {
-    paddingBottom: spacing.xxxl, // or 80
+    paddingBottom: spacing.xxl, // or 80
   },
 
   body: {
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     paddingTop: spacing.xs,
     paddingBottom: spacing.xxl,
   },
@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: colors.text,
-    marginVertical: spacing.lg,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
 });

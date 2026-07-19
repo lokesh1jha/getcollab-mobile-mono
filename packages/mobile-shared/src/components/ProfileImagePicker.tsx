@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
+import { colors } from "../constants";
 
 interface Props {
   onImageSelected?: (uri: string) => void;
@@ -55,7 +56,7 @@ const ProfileImagePicker = ({ onImageSelected }: Props) => {
           <Image source={{ uri: imageUri }} style={styles.image} />
         ) : (
           <View style={styles.placeholder}>
-            <Ionicons name="person-outline" size={80} color="#5E6AD2" />
+            <Ionicons name="person-outline" size={80} color={colors.primary} />
           </View>
         )}
 
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     overflow: "visible",
     borderWidth: 2,
-    borderColor: "#5E6AD2",
+    borderColor: colors.primary,
   },
 
   placeholder: {
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#5E6AD2",
+    borderColor: colors.primary,
   },
 
   image: {
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 17,
-    backgroundColor: "#5E6AD2",
+    backgroundColor: colors.primary,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,

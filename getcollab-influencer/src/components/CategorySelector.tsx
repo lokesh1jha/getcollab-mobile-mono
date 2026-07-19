@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, spacing, radius } from "@/src/theme";
+import { colors, spacing, borderRadius } from "@shared/constants";
 
 interface Props {
   value: string[];
@@ -127,26 +127,26 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: radius.pill,
+    borderRadius: borderRadius.full,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.background,
   },
 
   selectedChip: {
-    backgroundColor: "#3B82F6",
-    borderColor: "#3B82F6",
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
 
   chipText: {
     color: colors.text,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "400",
   },
 
   selectedText: {
     color: "#fff",
-    fontWeight: "700",
+    fontWeight: "500",
   },
 
   moreChip: {
@@ -155,14 +155,14 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: radius.pill,
+    borderRadius: borderRadius.full,
     borderWidth: 1,
     borderColor: colors.textMuted,
   },
 
   moreText: {
     color: colors.textMuted,
-    fontWeight: "600",
+    fontWeight: "700",
     fontSize: 14,
   },
 });
