@@ -1,13 +1,28 @@
 import React, { useState } from 'react'
 import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing } from '@shared/constants'
+import { spacing } from '@shared/constants'
 import { Button } from '@shared/components/ui/Button'
 import { Input } from '@shared/components/ui/Input'
 import apiService, { handleApiError } from '@shared/services/api'
 
 interface ForgotPasswordScreenProps {
   navigation?: any
+}
+
+// Self-contained palette for the premium dark-luxury theme.
+// (Kept local so this screen renders consistently even if the shared
+// theme file still has the old tokens — see note at the end of the reply.)
+const palette = {
+  bg: '#09090B',
+  card: 'rgba(255,255,255,0.04)',
+  border: 'rgba(124,124,255,0.18)',
+  text: '#FFFFFF',
+  textSecondary: '#C7C7D4',
+  textMuted: '#8B8BA0',
+  accent: '#6D6AFD',
+  accentBright: '#8D8BFF',
+  success: '#34D399',
 }
 
 export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScreenProps) {
@@ -33,6 +48,10 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Ambient purple glow */}
+      <View style={styles.glowTop} pointerEvents="none" />
+      <View style={styles.glowBottom} pointerEvents="none" />
+
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Forgot password?</Text>
         <Text style={styles.subtitle}>
@@ -99,21 +118,42 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: palette.bg,
   },
+
+  // Soft blurred purple glows
+  glowTop: {
+    position: 'absolute',
+    top: -110,
+    right: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: 'rgba(109,106,253,0.14)',
+  },
+  glowBottom: {
+    position: 'absolute',
+    bottom: -140,
+    left: -90,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: 'rgba(124,124,255,0.10)',
+  },
+
   content: {
     padding: spacing.lg,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: colors.text,
+    color: palette.text,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
   },
   subtitle: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: palette.textSecondary,
     marginBottom: spacing.xl,
     lineHeight: 20,
   },
@@ -124,26 +164,26 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   successCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
+    backgroundColor: palette.card,
+    borderRadius: 20,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.success,
+    borderColor: palette.border,
   },
   successTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.text,
+    color: palette.text,
     marginBottom: spacing.sm,
   },
   successText: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: palette.textSecondary,
     lineHeight: 20,
     marginBottom: spacing.lg,
   },
   successEmail: {
-    color: colors.text,
+    color: palette.accentBright,
     fontWeight: '600',
   },
   backBtn: {
