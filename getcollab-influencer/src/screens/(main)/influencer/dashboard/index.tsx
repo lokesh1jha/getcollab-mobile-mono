@@ -12,6 +12,12 @@ import { EmailVerificationBanner } from '@shared/components/EmailVerificationBan
 const { width } = Dimensions.get('window')
 const CARD_W = width * 0.42
 
+// Theme accents pulled from the reference design — indigo/violet on near-black glass cards
+const ACCENT = '#6366F1'
+const ACCENT_SOFT = 'rgba(99, 102, 241, 0.16)'
+const GLASS_BORDER = 'rgba(255, 255, 255, 0.08)'
+const GLASS_CARD = 'rgba(255, 255, 255, 0.03)'
+
 interface Stats { campaigns: number; earnings: number; followers: string; engagement: string }
 interface Activity { id: string; text: string; time: string; type: string }
 
@@ -123,7 +129,7 @@ export default function InfluencerDashboard({ navigation }: any) {
   const onRefresh = () => { setRefreshing(true); load(false) }
 
   const kpiCards = [
-    { id: 'campaigns', label: 'Active Bids', value: String(stats.campaigns), icon: 'megaphone-outline', color: colors.blue },
+    { id: 'campaigns', label: 'Active Bids', value: String(stats.campaigns), icon: 'megaphone-outline', color: ACCENT },
     { id: 'earnings', label: 'Earnings', value: `₹${stats.earnings.toLocaleString()}`, icon: 'wallet-outline', color: colors.success },
     { id: 'followers', label: 'Followers', value: stats.followers, icon: 'people-outline', color: colors.neon },
     { id: 'engagement', label: 'Engagement', value: stats.engagement, icon: 'trending-up-outline', color: colors.warning },
@@ -132,7 +138,7 @@ export default function InfluencerDashboard({ navigation }: any) {
   if (loading) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={ACCENT} />
       </View>
     )
   }
@@ -143,7 +149,7 @@ export default function InfluencerDashboard({ navigation }: any) {
         <ScrollView
           contentContainerStyle={{ paddingBottom: spacing.xxxl }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />}
         >
           <EmailVerificationBanner />
 
@@ -163,7 +169,7 @@ export default function InfluencerDashboard({ navigation }: any) {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.md, paddingVertical: spacing.sm }} style={{ marginTop: spacing.sm }}>
             {kpiCards.map((k, i) => (
               <Animated.View key={k.id} entering={FadeInDown.delay(80 * i).duration(320)} style={[styles.kpiCard, { width: CARD_W }]}>
-                <View style={[styles.kpiIconWrap, { backgroundColor: k.color + '20' }]}>
+                <View style={[styles.kpiIconWrap, { backgroundColor: k.color + '20', borderColor: k.color + '33' }]}>
                   <Ionicons name={k.icon as any} size={16} color={k.color} />
                 </View>
                 <Text style={styles.kpiValue}>{k.value}</Text>
@@ -179,11 +185,11 @@ export default function InfluencerDashboard({ navigation }: any) {
               {QUICK_ACTIONS.map((a) => (
                 <Pressable
                   key={a.id}
-                  style={({ pressed }) => [styles.actionCard, pressed && { opacity: 0.75, transform: [{ scale: 0.97 }] }]}
+                  style={({ pressed }) => [styles.actionCard, pressed && { opacity: 0.75, transform: [{ scale: 0.97 }], borderColor: ACCENT + '55' }]}
                   onPress={() => navigation?.navigate(a.screen)}
                 >
                   <View style={styles.actionIcon}>
-                    <Ionicons name={a.icon as any} size={18} color={colors.text} />
+                    <Ionicons name={a.icon as any} size={18} color={ACCENT} />
                   </View>
                   <Text style={styles.actionLabel}>{a.label}</Text>
                 </Pressable>
@@ -215,7 +221,7 @@ export default function InfluencerDashboard({ navigation }: any) {
                 {activities.map((a, idx) => (
                   <View key={a.id} style={[styles.activityRow, idx !== activities.length - 1 && styles.activityDivider]}>
                     <View style={styles.activityIconWrap}>
-                      <Ionicons name={activityIcon(a.type) as any} size={16} color={colors.textMuted} />
+                      <Ionicons name={activityIcon(a.type) as any} size={16} color={ACCENT} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.activityText} numberOfLines={2}>{a.text}</Text>
@@ -233,40 +239,40 @@ export default function InfluencerDashboard({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: '#05050A' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
   greeting: { color: colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
   subtitle: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
-  bellBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
-  bellDot: { position: 'absolute', top: 10, right: 11, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.neon, borderWidth: 2, borderColor: colors.card },
+  bellBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: GLASS_BORDER, alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS_CARD },
+  bellDot: { position: 'absolute', top: 10, right: 11, width: 8, height: 8, borderRadius: 4, backgroundColor: ACCENT, borderWidth: 2, borderColor: '#05050A' },
 
-  kpiCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm },
-  kpiIconWrap: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' },
+  kpiCard: { backgroundColor: GLASS_CARD, borderWidth: 1, borderColor: GLASS_BORDER, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm },
+  kpiIconWrap: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start', borderWidth: 1 },
   kpiValue: { color: colors.text, fontSize: 24, fontWeight: '700', letterSpacing: -0.8 },
   kpiLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '500' },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   sectionTitle: { color: colors.text, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
-  sectionLink: { color: colors.blue, fontSize: 13, fontWeight: '600' },
+  sectionLink: { color: ACCENT, fontSize: 13, fontWeight: '600' },
 
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   actionCard: {
     width: (width - spacing.lg * 2 - spacing.md * 2) / 3,
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: GLASS_CARD, borderWidth: 1, borderColor: GLASS_BORDER,
     borderRadius: radius.md, padding: spacing.md, alignItems: 'flex-start', gap: 10, minHeight: 88,
   },
-  actionIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+  actionIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: ACCENT_SOFT, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(99, 102, 241, 0.28)' },
   actionLabel: { color: colors.text, fontSize: 12, fontWeight: '600', lineHeight: 16 },
 
-  listCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden' },
+  listCard: { backgroundColor: GLASS_CARD, borderWidth: 1, borderColor: GLASS_BORDER, borderRadius: radius.lg, overflow: 'hidden' },
   activityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  activityDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
-  activityIconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center' },
+  activityDivider: { borderBottomWidth: 1, borderBottomColor: GLASS_BORDER },
+  activityIconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: ACCENT_SOFT, alignItems: 'center', justifyContent: 'center' },
   activityText: { color: colors.text, fontSize: 13, lineHeight: 18 },
   activityTime: { color: colors.textSubtle, fontSize: 11 },
 
-  emptyCard: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg },
-  emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.elevated, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  emptyCard: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.sm, backgroundColor: GLASS_CARD, borderWidth: 1, borderColor: GLASS_BORDER, borderRadius: radius.lg },
+  emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: ACCENT_SOFT, borderWidth: 1, borderColor: 'rgba(99, 102, 241, 0.28)', alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { color: colors.text, fontSize: 15, fontWeight: '700', marginTop: spacing.sm },
   emptySub: { color: colors.textMuted, fontSize: 13, textAlign: 'center', paddingHorizontal: spacing.xl },
 })
