@@ -1,35 +1,51 @@
 import React, { useState, useCallback } from 'react'
-import { Dimensions, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, ActivityIndicator } from 'react-native'
-import Animated, { FadeInDown } from 'react-native-reanimated'
+import {
+  Dimensions, Pressable, RefreshControl, ScrollView,
+  StyleSheet, Text, View, ActivityIndicator,
+} from 'react-native'
+import Animated, {
+  FadeIn, FadeInDown,
+  useSharedValue, useAnimatedStyle, withSpring,
+} from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { EmailVerificationBanner } from '@shared/components/EmailVerificationBanner'
 
 const { width } = Dimensions.get('window')
-const CARD_W = width * 0.42
+const CARD_W = width * 0.44
 
-// Theme accents pulled from the reference design — indigo/violet on near-black glass cards
-const ACCENT = '#6366F1'
-const ACCENT_SOFT = 'rgba(99, 102, 241, 0.16)'
-const GLASS_BORDER = 'rgba(255, 255, 255, 0.08)'
-const GLASS_CARD = 'rgba(255, 255, 255, 0.03)'
+// ─── Palette ────────────────────────────────────────────────────────────────────
+const P = {
+  bg:           '#0B0B0B',
+  card:         '#19191E',
+  cardHigh:     '#1C1C23',
+  text:         '#F5F5F5',
+  textMuted:    '#A6A6B0',
+  textSubtle:   '#6E6F7E',
+  accent:       '#5868D8',
+  accentLight:  '#6675E8',
+  accentSoft:   '#303058',
+  border:       'rgba(255,255,255,0.07)',
+  accentBorder: 'rgba(88,104,216,0.28)',
+}
 
 interface Stats { campaigns: number; earnings: number; followers: string; engagement: string }
 interface Activity { id: string; text: string; time: string; type: string }
 
 const QUICK_ACTIONS = [
-  { id: 'discover', icon: 'compass-outline', label: 'Find\nCampaigns', screen: 'Discover' },
-  { id: 'bids', icon: 'document-text-outline', label: 'My\nBids', screen: 'MyCampaigns' },
-  { id: 'chat', icon: 'chatbubbles-outline', label: 'Messages', screen: 'Chat' },
-  { id: 'earnings', icon: 'wallet-outline', label: 'Earnings', screen: 'Earnings' },
-  { id: 'profile', icon: 'person-circle-outline', label: 'Profile', screen: 'Profile' },
-  { id: 'notifications', icon: 'notifications-outline', label: 'Alerts', screen: 'Notifications' },
+  { id: 'discover',      icon: 'compass-outline',       label: 'Find\nCampaigns', screen: 'Discover' },
+  { id: 'bids',          icon: 'document-text-outline', label: 'My\nBids',        screen: 'MyCampaigns' },
+  { id: 'chat',          icon: 'chatbubbles-outline',   label: 'Messages',        screen: 'Chat' },
+  { id: 'earnings',      icon: 'wallet-outline',        label: 'Earnings',        screen: 'Earnings' },
+  { id: 'profile',       icon: 'person-circle-outline', label: 'Profile',         screen: 'Profile' },
+  { id: 'notifications', icon: 'notifications-outline', label: 'Alerts',          screen: 'Notifications' },
 ]
 
+// ─── Helpers ────────────────────────────────────────────────────────────────────
 function activityIcon(type: string) {
   if (type?.includes('bid') || type?.includes('campaign')) return 'megaphone-outline'
   if (type?.includes('payment') || type?.includes('earning')) return 'cash-outline'
@@ -57,9 +73,36 @@ function formatTime(value?: string): string {
 function getGreeting(name?: string): string {
   const h = new Date().getHours()
   const t = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'
-  return name ? `Good ${t}, ${name.split(' ')[0]}` : `Good ${t}`
+  return name ? `Good ${t}, ${name.split(' ')[0]} 👋` : `Good ${t}`
 }
 
+// ─── Animated Action Card ────────────────────────────────────────────────────────
+function ActionCard({ item, index, navigation }: { item: typeof QUICK_ACTIONS[0]; index: number; navigation: any }) {
+  const scale = useSharedValue(1)
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: withSpring(scale.value, { damping: 14, stiffness: 280 }) }],
+  }))
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(200 + index * 65).duration(460).springify().damping(14)}
+      style={[{ width: (width - spacing.lg * 2 - 12 * 2) / 3 }, animStyle]}
+    >
+      <Pressable
+        onPressIn={() => { scale.value = 0.93 }}
+        onPressOut={() => { scale.value = 1 }}
+        onPress={() => navigation?.navigate(item.screen)}
+        style={styles.actionCard}
+      >
+        <View style={styles.actionIcon}>
+          <Ionicons name={item.icon as any} size={18} color={P.accentLight} />
+        </View>
+        <Text style={styles.actionLabel}>{item.label}</Text>
+      </Pressable>
+    </Animated.View>
+  )
+}
+
+// ─── Main Screen ─────────────────────────────────────────────────────────────────
 export default function InfluencerDashboard({ navigation }: any) {
   const { user } = useAuthStore()
   const [stats, setStats] = useState<Stats>({ campaigns: 0, earnings: 0, followers: '—', engagement: '—' })
@@ -84,7 +127,7 @@ export default function InfluencerDashboard({ navigation }: any) {
         : Number(earningsRes?.total ?? 0)
 
       const profile = profileRes?.data || profileRes?.profile || profileRes?.influencerProfile || profileRes || {}
-      const notifs = notifRes?.data || notifRes?.notifications || (Array.isArray(notifRes) ? notifRes : [])
+      const notifs  = notifRes?.data || notifRes?.notifications || (Array.isArray(notifRes) ? notifRes : [])
 
       const rawFollowers = (() => {
         for (const k of ['instagramMetrics','youtubeMetrics','tiktokMetrics','twitterMetrics','facebookMetrics']) {
@@ -103,15 +146,15 @@ export default function InfluencerDashboard({ navigation }: any) {
       })()
 
       setStats({
-        campaigns: Array.isArray(bids) ? bids.length : 0,
-        earnings: earningsTotal,
-        followers: rawFollowers > 0 ? formatFollowers(rawFollowers) : '—',
+        campaigns:  Array.isArray(bids) ? bids.length : 0,
+        earnings:   earningsTotal,
+        followers:  rawFollowers > 0 ? formatFollowers(rawFollowers) : '—',
         engagement: rawEng > 0 ? `${rawEng.toFixed(1)}%` : '—',
       })
 
       setActivities(
         (Array.isArray(notifs) ? notifs : []).slice(0, 5).map((n: any) => ({
-          id: String(n.id ?? Math.random()),
+          id:   String(n.id ?? Math.random()),
           text: n.message || n.title || 'New activity',
           time: formatTime(n.createdAt),
           type: n.type || '',
@@ -129,16 +172,16 @@ export default function InfluencerDashboard({ navigation }: any) {
   const onRefresh = () => { setRefreshing(true); load(false) }
 
   const kpiCards = [
-    { id: 'campaigns', label: 'Active Bids', value: String(stats.campaigns), icon: 'megaphone-outline', color: ACCENT },
-    { id: 'earnings', label: 'Earnings', value: `₹${stats.earnings.toLocaleString()}`, icon: 'wallet-outline', color: colors.success },
-    { id: 'followers', label: 'Followers', value: stats.followers, icon: 'people-outline', color: colors.neon },
-    { id: 'engagement', label: 'Engagement', value: stats.engagement, icon: 'trending-up-outline', color: colors.warning },
+    { id: 'campaigns',  label: 'Active Bids',  value: String(stats.campaigns),              icon: 'megaphone-outline',    color: P.accentLight },
+    { id: 'earnings',   label: 'Total Earned', value: `₹${stats.earnings.toLocaleString()}`, icon: 'wallet-outline',       color: '#4ADE80' },
+    { id: 'followers',  label: 'Followers',    value: stats.followers,                       icon: 'people-outline',       color: '#F59E0B' },
+    { id: 'engagement', label: 'Engagement',   value: stats.engagement,                      icon: 'trending-up-outline',  color: '#FB7185' },
   ]
 
   if (loading) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={ACCENT} />
+        <ActivityIndicator size="large" color={P.accent} />
       </View>
     )
   }
@@ -147,71 +190,86 @@ export default function InfluencerDashboard({ navigation }: any) {
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <ScrollView
-          contentContainerStyle={{ paddingBottom: spacing.xxxl }}
+          contentContainerStyle={{ paddingBottom: 48 }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.accent} />}
         >
           <EmailVerificationBanner />
 
-          {/* Header */}
-          <View style={styles.header}>
+          {/* ── Header ─────────────────────────────────────────────────── */}
+          <Animated.View entering={FadeIn.duration(500)} style={styles.header}>
             <View style={{ flex: 1 }}>
+              <Text style={styles.eyebrow}>CREATOR DASHBOARD</Text>
               <Text style={styles.greeting}>{getGreeting(user?.name)}</Text>
               <Text style={styles.subtitle}>Here's your creator summary.</Text>
             </View>
-            <Pressable onPress={() => navigation?.navigate('Notifications')} style={styles.bellBtn} hitSlop={10}>
-              <Ionicons name="notifications-outline" size={20} color={colors.text} />
+            <Pressable
+              onPress={() => navigation?.navigate('Notifications')}
+              style={({ pressed }) => [styles.bellBtn, pressed && { opacity: 0.7 }]}
+              hitSlop={10}
+            >
+              <Ionicons name="notifications-outline" size={20} color={P.text} />
               <View style={styles.bellDot} />
             </Pressable>
-          </View>
+          </Animated.View>
 
-          {/* KPI Cards */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.md, paddingVertical: spacing.sm }} style={{ marginTop: spacing.sm }}>
+          {/* ── KPI Cards ──────────────────────────────────────────────── */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: 12, paddingVertical: 4 }}
+            style={{ marginTop: 8 }}
+          >
             {kpiCards.map((k, i) => (
-              <Animated.View key={k.id} entering={FadeInDown.delay(80 * i).duration(320)} style={[styles.kpiCard, { width: CARD_W }]}>
-                <View style={[styles.kpiIconWrap, { backgroundColor: k.color + '20', borderColor: k.color + '33' }]}>
+              <Animated.View
+                key={k.id}
+                entering={FadeInDown.delay(60 + i * 90).duration(480).springify().damping(14)}
+                style={[styles.kpiCard, { width: CARD_W }]}
+              >
+                <View style={[styles.kpiIconWrap, { backgroundColor: k.color + '1A', borderColor: k.color + '40' }]}>
                   <Ionicons name={k.icon as any} size={16} color={k.color} />
                 </View>
                 <Text style={styles.kpiValue}>{k.value}</Text>
                 <Text style={styles.kpiLabel}>{k.label}</Text>
+                <View style={[styles.kpiBar, { backgroundColor: k.color + '40' }]} />
               </Animated.View>
             ))}
           </ScrollView>
 
-          {/* Quick Actions */}
-          <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.xl }}>
-            <Text style={[styles.sectionTitle, { marginBottom: spacing.md }]}>Quick Actions</Text>
+          {/* ── Quick Actions ───────────────────────────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionEyebrow}>SHORTCUTS</Text>
+              <Text style={styles.sectionTitle}>Quick Actions</Text>
+            </View>
             <View style={styles.actionGrid}>
-              {QUICK_ACTIONS.map((a) => (
-                <Pressable
-                  key={a.id}
-                  style={({ pressed }) => [styles.actionCard, pressed && { opacity: 0.75, transform: [{ scale: 0.97 }], borderColor: ACCENT + '55' }]}
-                  onPress={() => navigation?.navigate(a.screen)}
-                >
-                  <View style={styles.actionIcon}>
-                    <Ionicons name={a.icon as any} size={18} color={ACCENT} />
-                  </View>
-                  <Text style={styles.actionLabel}>{a.label}</Text>
-                </Pressable>
+              {QUICK_ACTIONS.map((a, idx) => (
+                <ActionCard key={a.id} item={a} index={idx} navigation={navigation} />
               ))}
             </View>
-          </View>
+          </Animated.View>
 
-          {/* Recent Activity */}
-          <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.xl }}>
+          {/* ── Recent Activity ─────────────────────────────────────────── */}
+          <Animated.View entering={FadeInDown.delay(420).duration(400)} style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent Activity</Text>
-              {activities.length > 0 && (
-                <Pressable onPress={() => navigation?.navigate('Notifications')}>
-                  <Text style={styles.sectionLink}>View all</Text>
-                </Pressable>
-              )}
+              <Text style={styles.sectionEyebrow}>NOTIFICATIONS</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={styles.sectionTitle}>Recent Activity</Text>
+                {activities.length > 0 && (
+                  <Pressable
+                    onPress={() => navigation?.navigate('Notifications')}
+                    style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                  >
+                    <Text style={styles.sectionLink}>View all →</Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
 
             {activities.length === 0 ? (
               <View style={styles.emptyCard}>
                 <View style={styles.emptyIcon}>
-                  <Ionicons name="notifications-outline" size={26} color={colors.textMuted} />
+                  <Ionicons name="notifications-outline" size={26} color={P.textSubtle} />
                 </View>
                 <Text style={styles.emptyTitle}>No activity yet</Text>
                 <Text style={styles.emptySub}>Campaign matches and payments will appear here.</Text>
@@ -219,19 +277,23 @@ export default function InfluencerDashboard({ navigation }: any) {
             ) : (
               <View style={styles.listCard}>
                 {activities.map((a, idx) => (
-                  <View key={a.id} style={[styles.activityRow, idx !== activities.length - 1 && styles.activityDivider]}>
+                  <Animated.View
+                    key={a.id}
+                    entering={FadeInDown.delay(460 + idx * 55).duration(380).springify().damping(16)}
+                    style={[styles.activityRow, idx !== activities.length - 1 && styles.activityDivider]}
+                  >
                     <View style={styles.activityIconWrap}>
-                      <Ionicons name={activityIcon(a.type) as any} size={16} color={ACCENT} />
+                      <Ionicons name={activityIcon(a.type) as any} size={15} color={P.accentLight} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.activityText} numberOfLines={2}>{a.text}</Text>
                     </View>
                     {a.time ? <Text style={styles.activityTime}>{a.time}</Text> : null}
-                  </View>
+                  </Animated.View>
                 ))}
               </View>
             )}
-          </View>
+          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -239,40 +301,96 @@ export default function InfluencerDashboard({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#05050A' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
-  greeting: { color: colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
-  subtitle: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
-  bellBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: GLASS_BORDER, alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS_CARD },
-  bellDot: { position: 'absolute', top: 10, right: 11, width: 8, height: 8, borderRadius: 4, backgroundColor: ACCENT, borderWidth: 2, borderColor: '#05050A' },
+  root: { flex: 1, backgroundColor: P.bg },
 
-  kpiCard: { backgroundColor: GLASS_CARD, borderWidth: 1, borderColor: GLASS_BORDER, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm },
-  kpiIconWrap: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start', borderWidth: 1 },
-  kpiValue: { color: colors.text, fontSize: 24, fontWeight: '700', letterSpacing: -0.8 },
-  kpiLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '500' },
-
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
-  sectionTitle: { color: colors.text, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
-  sectionLink: { color: ACCENT, fontSize: 13, fontWeight: '600' },
-
-  actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  actionCard: {
-    width: (width - spacing.lg * 2 - spacing.md * 2) / 3,
-    backgroundColor: GLASS_CARD, borderWidth: 1, borderColor: GLASS_BORDER,
-    borderRadius: radius.md, padding: spacing.md, alignItems: 'flex-start', gap: 10, minHeight: 88,
+  // ── Header
+  header: {
+    flexDirection: 'row', alignItems: 'flex-start',
+    paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm,
   },
-  actionIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: ACCENT_SOFT, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(99, 102, 241, 0.28)' },
-  actionLabel: { color: colors.text, fontSize: 12, fontWeight: '600', lineHeight: 16 },
+  eyebrow: {
+    color: P.textSubtle, fontSize: 10, fontWeight: '700',
+    letterSpacing: 1.8, marginBottom: 6, textTransform: 'uppercase',
+  },
+  greeting:  { color: P.text, fontSize: 24, fontWeight: '700', letterSpacing: -0.6 },
+  subtitle:  { color: P.textMuted, fontSize: 13, marginTop: 3 },
+  bellBtn: {
+    width: 42, height: 42, borderRadius: 21,
+    borderWidth: 1, borderColor: P.border,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: P.card,
+  },
+  bellDot: {
+    position: 'absolute', top: 9, right: 10,
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: P.accent, borderWidth: 2, borderColor: P.bg,
+  },
 
-  listCard: { backgroundColor: GLASS_CARD, borderWidth: 1, borderColor: GLASS_BORDER, borderRadius: radius.lg, overflow: 'hidden' },
-  activityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  activityDivider: { borderBottomWidth: 1, borderBottomColor: GLASS_BORDER },
-  activityIconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: ACCENT_SOFT, alignItems: 'center', justifyContent: 'center' },
-  activityText: { color: colors.text, fontSize: 13, lineHeight: 18 },
-  activityTime: { color: colors.textSubtle, fontSize: 11 },
+  // ── KPI
+  kpiCard: {
+    backgroundColor: P.card, borderWidth: 1, borderColor: P.border,
+    borderRadius: 16, padding: 18, gap: 10, overflow: 'hidden',
+  },
+  kpiIconWrap: {
+    width: 34, height: 34, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
+    alignSelf: 'flex-start', borderWidth: 1,
+  },
+  kpiValue: { color: P.text, fontSize: 26, fontWeight: '800', letterSpacing: -1 },
+  kpiLabel: { color: P.textMuted, fontSize: 12, fontWeight: '500', letterSpacing: 0.2 },
+  kpiBar:   { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, borderRadius: 1 },
 
-  emptyCard: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.sm, backgroundColor: GLASS_CARD, borderWidth: 1, borderColor: GLASS_BORDER, borderRadius: radius.lg },
-  emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: ACCENT_SOFT, borderWidth: 1, borderColor: 'rgba(99, 102, 241, 0.28)', alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { color: colors.text, fontSize: 15, fontWeight: '700', marginTop: spacing.sm },
-  emptySub: { color: colors.textMuted, fontSize: 13, textAlign: 'center', paddingHorizontal: spacing.xl },
+  // ── Section
+  section:        { paddingHorizontal: spacing.lg, marginTop: 28 },
+  sectionHeader:  { marginBottom: 14 },
+  sectionEyebrow: {
+    color: P.textSubtle, fontSize: 10, fontWeight: '700',
+    letterSpacing: 1.6, marginBottom: 4, textTransform: 'uppercase',
+  },
+  sectionTitle: { color: P.text, fontSize: 18, fontWeight: '700', letterSpacing: -0.4 },
+  sectionLink:  { color: P.accentLight, fontSize: 13, fontWeight: '600' },
+
+  // ── Action Grid
+  actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  actionCard: {
+    backgroundColor: P.cardHigh, borderWidth: 1, borderColor: P.border,
+    borderRadius: 14, padding: 14, alignItems: 'flex-start', gap: 10, minHeight: 86,
+  },
+  actionIcon: {
+    width: 34, height: 34, borderRadius: 10,
+    backgroundColor: P.accentSoft, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: P.accentBorder,
+  },
+  actionLabel: { color: P.text, fontSize: 12, fontWeight: '600', lineHeight: 17 },
+
+  // ── Activity List
+  listCard: {
+    backgroundColor: P.card, borderWidth: 1, borderColor: P.border,
+    borderRadius: 16, overflow: 'hidden',
+  },
+  activityRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 16, paddingVertical: 14,
+  },
+  activityDivider:  { borderBottomWidth: 1, borderBottomColor: P.border },
+  activityIconWrap: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: P.accentSoft, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: P.accentBorder,
+  },
+  activityText: { color: P.text, fontSize: 13, lineHeight: 19 },
+  activityTime: { color: P.textSubtle, fontSize: 11, fontWeight: '500' },
+
+  // ── Empty State
+  emptyCard: {
+    alignItems: 'center', paddingVertical: 48, gap: 8,
+    backgroundColor: P.card, borderWidth: 1, borderColor: P.border, borderRadius: 16,
+  },
+  emptyIcon: {
+    width: 58, height: 58, borderRadius: 29,
+    backgroundColor: P.accentSoft, borderWidth: 1, borderColor: P.accentBorder,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  emptyTitle: { color: P.text, fontSize: 15, fontWeight: '700', marginTop: 8 },
+  emptySub:   { color: P.textMuted, fontSize: 13, textAlign: 'center', paddingHorizontal: 32, lineHeight: 19 },
 })
