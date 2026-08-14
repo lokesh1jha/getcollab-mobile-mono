@@ -47,6 +47,7 @@ export default function SignUpScreen({ navigation, route }: Props) {
     setLoading(true)
     try {
       await useAuthStore.getState().signUp(name, email, password, 'influencer')
+      navigation?.navigate('VerifyEmail', { email })
     } catch (error: any) {
       handleApiError(error, 'Failed to create account. Please try again.')
     } finally { setLoading(false) }

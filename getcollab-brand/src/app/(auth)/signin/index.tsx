@@ -32,7 +32,11 @@ export default function SignInScreen({ navigation }: ScreenProps) {
     try {
       await useAuthStore.getState().signIn(email, password)
     } catch (error: any) {
-      showSignInError(error, () => navigation?.navigate('SignUp'))
+      if (error.code === 'email_unverified') {
+        navigation?.navigate('VerifyEmail', { email })
+      } else {
+        showSignInError(error, () => navigation?.navigate('SignUp'))
+      }
     } finally { setLoading(false) }
   }
 

@@ -35,6 +35,7 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
     setLoading(true)
     try {
       await useAuthStore.getState().signUp(name, email, password, 'brand')
+      navigation?.navigate('VerifyEmail', { email })
     } catch (error: any) {
       handleApiError(error, 'Failed to create account. Please try again.')
     } finally { setLoading(false) }

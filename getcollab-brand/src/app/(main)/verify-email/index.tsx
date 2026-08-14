@@ -9,26 +9,40 @@ import apiService, { handleApiError } from '@shared/services/api'
 
 interface Props {
   navigation?: any
+  route?: any
 }
 
-export default function VerifyEmailScreen({ navigation }: Props) {
+export default function VerifyEmailScreen({ navigation, route }: Props) {
   const { user, fetchCurrentUser } = useAuthStore()
+  const emailParam = route?.params?.email
+  const email = emailParam || user?.email
+
   const [token, setToken] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [resending, setResending] = useState(false)
 
   const handleVerify = async () => {
     if (!token.trim()) {
-      Alert.alert('Missing token', 'Paste the verification token from your email.')
+      Alert.alert('Missing code', 'Enter the verification code from your email.')
+      return
+    }
+    if (!email) {
+      Alert.alert('Missing email', 'Email address is missing.')
       return
     }
     setSubmitting(true)
     try {
-      await apiService.verifyEmail(token.trim())
-      await fetchCurrentUser()
-      Alert.alert('Verified', 'Your email is now verified.', [
-        { text: 'OK', onPress: () => navigation?.goBack() },
-      ])
+      await apiService.verifyEmail(email, token.trim())
+      if (user) {
+        await fetchCurrentUser()
+        Alert.alert('Verified', 'Your email is now verified.', [
+          { text: 'OK', onPress: () => navigation?.goBack() },
+        ])
+      } else {
+        Alert.alert('Verified', 'Your email is now verified. Please sign in.', [
+          { text: 'OK', onPress: () => navigation?.navigate('SignIn', { email }) },
+        ])
+      }
     } catch (err) {
       handleApiError(err, 'Verification failed')
     } finally {
@@ -37,10 +51,14 @@ export default function VerifyEmailScreen({ navigation }: Props) {
   }
 
   const handleResend = async () => {
+    if (!email) {
+      Alert.alert('Missing email', 'Email address is missing.')
+      return
+    }
     setResending(true)
     try {
-      await apiService.sendVerificationEmail()
-      Alert.alert('Email sent', `A new verification link was sent to ${user?.email}.`)
+      await apiService.resendEmailOtp(email)
+      Alert.alert('Email sent', `A new verification code was sent to ${email}.`)
     } catch (err) {
       handleApiError(err, 'Failed to resend')
     } finally {
@@ -53,15 +71,15 @@ export default function VerifyEmailScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Verify your email</Text>
         <Text style={styles.subtitle}>
-          We sent a verification link to <Text style={styles.email}>{user?.email}</Text>.
-          Tap the link in the email, or paste the token below.
+          We sent a verification code to <Text style={styles.email}>{email}</Text>.
+          Please enter the code below.
         </Text>
 
         <Input
-          label="Verification Token"
+          label="Verification Code"
           value={token}
           onChangeText={setToken}
-          placeholder="Paste token here"
+          placeholder="Enter 6-digit code"
           style={styles.input}
         />
 
