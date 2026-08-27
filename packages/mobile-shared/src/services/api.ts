@@ -2,10 +2,34 @@ import { Alert } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import { resolveApiBaseUrl } from '../utils/api-url'
 
-const API_BASE_URL = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api/v1')
+const API_BASE_URL = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api/v1')
 const TOKEN_KEY = 'getcollab_auth_token'
 const REFRESH_TOKEN_KEY = 'getcollab_refresh_token'
-const CREDENTIAL_AUTH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/signin']
+const DEVICE_ID_KEY = 'getcollab_device_id'
+const CREDENTIAL_AUTH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/signin', '/auth/signup']
+
+let cachedDeviceId: string | null = null
+
+async function getOrCreateDeviceId(): Promise<string> {
+  if (cachedDeviceId) return cachedDeviceId
+  try {
+    let deviceId = await SecureStore.getItemAsync(DEVICE_ID_KEY)
+    if (!deviceId) {
+      const chars = 'abcdef0123456789'
+      let randomStr = ''
+      for (let i = 0; i < 32; i++) {
+        randomStr += chars[Math.floor(Math.random() * chars.length)]
+      }
+      deviceId = `mobile_${randomStr}`
+      await SecureStore.setItemAsync(DEVICE_ID_KEY, deviceId)
+    }
+    cachedDeviceId = deviceId
+    return deviceId
+  } catch (error) {
+    console.error('Failed to get/create device id:', error)
+    return 'mobile_fallback_device_id'
+  }
+}
 
 function isCredentialAuthEndpoint(endpoint: string): boolean {
   return CREDENTIAL_AUTH_ENDPOINTS.some((path) => endpoint.includes(path))
@@ -145,6 +169,10 @@ class ApiService {
   }
 
   private async handleResponse<T>(response: Response, opts?: { surfaceCredentialError?: boolean }): Promise<T> {
+    if (response.status === 204) {
+      return { success: true } as unknown as T
+    }
+
     const contentType = response.headers.get('content-type')
 
     if (!contentType || !contentType.includes('application/json')) {
@@ -163,7 +191,9 @@ class ApiService {
       if (response.status === 401) {
         const errorMessage = data.error || data.message || 'Invalid email or password'
         if (opts?.surfaceCredentialError) {
-          throw new Error(errorMessage)
+          const errObj = new Error(errorMessage) as any
+          if (data.code) errObj.code = data.code
+          throw errObj
         }
         await this.clearTokens()
         if (this.onUnauthorized) {
@@ -178,16 +208,24 @@ class ApiService {
       }
 
       const errorMessage = data.error || data.message || 'Something went wrong'
-      throw new Error(errorMessage)
+      const errorObj = new Error(errorMessage) as any
+      if (data.code) {
+        errorObj.code = data.code
+      }
+      throw errorObj
     }
 
     if (data && typeof data === 'object') {
       data = this.sanitizeResponse(data)
     }
 
-    if (data && data.tokens) {
-      if (data.tokens.accessToken) data.token = data.tokens.accessToken
-      if (data.tokens.refreshToken) data.refreshToken = data.tokens.refreshToken
+    if (data) {
+      if (data.access_token && !data.token) data.token = data.access_token
+      if (data.refresh_token && !data.refreshToken) data.refreshToken = data.refresh_token
+      if (data.tokens) {
+        if (data.tokens.accessToken) data.token = data.tokens.accessToken
+        if (data.tokens.refreshToken) data.refreshToken = data.tokens.refreshToken
+      }
     }
 
     if (data && data.data && data.data.user && !data.user) {
@@ -200,10 +238,16 @@ class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
     const token = await this.getToken()
+    const deviceId = await getOrCreateDeviceId()
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'X-Device-Id': deviceId,
       ...(options.headers as Record<string, string>),
+    }
+
+    if (endpoint.includes('/auth/login')) {
+      headers['X-Auth-Transport'] = 'token'
     }
 
     if (token) {
@@ -279,7 +323,7 @@ class ApiService {
 
   // ------- Auth -------
   async signup(data: SignupData): Promise<ApiResponse<User>> {
-    return this.request<ApiResponse<User>>('/auth/register', {
+    return this.request<ApiResponse<User>>('/auth/signup', {
       method: 'POST',
       body: JSON.stringify(data),
     })
@@ -661,14 +705,17 @@ class ApiService {
     })
   }
 
-  async sendVerificationEmail(): Promise<any> {
-    return this.request('/auth/send-verification', { method: 'POST' })
+  async resendEmailOtp(email: string): Promise<any> {
+    return this.request('/auth/resend-email-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
   }
 
-  async verifyEmail(token: string): Promise<any> {
+  async verifyEmail(email: string, code: string): Promise<any> {
     return this.request('/auth/verify-email', {
       method: 'POST',
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ email, code }),
     })
   }
 
@@ -782,19 +829,21 @@ class ApiService {
       const refreshToken = await this.getRefreshToken()
       if (!refreshToken) return null
 
+      const deviceId = await getOrCreateDeviceId()
       const response = await fetch(`${this.baseUrl}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${refreshToken}`,
+          'X-Device-Id': deviceId,
+          'X-Refresh-Token': refreshToken,
         },
       })
 
       if (!response.ok) return null
 
       const data = await response.json()
-      const newToken = data.token || data.accessToken || data?.tokens?.accessToken
-      const newRefreshToken = data.refreshToken || data?.tokens?.refreshToken
+      const newToken = data.access_token || data.token || data.accessToken || data?.tokens?.accessToken
+      const newRefreshToken = data.refresh_token || data.refreshToken || data?.tokens?.refreshToken
 
       if (newToken) {
         await this.setToken(newToken)

@@ -22,6 +22,10 @@ function replaceLocalhost(url: string, host: string): string {
 export function resolveApiBaseUrl(url: string): string {
   if (!__DEV__) return url
 
+  if (process.env.EXPO_PUBLIC_USE_LOCALHOST === 'true') {
+    return url
+  }
+
   const isLocalhost = /:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(url)
   if (!isLocalhost) return url
 

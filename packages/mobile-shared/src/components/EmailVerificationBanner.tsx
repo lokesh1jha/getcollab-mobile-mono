@@ -17,8 +17,8 @@ export function EmailVerificationBanner() {
   const handleResend = async () => {
     setSending(true)
     try {
-      await apiService.sendVerificationEmail()
-      navigation.navigate('VerifyEmail')
+      await apiService.resendEmailOtp(user.email)
+      navigation.navigate('VerifyEmail', { email: user.email })
     } catch (err) {
       handleApiError(err, 'Failed to resend verification email')
     } finally {

@@ -18,6 +18,7 @@ import SignInScreen from './src/app/(auth)/signin'
 import SignUpScreen from './src/app/(auth)/signup'
 import MainTabs from './src/navigation/MainTabs'
 import MaintenanceScreen from '@shared/screens/MaintenanceScreen'
+import VerifyEmailScreen from './src/app/(main)/verify-email'
 
 const Stack = createNativeStackNavigator()
 
@@ -89,6 +90,7 @@ export default function App() {
                   <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
                   <Stack.Screen name="ForgotPassword" getComponent={() => require('./src/app/(auth)/forgot-password').default} options={{ headerShown: true, headerTitle: 'Forgot Password' }} />
                   <Stack.Screen name="ResetPassword" getComponent={() => require('./src/app/(auth)/reset-password').default} options={{ headerShown: true, headerTitle: 'Reset Password' }} />
+                  <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ headerShown: false }} />
                 </>
               ) : (
                 <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
