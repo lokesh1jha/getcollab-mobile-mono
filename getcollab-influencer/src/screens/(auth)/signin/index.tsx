@@ -53,11 +53,6 @@ export default function SignInScreen({ navigation }: Props) {
     } finally { setLoading(false) }
   }
 
-  const handleSocialSignIn = async (provider: 'google' | 'facebook' | 'instagram') => {
-    // TODO: wire up to your OAuth flow, e.g. useAuthStore.getState().signInWithProvider(provider)
-    console.log(`Sign in with ${provider}`)
-  }
-
   return (
     <View style={styles.root}>
       <View style={styles.glowTop} pointerEvents="none" />
@@ -102,24 +97,6 @@ export default function SignInScreen({ navigation }: Props) {
                   {!loading && <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />}
                 </View>
               </Pressable>
-
-              <View style={styles.dividerRow}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>Or continue with</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              <View style={styles.socialRow}>
-                <Pressable onPress={() => handleSocialSignIn('google')} style={({ pressed }) => [styles.socialBtn, pressed && { opacity: 0.7 }]}>
-                  <Ionicons name="logo-google" size={20} color={palette.text} />
-                </Pressable>
-                <Pressable onPress={() => handleSocialSignIn('facebook')} style={({ pressed }) => [styles.socialBtn, pressed && { opacity: 0.7 }]}>
-                  <Ionicons name="logo-facebook" size={20} color="#1877F2" />
-                </Pressable>
-                <Pressable onPress={() => handleSocialSignIn('instagram')} style={({ pressed }) => [styles.socialBtn, pressed && { opacity: 0.7 }]}>
-                  <Ionicons name="logo-instagram" size={20} color="#E1306C" />
-                </Pressable>
-              </View>
 
               <View style={styles.bottomRow}>
                 <Text style={styles.bottomText}>New to GetCollab? </Text>
@@ -211,11 +188,6 @@ const styles = StyleSheet.create({
   },
   primaryInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, backgroundColor: palette.accent },
   primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: spacing.xl },
-  dividerLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: palette.border },
-  dividerText: { color: palette.textMuted, fontSize: 12, fontWeight: '600' },
-  socialRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
-  socialBtn: { flex: 1, height: 52, borderRadius: 14, borderWidth: 1, borderColor: palette.border, backgroundColor: palette.card, alignItems: 'center', justifyContent: 'center' },
   bottomRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xxl },
   bottomText: { color: palette.textMuted, fontSize: 13 },
   bottomLink: { color: palette.accentBright, fontSize: 13, fontWeight: '700' },

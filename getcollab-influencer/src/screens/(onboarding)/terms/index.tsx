@@ -8,7 +8,7 @@ import {
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import OnboardingHeader from "@/src/components/OnboardingHeader";
-import { colors, spacing } from "@shared/constants";
+import { colors, spacing } from "@/src/theme";
 import { Button } from "@shared/components/ui";
 import TermsAndConditionsCard from "@/src/components/TermsAndConditionsCard";
 export default function AcceptTerms({ navigation }: any) {

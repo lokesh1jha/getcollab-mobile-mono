@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { colors, borderRadius, spacing } from "@shared/constants";
+import { colors, spacing, radius } from "@/src/theme";
 
 interface Props {
   icon: keyof typeof Ionicons.glyphMap;
@@ -15,7 +15,7 @@ interface Props {
 
 export default function SocialConnectCard({
   icon,
-  iconColor = colors.primary,
+  iconColor = colors.blue,
   title,
   subtitle,
   value,
@@ -98,7 +98,7 @@ export default function SocialConnectCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.backgroundLight,
-    borderRadius: borderRadius.xl,
+    borderRadius: radius.lg,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.primary,
-    borderRadius: borderRadius.full,
+    borderRadius: radius.pill,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: borderRadius.lg,
+    borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: 12,
     color: colors.text,

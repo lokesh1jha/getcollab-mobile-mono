@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, spacing } from "@shared/constants";
+import { colors, spacing } from "@/src/theme";
 import OnboardingHeader from "../../../components/OnboardingHeader";
 import ProfileImagePicker from "@shared/components/ProfileImagePicker";
 import { Button, Input } from "@shared/components/ui";

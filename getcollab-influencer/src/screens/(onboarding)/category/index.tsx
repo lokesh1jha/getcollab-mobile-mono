@@ -9,7 +9,7 @@ import {
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import OnboardingHeader from "@/src/components/OnboardingHeader";
-import { colors, spacing } from "@shared/constants";
+import { colors, spacing } from "@/src/theme";
 import CategorySelector from "@/src/components/CategorySelector";
 import SocialConnectCard from "@/src/components/SocialConnectCard";
 import { Button } from "@shared/components/ui/Button";

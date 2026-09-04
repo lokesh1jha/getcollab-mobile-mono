@@ -62,6 +62,7 @@ interface Activity {
 const QUICK_ACTIONS = [
   { id: 'discover', icon: 'compass-outline', label: 'Find\nCampaigns', screen: 'Discover' },
   { id: 'bids', icon: 'document-text-outline', label: 'My\nBids', screen: 'MyCampaigns' },
+  { id: 'analytics', icon: 'stats-chart-outline', label: 'Analytics', screen: 'Analytics' },
   { id: 'chat', icon: 'chatbubbles-outline', label: 'Messages', screen: 'Chat' },
   { id: 'earnings', icon: 'wallet-outline', label: 'Earnings', screen: 'Earnings' },
   { id: 'profile', icon: 'person-circle-outline', label: 'Profile', screen: 'Profile' },

@@ -24,6 +24,21 @@ export const colors = {
   blueDeep: '#1E3A8A',
   blueSoft: 'rgba(59,130,246,0.12)',
 
+  // Legacy aliases (old @shared/constants names used by pre-migration screens/components)
+  primary: '#D9FF00',          // was Linear indigo → now neon (CTA color)
+  accent: '#D9FF00',           // was Linear indigo → now neon
+  background: '#000000',       // alias of bg
+  backgroundLight: '#0F0F0F',  // alias of card
+  surface: '#0F0F0F',          // alias of card
+  surfaceLight: '#141516',     // elevated surface (old constants value)
+  borderLight: '#3F3F46',      // alias of borderStrong
+  textDark: '#6E6E6E',         // alias of textSubtle
+  white: '#FFFFFF',
+  instagram: '#E1306C',
+  youtube: '#FF0000',
+  tiktok: '#ffffff',
+  twitter: '#1DA1F2',
+
   black: '#000000',
 
   // Creator-specific

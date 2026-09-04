@@ -155,13 +155,13 @@ Same pattern. Tabs: `Dashboard`, `Discover`, `MyCampaigns`, `Chat`, `Profile`. T
 - All calls go through `@shared/services/api` (SecureStore tokens, refresh retry, `X-Device-Id`, network banner)
 
 ### Mock / hardcoded data (must strip before manual testing / prod)
-- **Dashboard** — `getcollab-influencer/src/screens/(main)/influencer/dashboard/index.tsx`: **mock data removed**. Stats render true zeros (from real bids/earnings/profile APIs), the activity feed shows a real empty state when notifications are empty, and the fake `12.5%` trend badge is gone. (Historical note: it previously inflated stats with `+4`/`+3` offsets, `₹48,750` fallback, and 3 hardcoded activity entries.)
+- **None remaining.** Dashboard mock data was removed earlier; the only stub (social Google/Facebook/Instagram sign-in buttons with a TODO in signin/signup) was removed on Sep 4 2026 — the backend's native Google endpoint (`POST /auth/google/token`, ID-token → session) exists, so re-add real buttons wired to `CompleteGoogleIDToken` once Google Sign-In SDK + client IDs are configured in the app.
 
 ### Missing vs getcollab web (gap list for prod readiness)
 - **Subscriptions/billing**: **Brand-only** — the Go backend (`getcollab-go/internal/billing/service.go` `Status()`) hardcodes influencer accounts as `{"plan": "INFLUENCER", "status": "active", "isActive": true}`; all quota/entitlement/checkout logic (campaign limits, marketplace search, influencer reports, seats, AI insights) applies to brand orgs via Razorpay. Influencer app needs NO paywall/checkout UI — at most a read-only plan row in Settings. The `apiService` subscription methods exist but are for brand-app use.
-- **Analytics**: `getAnalytics` / `getCampaignAnalytics` defined, nothing calls them.
+- **Analytics**: influencer Analytics screen now exists (`getcollab-influencer/src/screens/(main)/analytics/index.tsx`, registered in MainTabs, dashboard quick action). It derives stats from the influencer's own APIs (`getBids`, `getEarnings`, `getProfileWithMetrics`) — the backend `/analytics` endpoint is brand-org scoped and intentionally unused here. Includes: applications/win-rate, 30-day application activity chart (client-bucketed from bid dates), per-campaign bid aggregation, bid value, earnings, audience by platform. Still web-only: true timeseries/campaign-level analytics (needs an influencer-scoped backend endpoint; blocked by arch-lint edge `analytics→deals`).
 - **Campaign execution & escrow, deals/negotiation workflow, AI features, influencer reports, documents, affiliate/growth**: web-only (`getcollab` has services + components; mobile has none).
-- **Profile editing gaps**: `updatePricing`, `updateDemographics`, `getSettlements`, `uploadProfileImage`/`uploadCoverImage` defined but no influencer screen calls them.
+- **Profile editing**: **wired** — profile screen saves pricing via `updatePricing`, gender/age via `updateDemographics`, and avatar/cover via `uploadProfileImage`/`uploadCoverImage`. Earnings screen merges `getSettlements` history.
 - `getMarketplace` / `discoverCreators` unused — acceptable for the creator app.
 
 ## Common Patterns

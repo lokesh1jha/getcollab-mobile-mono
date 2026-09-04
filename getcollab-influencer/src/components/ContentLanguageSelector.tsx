@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, borderRadius, spacing } from "@shared/constants";
+import { colors, radius, spacing } from "@/src/theme";
 
 interface Props {
   value?: string;
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     height: 54,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: borderRadius.md,
+    borderRadius: radius.md,
     backgroundColor: colors.backgroundLight,
     paddingHorizontal: spacing.lg,
     flexDirection: "row",

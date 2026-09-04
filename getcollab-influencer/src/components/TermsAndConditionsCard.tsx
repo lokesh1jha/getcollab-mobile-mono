@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, borderRadius, spacing } from "@shared/constants";
+import { colors, radius, spacing } from "@/src/theme";
 
 interface Props {
   checked: boolean;
@@ -61,7 +61,7 @@ export default function TermsAndConditionsCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.backgroundLight,
-    borderRadius: borderRadius.xl,
+    borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.lg,
     borderWidth: 1,
