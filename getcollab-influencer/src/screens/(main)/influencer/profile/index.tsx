@@ -25,6 +25,9 @@ const SOCIAL_PLATFORMS = [
 
 interface ProfileData {
   name?: string; bio?: string; location?: string; categories?: string[]
+  gender?: string; ageRange?: string
+  pricePerPost?: number; pricePerReel?: number; pricePerStory?: number
+  pricePerVideo?: number; pricePerCampaign?: number
   instagramHandle?: string; youtubeHandle?: string; tiktokHandle?: string; twitterHandle?: string
   avatar?: string; coverImage?: string; portfolio?: string[]
   instagramMetrics?: { followers?: number }
@@ -44,6 +47,7 @@ export default function InfluencerProfile({ navigation }: any) {
   const [profile, setProfile] = useState<ProfileData>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState<null | 'avatar' | 'coverImage'>(null)
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState<ProfileData>({})
 
@@ -65,6 +69,10 @@ export default function InfluencerProfile({ navigation }: any) {
     setSaving(true)
     try {
       await apiService.updateProfile(form)
+      const { pricePerPost, pricePerReel, pricePerStory, pricePerVideo, pricePerCampaign, gender, ageRange, ...rest } = form as any
+      const pricing = { pricePerPost, pricePerReel, pricePerStory, pricePerVideo, pricePerCampaign }
+      if (Object.values(pricing).some(v => v != null)) await apiService.updatePricing(pricing)
+      if (gender != null || ageRange != null) await apiService.updateDemographics({ gender, ageRange })
       setProfile(form)
       setEditing(false)
     } catch (err: any) {
@@ -75,10 +83,20 @@ export default function InfluencerProfile({ navigation }: any) {
   const pickImage = async (field: 'avatar' | 'coverImage') => {
     const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
     if (status !== 'granted') { Alert.alert('Permission needed', 'Enable photo library access.'); return }
-    const result = await ImagePickerLib.launchImageLibraryAsync({ mediaTypes: ImagePickerLib.MediaTypeOptions.Images, quality: 0.8, base64: false })
-    if (!result.canceled && result.assets[0]?.uri) {
-      setForm(prev => ({ ...prev, [field]: result.assets[0].uri }))
-    }
+    const result = await ImagePickerLib.launchImageLibraryAsync({ mediaTypes: ImagePickerLib.MediaTypeOptions.Images, quality: 0.8, base64: true })
+    if (result.canceled || !result.assets[0]?.base64) return
+    const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`
+    setUploading(field)
+    try {
+      const res = field === 'avatar'
+        ? await apiService.uploadProfileImage(base64)
+        : await apiService.uploadCoverImage(base64)
+      const url = res?.url || res?.data?.url || res?.image || res?.coverImage || base64
+      setProfile(prev => ({ ...prev, [field]: url }))
+      setForm(prev => ({ ...prev, [field]: url }))
+    } catch (err: any) {
+      handleApiError(err, `Failed to upload ${field === 'avatar' ? 'profile photo' : 'cover image'}`)
+    } finally { setUploading(null) }
   }
 
   const toggleCategory = (cat: string) => {
@@ -108,7 +126,7 @@ export default function InfluencerProfile({ navigation }: any) {
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
           {/* Cover image */}
-          <Pressable onPress={editing ? () => pickImage('coverImage') : undefined} style={styles.coverWrap}>
+          <Pressable onPress={editing ? () => pickImage('coverImage') : undefined} style={({ pressed }) => [styles.coverWrap, editing && pressed && { opacity: 0.85 }]}>
             {form.coverImage ? (
               <Image source={{ uri: form.coverImage }} style={styles.coverImg} />
             ) : (
@@ -139,7 +157,7 @@ export default function InfluencerProfile({ navigation }: any) {
 
           {/* Avatar + basic info */}
           <View style={styles.profileInfo}>
-            <Pressable onPress={editing ? () => pickImage('avatar') : undefined} style={styles.avatarOuter}>
+            <Pressable onPress={editing ? () => pickImage('avatar') : undefined} style={({ pressed }) => [styles.avatarOuter, editing && pressed && { opacity: 0.85 }]}>
               {form.avatar ? (
                 <Image source={{ uri: form.avatar }} style={styles.avatar} />
               ) : (
@@ -149,7 +167,7 @@ export default function InfluencerProfile({ navigation }: any) {
               )}
               {editing && (
                 <View style={styles.avatarEditBadge}>
-                  <Ionicons name="camera" size={12} color="#000" />
+                  {uploading === 'avatar' ? <ActivityIndicator size={10} color="#000" /> : <Ionicons name="camera" size={12} color="#000" />}
                 </View>
               )}
             </Pressable>
@@ -246,6 +264,73 @@ export default function InfluencerProfile({ navigation }: any) {
               </View>
             </Section>
 
+            {/* Pricing */}
+            {editing && (
+              <Section title="Pricing">
+                <View style={{ gap: spacing.sm }}>
+                  {([
+                    ['pricePerPost', 'Per Post'],
+                    ['pricePerReel', 'Per Reel'],
+                    ['pricePerStory', 'Per Story'],
+                    ['pricePerVideo', 'Per Video'],
+                    ['pricePerCampaign', 'Full Campaign'],
+                  ] as const).map(([key, label]) => (
+                    <View key={key} style={styles.fieldWrap}>
+                      <Text style={styles.priceFieldLabel}>{label}</Text>
+                      <TextInput
+                        value={form[key] != null ? String(form[key]) : ''}
+                        onChangeText={v => setForm(p => ({ ...p, [key]: v.replace(/[^0-9]/g, '') ? Number(v.replace(/[^0-9]/g, '')) : undefined }))}
+                        placeholder="₹"
+                        placeholderTextColor={colors.textSubtle}
+                        keyboardType="numeric"
+                        style={styles.fieldInput}
+                      />
+                    </View>
+                  ))}
+                </View>
+              </Section>
+            )}
+            {!editing && (
+              <Section title="Pricing">
+                {(() => {
+                  const rows = ([
+                    ['pricePerPost', 'Per Post'],
+                    ['pricePerReel', 'Per Reel'],
+                    ['pricePerStory', 'Per Story'],
+                    ['pricePerVideo', 'Per Video'],
+                    ['pricePerCampaign', 'Full Campaign'],
+                  ] as const).filter(([key]) => profile[key] != null)
+                  if (!rows.length) return <Text style={styles.emptyNote}>No pricing set yet. Tap Edit to add rates.</Text>
+                  return (
+                    <View style={styles.listCard}>
+                      {rows.map(([key, label], i) => (
+                        <View key={key} style={[styles.priceRow, i < rows.length - 1 && styles.accountRowDivider]}>
+                          <Text style={styles.priceRowLabel}>{label}</Text>
+                          <Text style={styles.priceRowValue}>₹{Number(profile[key]).toLocaleString()}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )
+                })()}
+              </Section>
+            )}
+
+            {/* Demographics */}
+            {editing && (
+              <Section title="Demographics">
+                <View style={{ gap: spacing.sm }}>
+                  <View style={styles.fieldWrap}>
+                    <Ionicons name="person-outline" size={18} color={colors.textMuted} />
+                    <TextInput value={form.gender || ''} onChangeText={v => setForm(p => ({ ...p, gender: v }))} placeholder="Gender (e.g. Female)" placeholderTextColor={colors.textSubtle} style={styles.fieldInput} />
+                  </View>
+                  <View style={styles.fieldWrap}>
+                    <Ionicons name="people-outline" size={18} color={colors.textMuted} />
+                    <TextInput value={form.ageRange || ''} onChangeText={v => setForm(p => ({ ...p, ageRange: v }))} placeholder="Age range (e.g. 18-24)" placeholderTextColor={colors.textSubtle} style={styles.fieldInput} />
+                  </View>
+                </View>
+              </Section>
+            )}
+
             {/* Portfolio grid */}
             {(profile.portfolio || []).length > 0 && (
               <Section title="Portfolio">
@@ -331,6 +416,10 @@ const styles = StyleSheet.create({
   statLabel: { color: colors.textMuted, fontSize: 11, marginTop: 4, letterSpacing: 0.3 },
   sectionTitle: { color: colors.text, fontSize: 16, fontWeight: '700', letterSpacing: -0.3, marginBottom: spacing.md },
   bioText: { color: colors.textMuted, fontSize: 14, lineHeight: 21 },
+  priceFieldLabel: { color: colors.textMuted, fontSize: 13, fontWeight: '600', width: 110 },
+  priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  priceRowLabel: { color: colors.textMuted, fontSize: 14 },
+  priceRowValue: { color: colors.text, fontSize: 14, fontWeight: '700' },
   bioInput: { color: colors.text, fontSize: 14, lineHeight: 21, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, minHeight: 80, textAlignVertical: 'top' },
   fieldWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 13 },
   fieldInput: { flex: 1, color: colors.text, fontSize: 14, padding: 0 },

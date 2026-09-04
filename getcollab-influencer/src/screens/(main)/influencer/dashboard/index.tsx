@@ -10,7 +10,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { spacing } from '@/src/theme'
+import { colors, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { EmailVerificationBanner } from '@shared/components/EmailVerificationBanner'
@@ -18,26 +18,26 @@ import { EmailVerificationBanner } from '@shared/components/EmailVerificationBan
 const { width } = Dimensions.get('window')
 
 // ─── Palette ────────────────────────────────────────────────────────────────────
+// Palette mapped onto the app design system (@/src/theme) — no ad-hoc colors
 const P = {
-  bg: '#F8F9FA',
-  card: '#FFFFFF',
-  cardBorder: '#F0F0F0',
-  text: '#111827',
-  textMuted: '#6B7280',
-  textSubtle: '#9CA3AF',
-  heroBg: '#6C38E8',
-  heroText: '#FFFFFF',
-  heroSub: 'rgba(255,255,255,0.75)',
-  accent: '#6C38E8',
-  accentLight: '#7C3AED',
-  accentSoft: '#F3F0FF',
-  border: '#F0F0F0',
-  badgeGreenBg: '#D1FAE5',
-  badgeGreenText: '#059669',
-  badgeOrangeBg: '#FEF3C7',
-  badgeOrangeText: '#D97706',
-  badgeBlueBg: '#E0E7FF',
-  badgeBlueText: '#4F46E5',
+  bg: colors.bg,
+  card: colors.card,
+  cardBorder: colors.border,
+  text: colors.text,
+  textMuted: colors.textMuted,
+  textSubtle: colors.textSubtle,
+  heroBg: colors.card,
+  heroText: colors.neon,
+  heroSub: colors.textMuted,
+  accent: colors.neon,
+  accentSoft: colors.neonSoft,
+  border: colors.border,
+  badgeGreenBg: colors.successSoft,
+  badgeGreenText: colors.success,
+  badgeOrangeBg: colors.warningSoft,
+  badgeOrangeText: colors.warning,
+  badgeBlueBg: colors.blueSoft,
+  badgeBlueText: colors.blue,
 }
 
 interface Stats {
@@ -171,10 +171,10 @@ export default function InfluencerDashboard({ navigation }: any) {
       const totalBidsCount = bidsRes?.total || (Array.isArray(bids) ? bids.length : 0)
 
       setStats({
-        campaigns: activeBidsCount > 0 ? activeBidsCount + 4 : 12,
-        applications: totalBidsCount > 0 ? totalBidsCount + 3 : 8,
-        active: activeBidsCount > 0 ? activeBidsCount : 5,
-        earnings: earningsTotal > 0 ? earningsTotal : 48750,
+        campaigns: activeBidsCount,
+        applications: totalBidsCount,
+        active: activeBidsCount,
+        earnings: earningsTotal,
         followers: rawFollowers > 0 ? formatFollowers(rawFollowers) : '—',
         engagement: rawEng > 0 ? `${rawEng.toFixed(1)}%` : '—',
       })
@@ -183,11 +183,11 @@ export default function InfluencerDashboard({ navigation }: any) {
         ? notifs.slice(0, 5).map((n: any) => {
             const typeStr = (n.type || n.title || '').toLowerCase()
             const msgStr = (n.message || '').toLowerCase()
-            let pillText = 'Notification'
+            let pillText: string | undefined
             let pillType: 'green' | 'orange' | 'blue' = 'blue'
 
-            if (n.amount || msgStr.includes('payment') || msgStr.includes('earned') || msgStr.includes('₹')) {
-              pillText = n.amount ? `+₹${Number(n.amount).toLocaleString()}` : '+₹12,610'
+            if (n.amount) {
+              pillText = `+₹${Number(n.amount).toLocaleString()}`
               pillType = 'green'
             } else if (msgStr.includes('approve') || typeStr.includes('approve')) {
               pillText = 'Approved'
@@ -207,35 +207,7 @@ export default function InfluencerDashboard({ navigation }: any) {
               pillType,
             }
           })
-        : [
-            {
-              id: '1',
-              title: 'Payment received',
-              subtitle: 'Nike Summer Campaign · Today',
-              time: 'Today',
-              type: 'payment',
-              pillText: '+₹12,610',
-              pillType: 'green',
-            },
-            {
-              id: '2',
-              title: 'Application approved',
-              subtitle: 'Skincare Brand Collab · 14m ago',
-              time: '14m ago',
-              type: 'approval',
-              pillText: 'Approved',
-              pillType: 'green',
-            },
-            {
-              id: '3',
-              title: 'New campaign match',
-              subtitle: 'Travel Tech India',
-              time: '1h ago',
-              type: 'match',
-              pillText: 'Pending',
-              pillType: 'orange',
-            },
-          ]
+        : []
 
       setActivities(mappedNotifs)
     } catch (err: any) {
@@ -284,7 +256,7 @@ export default function InfluencerDashboard({ navigation }: any) {
                   <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
                 ) : (
                   <View style={styles.avatarFallback}>
-                    <Ionicons name="person" size={20} color="#6B7280" />
+                    <Ionicons name="person" size={20} color={P.textMuted} />
                   </View>
                 )}
               </Pressable>
@@ -300,10 +272,6 @@ export default function InfluencerDashboard({ navigation }: any) {
               <Text style={styles.heroAmount}>
                 ₹{stats.earnings.toLocaleString()}
               </Text>
-              <View style={styles.trendBadge}>
-                <Ionicons name="arrow-up" size={12} color="#34D399" />
-                <Text style={styles.trendText}>12.5%</Text>
-              </View>
             </View>
           </Animated.View>
 
@@ -339,6 +307,15 @@ export default function InfluencerDashboard({ navigation }: any) {
               )}
             </View>
 
+            {activities.length === 0 ? (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyIcon}>
+                  <Ionicons name="notifications-outline" size={26} color={P.textMuted} />
+                </View>
+                <Text style={styles.emptyTitle}>No activity yet</Text>
+                <Text style={styles.emptySub}>Bids, payments and approvals will appear here.</Text>
+              </View>
+            ) : (
             <View style={styles.activityList}>
               {activities.map((a, idx) => {
                 const isGreen = a.pillType === 'green'
@@ -369,6 +346,7 @@ export default function InfluencerDashboard({ navigation }: any) {
                 )
               })}
             </View>
+            )}
           </Animated.View>
 
           {/* ── Quick Actions / Shortcuts ───────────────────────────────── */}
@@ -422,7 +400,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: P.border,
   },
   avatarImg: {
     width: '100%',
@@ -431,7 +409,7 @@ const styles = StyleSheet.create({
   avatarFallback: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.elevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -440,13 +418,10 @@ const styles = StyleSheet.create({
   heroCard: {
     backgroundColor: P.heroBg,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: P.cardBorder,
     padding: 22,
     marginTop: 8,
-    shadowColor: P.heroBg,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 6,
   },
   heroHeader: {
     marginBottom: 12,
@@ -469,20 +444,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.8,
   },
-  trendBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    gap: 4,
-  },
-  trendText: {
-    color: '#34D399',
-    fontSize: 12,
-    fontWeight: '700',
-  },
 
   // ── Summary Stat Cards Row
   statsRow: {
@@ -500,7 +461,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: P.cardBorder,
-    shadowColor: '#000',
+    shadowColor: colors.bg,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 8,
@@ -555,7 +516,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: P.cardBorder,
-    shadowColor: '#000',
+    shadowColor: colors.bg,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.02,
     shadowRadius: 6,
@@ -582,6 +543,32 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  // ── Empty state
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    gap: 8,
+  },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: P.card,
+    borderWidth: 1,
+    borderColor: P.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    color: P.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  emptySub: {
+    color: P.textMuted,
+    fontSize: 13,
+  },
+
   // ── Action Grid
   actionGrid: {
     flexDirection: 'row',
@@ -597,7 +584,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 10,
     minHeight: 86,
-    shadowColor: '#000',
+    shadowColor: colors.bg,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.02,
     shadowRadius: 6,

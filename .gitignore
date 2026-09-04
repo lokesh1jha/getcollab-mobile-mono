@@ -13,3 +13,6 @@ web-build/
 .env
 .env.local
 .DS_Store
+
+# graphify knowledge graph (per-repo)
+graphify-out/

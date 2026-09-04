@@ -127,7 +127,7 @@ class NotificationService {
     } else if (data.type === 'bid' && data.bidId) {
       navigateNested('Bids', { bidId: data.bidId })
     } else if (data.type === 'subscription') {
-      navigateNested('Subscription')
+      navigateNested('Dashboard')
     }
   }
 
