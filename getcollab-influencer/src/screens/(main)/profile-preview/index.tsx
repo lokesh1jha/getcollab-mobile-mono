@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing } from '@shared/constants'
+import { colors, spacing } from '@/src/theme'
 import { Card } from '@shared/components/ui'
 import { PortfolioGallery } from '@shared/components/PortfolioGallery'
 import apiService from '@shared/services/api'

@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, spacing } from "@shared/constants";
+import { colors, spacing } from "@/src/theme";
 
 interface Props {
   currentStep: number;

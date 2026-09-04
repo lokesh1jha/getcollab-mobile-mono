@@ -102,7 +102,6 @@ export default function SettingsScreen({ navigation }: any) {
           <SectionHeader title="Account" />
           <View style={styles.listCard}>
             <LinkRow icon="lock-closed-outline" label="Change Password" onPress={() => navigation?.navigate('ChangePassword')} divider />
-            <LinkRow icon="receipt-outline" label="Subscription" onPress={() => navigation?.navigate('Subscription')} divider />
             <LinkRow icon="notifications-outline" label="Notification Preferences" onPress={() => navigation?.navigate('Notifications')} />
           </View>
 

@@ -1,0 +1,6 @@
+# Generated native folders (expo prebuild) — not product code
+ios
+android
+web-build
+Pods
+DerivedData

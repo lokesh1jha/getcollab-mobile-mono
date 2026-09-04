@@ -14,6 +14,7 @@ import InfluencerChat from '../screens/(main)/influencer/chat'
 import InfluencerChatDetail from '../screens/(main)/influencer/chat-detail/[id]'
 import InfluencerProfile from '../screens/(main)/influencer/profile'
 import EarningsScreen from '../screens/(main)/earnings'
+import AnalyticsScreen from '../screens/(main)/analytics'
 import DisputesScreen from '../screens/(main)/disputes'
 import SettingsScreen from '../screens/(main)/settings'
 import NotificationsScreen from '../screens/(main)/notifications'
@@ -132,6 +133,7 @@ function InfluencerStack() {
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Change Password' }} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ProfilePreview" component={ProfilePreviewScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Public Profile' }} />
+      <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Analytics' }} />
     </Stack.Navigator>
   )
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing } from '@shared/constants'
+import { colors, spacing } from '@/src/theme'
 import { Button } from '@shared/components/ui/Button'
 import { Input } from '@shared/components/ui/Input'
 import { useAuthStore } from '@shared/stores/auth-store'
@@ -112,8 +112,8 @@ export default function OnboardingScreen({ navigation }: Props) {
         currency: 'INR',
       })
       await fetchCurrentUser()
-      Alert.alert('Welcome aboard!', 'Your brand profile is set up. Start your free trial to launch campaigns.', [
-        { text: "Let's go", onPress: () => navigation?.navigate('Subscription') },
+      Alert.alert('Welcome aboard!', 'Your brand profile is set up. Manage billing from the web dashboard to launch campaigns.', [
+        { text: 'Go to Dashboard', onPress: () => navigation?.navigate('Dashboard') },
       ])
     } catch (e) {
       handleApiError(e, 'Failed to complete onboarding')

@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, spacing, borderRadius } from "@shared/constants";
+import { colors, spacing, radius } from "@/src/theme";
 
 interface Props {
   value: string[];
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: borderRadius.full,
+    borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.background,
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: borderRadius.full,
+    borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.textMuted,
   },

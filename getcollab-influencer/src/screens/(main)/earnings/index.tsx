@@ -30,9 +30,18 @@ export default function EarningsScreen({ navigation }: any) {
   const load = useCallback(async (spinner = false) => {
     if (spinner) setLoading(true)
     try {
-      const res = await apiService.getEarnings()
-      const list: Settlement[] = res?.data || res?.requests || res?.earnings || (Array.isArray(res) ? res : [])
-      setSettlements(Array.isArray(list) ? list : [])
+      // getSettlements and getEarnings both serve /earnings — merge and dedupe by id.
+      const [earningsRes, settlementsRes] = await Promise.all([
+        apiService.getEarnings(),
+        apiService.getSettlements().catch(() => null),
+      ])
+      const earningsList: Settlement[] = earningsRes?.data || earningsRes?.requests || earningsRes?.earnings || (Array.isArray(earningsRes) ? earningsRes : [])
+      const settlementsList: Settlement[] = settlementsRes?.data || settlementsRes?.requests || settlementsRes?.earnings || (Array.isArray(settlementsRes) ? settlementsRes : [])
+      const byId = new Map<string, Settlement>()
+      for (const s of [...(Array.isArray(earningsList) ? earningsList : []), ...(Array.isArray(settlementsList) ? settlementsList : [])]) {
+        if (s?.id) byId.set(s.id, s)
+      }
+      setSettlements(Array.from(byId.values()))
     } catch (err: any) {
       handleApiError(err, 'Failed to load earnings')
     } finally { setLoading(false); setRefreshing(false) }

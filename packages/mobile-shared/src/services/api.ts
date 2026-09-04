@@ -653,6 +653,44 @@ class ApiService {
     })
   }
 
+  // ------- Collabs (deal lifecycle, participant side) -------
+  async getDeals(params?: Record<string, any>): Promise<any> {
+    const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
+    return this.request(`/collabs${queryString}`)
+  }
+
+  async getDeal(id: string): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(id)}`)
+  }
+
+  async acceptDealContract(id: string): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(id)}/contract/accept`, { method: 'POST', body: JSON.stringify({}) })
+  }
+
+  async startDeal(id: string): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(id)}/start`, { method: 'POST', body: JSON.stringify({}) })
+  }
+
+  async submitDealScript(id: string, content: string): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(id)}/assets/script`, { method: 'POST', body: JSON.stringify({ content }) })
+  }
+
+  async submitDealMedia(id: string, payload: Record<string, any>): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(id)}/assets/media`, { method: 'POST', body: JSON.stringify(payload) })
+  }
+
+  async upsertDealProof(id: string, payload: Record<string, any>): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(id)}/proof`, { method: 'PUT', body: JSON.stringify(payload) })
+  }
+
+  async submitDealProof(id: string, payload: Record<string, any>): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(id)}/proof/submit`, { method: 'POST', body: JSON.stringify(payload) })
+  }
+
+  async getDealShipping(id: string): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(id)}/shipping`)
+  }
+
   // ------- Generic -------
   async get<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint)
