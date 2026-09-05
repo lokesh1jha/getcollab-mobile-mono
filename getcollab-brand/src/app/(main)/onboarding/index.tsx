@@ -121,7 +121,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
     }
     setSubmitting(true)
     try {
-      await apiService.submitBrandOnboardingStep1(brandStep1)
+      await apiService.patchOnboarding({ role: 'brand', step: 'brand.profile', patch: { profile: brandStep1 } })
       setStep(2)
     } catch (e) {
       handleApiError(e, 'Failed to save')
@@ -145,15 +145,21 @@ export default function OnboardingScreen({ navigation, route }: Props) {
     }
     setSubmitting(true)
     try {
-      await apiService.submitBrandOnboardingStep2({
-        campaignTypes: brandStep2.campaignTypes,
-        targetAudience: {
-          ageRanges: brandStep2.ageRanges,
-          genders: brandStep2.genders,
-          location: brandStep2.location,
+      await apiService.patchOnboarding({
+        role: 'brand',
+        step: 'brand.campaigns',
+        patch: {
+          campaigns: {
+            campaignTypes: brandStep2.campaignTypes,
+            targetAudience: {
+              ageRanges: brandStep2.ageRanges,
+              genders: brandStep2.genders,
+              location: brandStep2.location,
+            },
+            creatorCategories: brandStep2.creatorCategories,
+            objectives: brandStep2.objectives,
+          },
         },
-        creatorCategories: brandStep2.creatorCategories,
-        objectives: brandStep2.objectives,
       })
       setStep(3)
     } catch (e) {
@@ -170,14 +176,21 @@ export default function OnboardingScreen({ navigation, route }: Props) {
     }
     setSubmitting(true)
     try {
-      await apiService.submitBrandOnboardingStep3({
-        budgetRange: brandStep3.budgetRange,
-        companySize: brandStep3.companySize,
-        timeline: brandStep3.timeline,
-        frequency: brandStep3.frequency,
-        currency: 'INR',
-        termsAccepted: true,
+      await apiService.patchOnboarding({
+        role: 'brand',
+        step: 'brand.scale',
+        patch: {
+          scale: {
+            budgetRange: brandStep3.budgetRange,
+            companySize: brandStep3.companySize,
+            timeline: brandStep3.timeline,
+            frequency: brandStep3.frequency,
+            currency: 'INR',
+            termsAccepted: true,
+          },
+        },
       })
+      await apiService.completeOnboarding('brand')
       await fetchCurrentUser()
       navigation?.reset({
         index: 1,
@@ -205,11 +218,18 @@ export default function OnboardingScreen({ navigation, route }: Props) {
     }
     setSubmitting(true)
     try {
-      await apiService.submitInfluencerOnboardingStep1({
-        bio: infStep1.bio,
-        location: infStep1.location,
-        categories: infStep1.categories,
-        phoneNumber: infStep1.phoneNumber || undefined,
+      await apiService.patchOnboarding({
+        role: 'influencer',
+        step: 'influencer.profile',
+        patch: {
+          profile: {
+            name: user?.name || '',
+            bio: infStep1.bio,
+            city: infStep1.location,
+            categories: infStep1.categories,
+            phone: infStep1.phoneNumber || undefined,
+          },
+        },
       })
       setStep(2)
     } catch (e) {
@@ -227,13 +247,18 @@ export default function OnboardingScreen({ navigation, route }: Props) {
     }
     setSubmitting(true)
     try {
-      await apiService.submitInfluencerOnboardingStep2({
-        handles: {
-          instagram: infStep2.instagram ? { handle: infStep2.instagram, followers: infStep2.instagramFollowers } : undefined,
-          youtube: infStep2.youtube ? { channelUrl: infStep2.youtube, subscribers: infStep2.youtubeSubscribers } : undefined,
-          tiktok: infStep2.tiktok ? { handle: infStep2.tiktok, followers: infStep2.tiktokFollowers } : undefined,
+      await apiService.patchOnboarding({
+        role: 'influencer',
+        step: 'influencer.socials',
+        patch: {
+          socials: {
+            instagram: infStep2.instagram || undefined,
+            youtube: infStep2.youtube || undefined,
+            tiktok: infStep2.tiktok || undefined,
+          },
         },
       })
+      await apiService.completeOnboarding('influencer')
       await fetchCurrentUser()
       navigation?.reset({
         index: 0,

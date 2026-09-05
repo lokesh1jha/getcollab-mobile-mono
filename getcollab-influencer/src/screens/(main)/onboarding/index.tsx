@@ -1,12 +1,20 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Image, TextInput, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing } from '@/src/theme'
+import * as ImagePicker from 'expo-image-picker'
+import { Ionicons } from '@expo/vector-icons'
+import { colors, spacing, radius } from '@/src/theme'
 import { Button } from '@shared/components/ui/Button'
 import { Input } from '@shared/components/ui/Input'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { useReferenceDataStore, selectCategories, selectLanguages, selectCampaignTypes, selectObjectives } from '@shared/stores/reference-data-store'
+import type { RefItem } from '@shared/stores/reference-data-store'
 import apiService, { handleApiError } from '@shared/services/api'
+
+// Web pins these first in the language picker (creator flow suggestions).
+const SUGGESTED_LANGUAGES = ['English', 'Hindi']
+// Same fallback list as the web start-profile country select.
+const FALLBACK_COUNTRIES = ['India', 'United States', 'United Kingdom', 'UAE']
 
 interface Props {
   navigation?: any
@@ -14,6 +22,9 @@ interface Props {
 
 const AGE_RANGES = ['13-17', '18-24', '25-34', '35-44', '45-54', '55+']
 const GENDERS = ['Male', 'Female', 'Non-binary', 'All']
+// Stable empty — a fresh [] per call would re-trigger the useSyncExternalStore
+// getSnapshot infinite loop (see reference-data-store selectors).
+const NO_COUNTRIES: RefItem[] = []
 
 export default function OnboardingScreen({ navigation }: Props) {
   const { user, fetchCurrentUser } = useAuthStore()
@@ -21,6 +32,7 @@ export default function OnboardingScreen({ navigation }: Props) {
   const languages = useReferenceDataStore(selectLanguages)
   const campaignTypes = useReferenceDataStore(selectCampaignTypes)
   const objectives = useReferenceDataStore(selectObjectives)
+  const countries = useReferenceDataStore((s) => s.data?.countries ?? NO_COUNTRIES)
   const role = user?.role === 'brand' ? 'brand' : 'influencer'
   const totalSteps = role === 'brand' ? 3 : 2
   const [step, setStep] = useState(1)
@@ -39,7 +51,9 @@ export default function OnboardingScreen({ navigation }: Props) {
   const [brandStep3, setBrandStep3] = useState({ budgetRange: '', companySize: '', timeline: '', frequency: '' })
 
   // Influencer state
-  const [infStep1, setInfStep1] = useState({ bio: '', location: '', phoneNumber: '', categories: [] as string[], languages: [] as string[] })
+  const [infStep1, setInfStep1] = useState({ bio: '', country: '', state: '', phoneNumber: '', categories: [] as string[], languages: [] as string[] })
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [infStep2, setInfStep2] = useState({
     instagram: '',
     instagramFollowers: '',
@@ -59,7 +73,7 @@ export default function OnboardingScreen({ navigation }: Props) {
     }
     setSubmitting(true)
     try {
-      await apiService.submitBrandOnboardingStep1(brandStep1)
+      await apiService.patchOnboarding({ role: 'brand', step: 'brand.profile', patch: { profile: brandStep1 } })
       setStep(2)
     } catch (e) {
       handleApiError(e, 'Failed to save')
@@ -83,15 +97,21 @@ export default function OnboardingScreen({ navigation }: Props) {
     }
     setSubmitting(true)
     try {
-      await apiService.submitBrandOnboardingStep2({
-        campaignTypes: brandStep2.campaignTypes,
-        targetAudience: {
-          ageRanges: brandStep2.ageRanges,
-          genders: brandStep2.genders,
-          location: brandStep2.location,
+      await apiService.patchOnboarding({
+        role: 'brand',
+        step: 'brand.campaigns',
+        patch: {
+          campaigns: {
+            campaignTypes: brandStep2.campaignTypes,
+            targetAudience: {
+              ageRanges: brandStep2.ageRanges,
+              genders: brandStep2.genders,
+              location: brandStep2.location,
+            },
+            creatorCategories: brandStep2.creatorCategories,
+            objectives: brandStep2.objectives,
+          },
         },
-        creatorCategories: brandStep2.creatorCategories,
-        objectives: brandStep2.objectives,
       })
       setStep(3)
     } catch (e) {
@@ -104,13 +124,23 @@ export default function OnboardingScreen({ navigation }: Props) {
   const handleBrandStep3 = async () => {
     setSubmitting(true)
     try {
-      await apiService.submitBrandOnboardingStep3({
-        budgetRange: brandStep3.budgetRange,
-        companySize: brandStep3.companySize,
-        timeline: brandStep3.timeline,
-        frequency: brandStep3.frequency,
-        currency: 'INR',
+      await apiService.patchOnboarding({
+        role: 'brand',
+        step: 'brand.scale',
+        patch: {
+          scale: {
+            budgetRange: brandStep3.budgetRange,
+            companySize: brandStep3.companySize,
+            timeline: brandStep3.timeline,
+            frequency: brandStep3.frequency,
+            currency: 'INR',
+            // Web's payments step sets this to trigger server-side terms
+            // acceptance (service.Patch: scale.termsAccepted → AcceptTerms).
+            termsAccepted: true,
+          },
+        },
       })
+      await apiService.completeOnboarding('brand')
       await fetchCurrentUser()
       Alert.alert('Welcome aboard!', 'Your brand profile is set up. Manage billing from the web dashboard to launch campaigns.', [
         { text: 'Go to Dashboard', onPress: () => navigation?.navigate('Dashboard') },
@@ -122,13 +152,40 @@ export default function OnboardingScreen({ navigation }: Props) {
     }
   }
 
+  const pickAvatar = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Enable photo library access to add a profile photo.')
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaType.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+      base64: true,
+    })
+    if (result.canceled || !result.assets[0]?.base64) return
+    const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`
+    setUploadingAvatar(true)
+    try {
+      // Same endpoint the Profile screen uses — persists avatar_key server-side.
+      const res = await apiService.uploadProfileImage(base64)
+      setAvatarUrl(res?.url || res?.data?.url || res?.image || base64)
+    } catch (e) {
+      handleApiError(e, 'Failed to upload photo')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   const handleInfStep1 = async () => {
     if (!infStep1.bio.trim() || infStep1.bio.trim().length < 20) {
       Alert.alert('Bio too short', 'Tell brands about yourself (at least 20 characters).')
       return
     }
-    if (!infStep1.location.trim()) {
-      Alert.alert('Location', 'Add your city/country.')
+    if (!infStep1.country.trim()) {
+      Alert.alert('Location', 'Select your country.')
       return
     }
     if (infStep1.categories.length === 0) {
@@ -141,12 +198,23 @@ export default function OnboardingScreen({ navigation }: Props) {
     }
     setSubmitting(true)
     try {
-      await apiService.submitInfluencerOnboardingStep1({
-        bio: infStep1.bio,
-        location: infStep1.location,
-        categories: infStep1.categories,
-        languages: infStep1.languages,
-        phoneNumber: infStep1.phoneNumber || undefined,
+      // profile patch upserts catalog.influencer_profile on the backend —
+      // without it /bids returns 403 "influencer profile required".
+      // Field keys mirror the web wizard's buildPatch (onboarding-api.ts).
+      await apiService.patchOnboarding({
+        role: 'influencer',
+        step: 'influencer.profile',
+        patch: {
+          profile: {
+            name: user?.name || '',
+            bio: infStep1.bio,
+            country: infStep1.country,
+            state: infStep1.state,
+            categories: infStep1.categories,
+            languages: infStep1.languages,
+            phone: infStep1.phoneNumber || undefined,
+          },
+        },
       })
       setStep(2)
     } catch (e) {
@@ -164,13 +232,18 @@ export default function OnboardingScreen({ navigation }: Props) {
     }
     setSubmitting(true)
     try {
-      await apiService.submitInfluencerOnboardingStep2({
-        handles: {
-          instagram: infStep2.instagram ? { handle: infStep2.instagram, followers: infStep2.instagramFollowers } : undefined,
-          youtube: infStep2.youtube ? { channelUrl: infStep2.youtube, subscribers: infStep2.youtubeSubscribers } : undefined,
-          tiktok: infStep2.tiktok ? { handle: infStep2.tiktok, followers: infStep2.tiktokFollowers } : undefined,
+      await apiService.patchOnboarding({
+        role: 'influencer',
+        step: 'influencer.socials',
+        patch: {
+          socials: {
+            instagram: infStep2.instagram || undefined,
+            youtube: infStep2.youtube || undefined,
+            tiktok: infStep2.tiktok || undefined,
+          },
         },
       })
+      await apiService.completeOnboarding('influencer')
       await fetchCurrentUser()
       Alert.alert('You\'re all set!', 'Time to find campaigns that match your style.', [
         { text: 'Discover Campaigns', onPress: () => navigation?.navigate('Discover') },
@@ -181,6 +254,26 @@ export default function OnboardingScreen({ navigation }: Props) {
       setSubmitting(false)
     }
   }
+
+  const renderAvatarPicker = () => (
+    <View style={styles.avatarWrap}>
+      <Pressable style={styles.avatar} onPress={pickAvatar} disabled={uploadingAvatar}>
+        {avatarUrl ? (
+          <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
+        ) : (
+          <Ionicons name="person" size={40} color={colors.textSubtle} />
+        )}
+        <View style={styles.avatarEdit}>
+          {uploadingAvatar ? (
+            <ActivityIndicator size="small" color={colors.bg} />
+          ) : (
+            <Ionicons name="pencil" size={13} color={colors.bg} />
+          )}
+        </View>
+      </Pressable>
+      <Text style={styles.avatarHint}>{avatarUrl ? 'Tap to change photo' : 'Add a profile photo'}</Text>
+    </View>
+  )
 
   const renderProgress = () => (
     <View style={styles.progressBar}>
@@ -286,29 +379,49 @@ export default function OnboardingScreen({ navigation }: Props) {
 
   // ----- Influencer steps -----
   if (role === 'influencer' && step === 1) {
+    const countryOptions = (countries.length > 0
+      ? countries.map((c) => c.label)
+      : FALLBACK_COUNTRIES
+    ).map((label) => ({ label, value: label }))
+    const languageOptions = languages.map((l) => ({ label: l.label, value: l.slug }))
+    const categoryOptions = categories.map((label) => ({ label, value: label }))
     return (
       <Wrapper>
         <Text style={styles.heading}>Tell brands about you</Text>
         <Text style={styles.subheading}>Step 1 of 2 · Creator profile</Text>
         {renderProgress()}
 
+        {renderAvatarPicker()}
+
         <Input label="Bio *" value={infStep1.bio} onChangeText={(v) => setInfStep1({ ...infStep1, bio: v })} placeholder="At least 20 characters" multiline style={styles.input} />
-        <Input label="Location *" value={infStep1.location} onChangeText={(v) => setInfStep1({ ...infStep1, location: v })} placeholder="City, Country" style={styles.input} />
         <Input label="Phone (optional)" value={infStep1.phoneNumber} onChangeText={(v) => setInfStep1({ ...infStep1, phoneNumber: v })} keyboardType="phone-pad" style={styles.input} />
 
+        <SectionLabel label="Country *" />
+        <MultiSearchSelect
+          options={countryOptions}
+          selected={infStep1.country ? [infStep1.country] : []}
+          onToggle={(v) => setInfStep1({ ...infStep1, country: infStep1.country === v ? '' : v })}
+          placeholder="Search country"
+          single
+        />
+        <Input label="State" value={infStep1.state} onChangeText={(v) => setInfStep1({ ...infStep1, state: v })} placeholder="e.g. Maharashtra" style={styles.input} />
+
         <SectionLabel label="Categories *" />
-        {renderChips(categories, infStep1.categories, (v) => setInfStep1({ ...infStep1, categories: toggle(infStep1.categories, v) }))}
+        <MultiSearchSelect
+          options={categoryOptions}
+          selected={infStep1.categories}
+          onToggle={(v) => setInfStep1({ ...infStep1, categories: toggle(infStep1.categories, v) })}
+          placeholder="Search categories"
+        />
 
         <SectionLabel label="Content Languages *" />
-        {renderChips(
-          languages.map((l) => l.label),
-          languages.filter((l) => infStep1.languages.includes(l.slug)).map((l) => l.label),
-          (label) => {
-            const lang = languages.find((l) => l.label === label)
-            if (!lang) return
-            setInfStep1({ ...infStep1, languages: toggle(infStep1.languages, lang.slug) })
-          },
-        )}
+        <MultiSearchSelect
+          options={languageOptions}
+          selected={infStep1.languages}
+          onToggle={(v) => setInfStep1({ ...infStep1, languages: toggle(infStep1.languages, v) })}
+          placeholder="Search languages"
+          suggestions={SUGGESTED_LANGUAGES}
+        />
 
         <Button title={submitting ? 'Saving...' : 'Continue'} onPress={handleInfStep1} loading={submitting} disabled={submitting} fullWidth style={{ marginTop: spacing.lg }} />
       </Wrapper>
@@ -353,6 +466,179 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => (
 
 const SectionLabel = ({ label }: { label: string }) => <Text style={styles.sectionLabel}>{label}</Text>
 
+// Search-enabled multi/single select dropdown (web parity: searchable select
+// fields with suggestions). Pure RN — inline expanding list under the field.
+function MultiSearchSelect({
+  options,
+  selected,
+  onToggle,
+  placeholder,
+  single = false,
+  suggestions = [],
+}: {
+  options: Array<{ label: string; value: string }>
+  selected: string[]
+  onToggle: (value: string) => void
+  placeholder: string
+  single?: boolean
+  suggestions?: string[]
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+
+  const q = query.trim().toLowerCase()
+  const filtered = q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options
+  const selectedLabels = options.filter((o) => selected.includes(o.value)).map((o) => o.label)
+  // Suggestion chips resolve to the option's value (slug) so selection state
+  // stays consistent with rows picked from the list.
+  const suggested = suggestions
+    .map((s) => options.find((o) => o.value === s || o.label === s))
+    .filter((o): o is { label: string; value: string } => !!o && !selected.includes(o.value))
+
+  return (
+    <View style={ss.wrap}>
+      {selectedLabels.length > 0 && !open && (
+        <View style={ss.chipRow}>
+          {selectedLabels.map((label) => (
+            <View key={label} style={ss.chip}>
+              <Text style={ss.chipText}>{label}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+      <Pressable style={ss.field} onPress={() => setOpen(!open)}>
+        <Ionicons name="search" size={18} color={colors.textMuted} />
+        <Text
+          style={[ss.fieldText, selectedLabels.length === 0 && ss.fieldPlaceholder]}
+          numberOfLines={1}
+        >
+          {selectedLabels.length > 0 ? selectedLabels.join(', ') : placeholder}
+        </Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textMuted} />
+      </Pressable>
+      {open && (
+        <View style={ss.dropdown}>
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Type to filter..."
+            placeholderTextColor={colors.textSubtle}
+            style={ss.search}
+          />
+          {suggested.length > 0 && q === '' && (
+            <View style={ss.suggestRow}>
+              <Text style={ss.suggestLabel}>Suggested</Text>
+              <View style={ss.suggestChips}>
+                {suggested.map((o) => (
+                  <TouchableOpacity key={o.value} style={ss.suggestChip} onPress={() => onToggle(o.value)}>
+                    <Text style={ss.suggestChipText}>+ {o.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+          <ScrollView style={ss.list} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+            {filtered.length === 0 && <Text style={ss.empty}>No matches</Text>}
+            {filtered.map((o) => {
+              const isSel = selected.includes(o.value)
+              return (
+                <TouchableOpacity
+                  key={o.value}
+                  style={[ss.row, isSel && ss.rowSel]}
+                  onPress={() => {
+                    onToggle(o.value)
+                    if (single) setOpen(false)
+                  }}
+                >
+                  <Text style={[ss.rowText, isSel && ss.rowTextSel]}>{o.label}</Text>
+                  {isSel && <Ionicons name="checkmark" size={18} color={colors.neon} />}
+                </TouchableOpacity>
+              )
+            })}
+          </ScrollView>
+          <TouchableOpacity
+            style={ss.doneBtn}
+            onPress={() => {
+              setOpen(false)
+              setQuery('')
+            }}
+          >
+            <Text style={ss.doneText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  )
+}
+
+const ss = StyleSheet.create({
+  wrap: { marginBottom: spacing.md },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 6 },
+  chip: {
+    backgroundColor: colors.neonSoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  chipText: { color: colors.neon, fontSize: 13, fontWeight: '600' },
+  field: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 52,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.elevated,
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+  },
+  fieldText: { flex: 1, color: colors.text, fontSize: 15 },
+  fieldPlaceholder: { color: colors.textSubtle },
+  dropdown: {
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+  },
+  search: {
+    color: colors.text,
+    fontSize: 15,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  suggestRow: { paddingHorizontal: 14, paddingTop: 10 },
+  suggestLabel: { color: colors.textSubtle, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 6 },
+  suggestChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  suggestChip: {
+    borderWidth: 1,
+    borderColor: colors.blue,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  suggestChipText: { color: colors.blue, fontSize: 12, fontWeight: '600' },
+  list: { maxHeight: 220 },
+  empty: { color: colors.textSubtle, fontSize: 13, padding: 14 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  rowSel: { backgroundColor: colors.neonSoft },
+  rowText: { color: colors.text, fontSize: 15 },
+  rowTextSel: { color: colors.neon, fontWeight: '600' },
+  doneBtn: { alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border },
+  doneText: { color: colors.neon, fontSize: 14, fontWeight: '700' },
+})
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing.xl },
@@ -384,4 +670,31 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 13, color: colors.text },
   chipTextActive: { color: colors.white },
   actionRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
+  avatarWrap: { alignItems: 'center', marginBottom: spacing.md },
+  avatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImg: { width: '100%', height: '100%' },
+  avatarEdit: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.neon,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.bg,
+  },
+  avatarHint: { color: colors.textSubtle, fontSize: 12, marginTop: 6 },
 })

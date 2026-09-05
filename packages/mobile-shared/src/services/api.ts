@@ -803,39 +803,26 @@ class ApiService {
   }
 
   // ------- Onboarding -------
-  async submitBrandOnboardingStep1(data: any): Promise<any> {
-    return this.request('/onboarding/brand/profile', {
-      method: 'POST',
-      body: JSON.stringify(data),
+  // Unified step-save: mirrors getcollab web OnboardingService.patch.
+  // The legacy /onboarding/brand/* and /onboarding/influencer/* step
+  // endpoints were removed from the Go backend — everything flows through
+  // PATCH /onboarding ({ role?, step?, patch }) now.
+  async patchOnboarding(body: { role?: string; step?: string; patch: Record<string, unknown> }): Promise<any> {
+    return this.request('/onboarding', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
     })
   }
 
-  async submitBrandOnboardingStep2(data: any): Promise<any> {
-    return this.request('/onboarding/brand/campaigns', {
+  async completeOnboarding(role?: string): Promise<any> {
+    return this.request('/onboarding/complete', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(role ? { role } : {}),
     })
   }
 
-  async submitBrandOnboardingStep3(data: any): Promise<any> {
-    return this.request('/onboarding/brand/scale', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async submitInfluencerOnboardingStep1(data: any): Promise<any> {
-    return this.request('/onboarding/influencer/profile', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async submitInfluencerOnboardingStep2(data: any): Promise<any> {
-    return this.request('/onboarding/influencer/socials', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+  async resetOnboarding(): Promise<any> {
+    return this.request('/onboarding/reset', { method: 'POST', body: JSON.stringify({}) })
   }
 
   // ------- Chat image upload + invitations -------

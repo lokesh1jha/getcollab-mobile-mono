@@ -88,10 +88,18 @@ class NotificationService {
     */
    private async getPushToken(): Promise<string | null> {
     try {
-      const token = await Notifications.getExpoPushTokenAsync()
+      // Bare workflow: getExpoPushTokenAsync throws ERR_NOTIFICATIONS_NO_EXPERIENCE_ID
+      // unless an EAS projectId is configured (or passed explicitly).
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined
+      if (!projectId) {
+        console.warn('[notifications] No EAS projectId configured — skipping push token registration')
+        return null
+      }
+      const token = await Notifications.getExpoPushTokenAsync({ projectId })
       return token.data
     } catch (error) {
-      console.error('Failed to get push token:', error)
+      // Non-fatal: expected on iOS simulators (no push support) and unconfigured builds.
+      console.warn('Failed to get push token:', error)
       return null
     }
   }
