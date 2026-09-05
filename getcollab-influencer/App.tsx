@@ -18,8 +18,8 @@ import SignInScreen from './src/screens/(auth)/signin'
 import SignUpScreen from './src/screens/(auth)/signup'
 import MainTabs from './src/navigation/MainTabs'
 import MaintenanceScreen from '@shared/screens/MaintenanceScreen'
-import OnboardingNavigator from './src/navigation/OnboardingNavigator'
 import VerifyEmailScreen from './src/screens/(main)/verify-email'
+import OnboardingScreen from './src/screens/(main)/onboarding'
 
 const Stack = createNativeStackNavigator()
 
@@ -58,6 +58,7 @@ function SplashScreen() {
 export default function App() {
   const { appReady, apiError, initializeApp } = useAppInit({ splashDelayMs: 1500 })
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const onboardingCompleted = useAuthStore((s) => s.user?.onboardingCompleted !== false)
 
   useEffect(() => {
     apiService.setOnUnauthorizedCallback(() => useAuthStore.getState().signOut())
@@ -95,8 +96,9 @@ export default function App() {
                   <Stack.Screen name="ForgotPassword" getComponent={() => require('./src/screens/(auth)/forgot-password').default} options={{ headerShown: false }} />
                   <Stack.Screen name="ResetPassword" getComponent={() => require('./src/screens/(auth)/reset-password').default} options={{ headerShown: false }} />
                   <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ headerShown: false }} />
-                  <Stack.Screen name="Onboarding" component={OnboardingNavigator} options={{ headerShown: false }} />
                 </>
+              ) : !onboardingCompleted ? (
+                <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
               ) : (
                 <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
               )}

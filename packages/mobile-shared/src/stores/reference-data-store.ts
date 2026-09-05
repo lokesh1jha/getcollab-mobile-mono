@@ -34,11 +34,37 @@ export const useReferenceDataStore = create<ReferenceDataState>((set, get) => ({
   },
 }))
 
+// Stable shared empty — selectors must never return a fresh [] per call,
+// otherwise useSyncExternalStore sees a new snapshot every render and React
+// throws "The result of getSnapshot should be cached" / infinite-loop.
+const EMPTY: string[] = []
+
+// Label arrays are derived from `data`, so cache them per data instance via
+// WeakMap: same data → same array reference for the life of that snapshot.
+const labelCache = new WeakMap<ReferenceData, Map<string, string[]>>()
+
+function labelsOf(s: ReferenceDataState, key: keyof ReferenceData): string[] {
+  const data = s.data
+  if (!data) return EMPTY
+  let cache = labelCache.get(data)
+  if (!cache) {
+    cache = new Map()
+    labelCache.set(data, cache)
+  }
+  let labels = cache.get(key)
+  if (!labels) {
+    labels = ((data[key] as RefItem[]) ?? []).map((i) => i.label)
+    cache.set(key, labels)
+  }
+  return labels
+}
+
 // Convenience selectors — return slug strings for multi-select pickers
-export const selectCategories   = (s: ReferenceDataState) => s.data?.categories?.map(i => i.label) ?? []
-export const selectLanguages    = (s: ReferenceDataState) => s.data?.languages ?? []
-export const selectIndustries   = (s: ReferenceDataState) => s.data?.industries?.map(i => i.label) ?? []
-export const selectCampaignTypes = (s: ReferenceDataState) => s.data?.campaignTypes ?? []
-export const selectObjectives   = (s: ReferenceDataState) => s.data?.objectives ?? []
-export const selectRegions      = (s: ReferenceDataState) => s.data?.regions?.map(i => i.label) ?? []
-export const selectDeliverables = (s: ReferenceDataState) => s.data?.deliverables?.map(i => i.label) ?? []
+// NOTE: must return referentially stable values for the same store state.
+export const selectCategories   = (s: ReferenceDataState) => labelsOf(s, 'categories')
+export const selectLanguages    = (s: ReferenceDataState) => s.data?.languages ?? EMPTY
+export const selectIndustries   = (s: ReferenceDataState) => labelsOf(s, 'industries')
+export const selectCampaignTypes = (s: ReferenceDataState) => s.data?.campaignTypes ?? EMPTY
+export const selectObjectives   = (s: ReferenceDataState) => s.data?.objectives ?? EMPTY
+export const selectRegions      = (s: ReferenceDataState) => labelsOf(s, 'regions')
+export const selectDeliverables = (s: ReferenceDataState) => labelsOf(s, 'deliverables')
