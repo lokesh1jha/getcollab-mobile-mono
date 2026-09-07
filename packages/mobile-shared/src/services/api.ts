@@ -693,7 +693,7 @@ class ApiService {
   }
 
   async submitDealScript(id: string, content: string): Promise<any> {
-    return this.request(`/collabs/${encodeURIComponent(id)}/assets/script`, { method: 'POST', body: JSON.stringify({ content }) })
+    return this.request(`/collabs/${encodeURIComponent(id)}/assets/script`, { method: 'POST', body: JSON.stringify({ bodyText: content }) })
   }
 
   async submitDealMedia(id: string, payload: Record<string, any>): Promise<any> {
@@ -721,9 +721,9 @@ class ApiService {
     return this.request(`/collabs/invites/${encodeURIComponent(id)}/accept`, { method: 'POST', body: JSON.stringify({}) })
   }
 
-  async declineDealInvite(id: string): Promise<any> {
-    return this.request(`/collabs/invites/${encodeURIComponent(id)}`, { method: 'DELETE' })
-  }
+  // NOTE: no influencer-side decline endpoint exists — DELETE
+  // /collabs/invites/{id} requires a brand org (403 for creators), so the
+  // app only offers Accept for invites.
 
   async getDocuments(dealId: string): Promise<any> {
     return this.request(`/deals/${encodeURIComponent(dealId)}/documents`)
@@ -1014,6 +1014,30 @@ export const showSignInError = (error: any, onSignUp: () => void) => {
 
 export const showSuccessMessage = (message: string) => {
   Alert.alert('Success', message)
+}
+
+// Direct-to-object-store upload: start (presigned PUT) → PUT bytes →
+// complete (enqueue scan). Uses raw fetch for the PUT because the signed
+// URL is outside the API base and must not carry auth/JSON headers.
+export async function uploadMediaBlob(input: { uri: string; mime: string; sizeBytes: number; width?: number; height?: number }): Promise<any> {
+  const started = await apiService.startMediaUpload({
+    mime: input.mime,
+    size_bytes: Math.max(0, Math.round(input.sizeBytes || 0)),
+    width: input.width,
+    height: input.height,
+  })
+  const blobId = started?.blob_id || started?.blobId || started?.id
+  const url = started?.url
+  if (!blobId || !url) throw new Error('Upload initialization failed')
+  const fileRes = await fetch(input.uri)
+  const blob = await fileRes.blob()
+  const putRes = await fetch(url, {
+    method: started?.method || 'PUT',
+    headers: { 'Content-Type': input.mime },
+    body: blob as any,
+  })
+  if (!putRes.ok) throw new Error('File upload failed')
+  return apiService.completeMediaUpload(String(blobId))
 }
 
 export default apiService

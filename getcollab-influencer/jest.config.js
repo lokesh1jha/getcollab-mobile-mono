@@ -1,9 +1,14 @@
+const expoPreset = require('jest-expo/jest-preset')
+
 module.exports = {
-  preset: 'jest-expo',
+  ...expoPreset,
+  // The installed React Native 0.81 preset injects an ESM setup file that
+  // Jest 29 loads before Babel. These tests are store/API tests and use the
+  // Node environment, so keep the Expo transform but skip that incompatible
+  // native setup hook.
+  setupFiles: [],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|socket\\.io-client|engine\\.io-client|posthog-react-native|zustand)|@react-native-async-storage/async-storage)',
-  ],
+  transformIgnorePatterns: expoPreset.transformIgnorePatterns,
   moduleNameMapper: {
     '^@shared/(.*)$': '<rootDir>/../packages/mobile-shared/src/$1',
   },
