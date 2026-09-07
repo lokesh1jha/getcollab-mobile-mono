@@ -14,11 +14,16 @@ jest.mock('@shared/services/api', () => ({
     signin: jest.fn(),
     signup: jest.fn(),
     getCurrentUser: jest.fn(),
+    getToken: jest.fn(() => Promise.resolve('tok')),
     updateProfile: jest.fn(),
     setToken: jest.fn(() => Promise.resolve()),
     setRefreshToken: jest.fn(() => Promise.resolve()),
     clearTokens: jest.fn(() => Promise.resolve()),
   },
+  isUnauthorizedError: jest.fn((message?: string) => {
+    if (!message) return false
+    return message === 'UNAUTHORIZED' || /unauthorized/i.test(message)
+  }),
 }))
 
 const mockApi = apiService as jest.Mocked<typeof apiService>
@@ -34,6 +39,9 @@ describe('auth-store', () => {
       user: { id: '1', name: 'Alice', email: 'a@a.com', role: 'brand' },
       token: 'tok',
       refreshToken: 'ref',
+    })
+    mockApi.getCurrentUser.mockResolvedValueOnce({
+      user: { id: '1', name: 'Alice', email: 'a@a.com', role: 'brand' },
     })
 
     await useAuthStore.getState().signIn('a@a.com', 'pw')
