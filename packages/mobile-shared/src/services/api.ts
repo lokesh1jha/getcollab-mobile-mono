@@ -382,6 +382,15 @@ class ApiService {
     return this.request(`/analytics${queryString}`)
   }
 
+  async getDashboardStats(): Promise<any> {
+    return this.request('/dashboard/stats')
+  }
+
+  async getDashboardFeed(params?: Record<string, any>): Promise<any> {
+    const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
+    return this.request(`/dashboard/feed${queryString}`)
+  }
+
   // ------- Bids -------
   async getBids(params?: Record<string, any>): Promise<any> {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
@@ -614,31 +623,43 @@ class ApiService {
   }
 
   async markAllNotificationsAsRead(): Promise<any> {
-    return this.request('/notifications/read-all', { method: 'POST' })
+    return this.request('/notifications', { method: 'PATCH', body: JSON.stringify({ all: true }) })
   }
 
-  // ------- Earnings (Settlement history) -------
+  // ------- Earnings, wallet, and settlements -------
   async getEarnings(): Promise<any> {
     return this.request('/earnings')
   }
 
   async getSettlements(): Promise<any> {
-    // Settlements module was removed in favor of a subscription-only model.
-    // Earnings history is served from /earnings now.
-    return this.request('/earnings')
+    return this.request('/settlements')
   }
 
-  async requestPayout(data: { amount: number; message: string; campaignId?: string }): Promise<any> {
-    // No dedicated settlement endpoint exists. Route payout requests through
-    // the support module so the team can action them out-of-band.
-    return this.request('/disputes', {
+  async getCreatorWallet(): Promise<any> {
+    return this.request('/wallet/creator')
+  }
+
+  async withdrawPayout(data: { amountMinor: number; currency?: string; idempotencyKey: string }): Promise<any> {
+    return this.request('/payouts/withdraw', {
       method: 'POST',
-      body: JSON.stringify({
-        reason: 'Payout Request',
-        description: `Payout request: ₹${data.amount}. ${data.message}`.trim(),
-        campaignId: data.campaignId,
-      }),
+      body: JSON.stringify({ currency: 'INR', ...data }),
     })
+  }
+
+  async createSettlement(data: { campaignId: string; amount?: number; message?: string }): Promise<any> {
+    return this.request('/settlements', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  async getPayoutSettings(): Promise<any> {
+    return this.request('/payout-settings')
+  }
+
+  async updatePayoutSettings(data: { bankAccount: string; ifscCode: string; panNumber: string; gstNumber?: string }): Promise<any> {
+    return this.request('/payout-settings', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  async deleteAccount(): Promise<any> {
+    return this.request('/settings/account', { method: 'DELETE', body: JSON.stringify({ confirmation: 'DELETE' }) })
   }
 
   // ------- Disputes -------
@@ -689,6 +710,72 @@ class ApiService {
 
   async getDealShipping(id: string): Promise<any> {
     return this.request(`/collabs/${encodeURIComponent(id)}/shipping`)
+  }
+
+  async getDealInvites(params?: Record<string, any>): Promise<any> {
+    const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
+    return this.request(`/collabs/invites${queryString}`)
+  }
+
+  async acceptDealInvite(id: string): Promise<any> {
+    return this.request(`/collabs/invites/${encodeURIComponent(id)}/accept`, { method: 'POST', body: JSON.stringify({}) })
+  }
+
+  async declineDealInvite(id: string): Promise<any> {
+    return this.request(`/collabs/invites/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  }
+
+  async getDocuments(dealId: string): Promise<any> {
+    return this.request(`/deals/${encodeURIComponent(dealId)}/documents`)
+  }
+
+  async signDocument(documentId: string, fullName: string): Promise<any> {
+    return this.request(`/documents/${encodeURIComponent(documentId)}/sign`, {
+      method: 'POST',
+      body: JSON.stringify({ fullName, consent: true }),
+    })
+  }
+
+  async getDocumentPdf(documentId: string): Promise<any> {
+    return this.request(`/documents/${encodeURIComponent(documentId)}/pdf`)
+  }
+
+  async getRelationships(): Promise<any> {
+    return this.request('/relationships')
+  }
+
+  async getAffiliatePrograms(params?: Record<string, any>): Promise<any> {
+    const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
+    return this.request(`/affiliate/programs${queryString}`)
+  }
+
+  async applyToAffiliateProgram(id: string): Promise<any> {
+    return this.request(`/affiliate/programs/${encodeURIComponent(id)}/apply`, { method: 'POST', body: JSON.stringify({}) })
+  }
+
+  async getAffiliateLinks(): Promise<any> {
+    return this.request('/affiliate/links')
+  }
+
+  async getAffiliateRewards(): Promise<any> {
+    return this.request('/affiliate/rewards')
+  }
+
+  async acceptAffiliateLink(id: string): Promise<any> {
+    return this.request(`/affiliate/links/${encodeURIComponent(id)}/accept`, { method: 'POST', body: JSON.stringify({}) })
+  }
+
+  async getMediaLibrary(type?: string): Promise<any> {
+    const query = type ? `?type=${encodeURIComponent(type)}` : ''
+    return this.request(`/media/library${query}`)
+  }
+
+  async startMediaUpload(data: { mime: string; size_bytes: number; width?: number; height?: number }): Promise<any> {
+    return this.request('/media/uploads', { method: 'POST', body: JSON.stringify(data) })
+  }
+
+  async completeMediaUpload(blobId: string): Promise<any> {
+    return this.request(`/media/${encodeURIComponent(blobId)}/complete`, { method: 'POST', body: JSON.stringify({}) })
   }
 
   // ------- Generic -------

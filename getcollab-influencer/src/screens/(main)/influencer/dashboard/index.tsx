@@ -136,18 +136,18 @@ export default function InfluencerDashboard({ navigation }: any) {
   const load = useCallback(async (spinner = false) => {
     if (spinner) setLoading(true)
     try {
-      const [bidsRes, earningsRes, profileRes, notifRes] = await Promise.all([
-        apiService.getBids({ status: 'accepted' }).catch(() => null),
+      const [dashboardRes, earningsRes, profileRes, notifRes] = await Promise.all([
+        apiService.getDashboardStats().catch(() => apiService.getBids().catch(() => null)),
         apiService.getEarnings().catch(() => null),
         apiService.getProfileWithMetrics().catch(() => apiService.getProfile().catch(() => null)),
         apiService.getNotifications().catch(() => null),
       ])
 
-      const bids = bidsRes?.data || bidsRes?.bids || (Array.isArray(bidsRes) ? bidsRes : [])
-      const earningsList = earningsRes?.data || earningsRes?.requests || (Array.isArray(earningsRes) ? earningsRes : [])
+      const bids = dashboardRes?.bids || dashboardRes?.data?.bids || dashboardRes?.bidsList || (Array.isArray(dashboardRes) ? dashboardRes : [])
+      const earningsList = earningsRes?.earnings || earningsRes?.data || (Array.isArray(earningsRes) ? earningsRes : [])
       const earningsTotal = Array.isArray(earningsList)
-        ? earningsList.reduce((s: number, i: any) => s + (Number(i.amount) || 0), 0)
-        : Number(earningsRes?.total ?? 0)
+        ? earningsList.reduce((s: number, i: any) => s + Number(i.amountMinor ?? i.amount ?? 0) / (i.amountMinor != null ? 100 : 1), 0)
+        : Number(earningsRes?.stats?.totalEarnings ?? earningsRes?.total ?? 0)
 
       const profile = profileRes?.data || profileRes?.profile || profileRes?.influencerProfile || profileRes || {}
       const notifs = notifRes?.data || notifRes?.notifications || (Array.isArray(notifRes) ? notifRes : [])
@@ -168,13 +168,14 @@ export default function InfluencerDashboard({ navigation }: any) {
         return 0
       })()
 
-      const activeBidsCount = Array.isArray(bids) ? bids.length : 0
-      const totalBidsCount = bidsRes?.total || (Array.isArray(bids) ? bids.length : 0)
+       const activeBidsCount = Number(dashboardRes?.activeDeals ?? dashboardRes?.activeDealsCount ?? dashboardRes?.stats?.activeDeals ?? (Array.isArray(bids) ? bids.length : 0))
+       const totalBidsCount = Number(dashboardRes?.totalBids ?? dashboardRes?.stats?.totalBids ?? (Array.isArray(bids) ? bids.length : 0))
+       const campaignsCount = Number(dashboardRes?.totalCampaigns ?? dashboardRes?.stats?.totalCampaigns ?? activeBidsCount)
 
       setStats({
-        campaigns: activeBidsCount,
+         campaigns: campaignsCount,
         applications: totalBidsCount,
-        active: activeBidsCount,
+         active: Number(dashboardRes?.activeCampaigns ?? dashboardRes?.stats?.activeCampaigns ?? activeBidsCount),
         earnings: earningsTotal,
         followers: rawFollowers > 0 ? formatFollowers(rawFollowers) : '—',
         engagement: rawEng > 0 ? `${rawEng.toFixed(1)}%` : '—',

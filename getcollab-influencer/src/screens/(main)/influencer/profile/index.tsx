@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   ActivityIndicator, Alert, FlatList, Image, Pressable, ScrollView,
-  StyleSheet, Text, TextInput, View, Dimensions,
+  StyleSheet, Text, TextInput, View, Dimensions, Linking,
 } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -348,7 +348,11 @@ export default function InfluencerProfile({ navigation }: any) {
                 <AccountRow icon="lock-closed-outline" label="Change Password" onPress={() => navigation?.navigate('ChangePassword')} divider />
                 <AccountRow icon="notifications-outline" label="Notifications" onPress={() => navigation?.navigate('Notifications')} divider />
                 <AccountRow icon="settings-outline" label="Settings" onPress={() => navigation?.navigate('Settings')} divider />
-                <AccountRow icon="help-circle-outline" label="Help & Support" onPress={() => {}} />
+                <AccountRow icon="mail-outline" label="Campaign Invites" onPress={() => navigation?.navigate('DealInvites')} divider />
+                <AccountRow icon="link-outline" label="Affiliate Programs" onPress={() => navigation?.navigate('Affiliate')} divider />
+                <AccountRow icon="people-outline" label="Brand Relationships" onPress={() => navigation?.navigate('Relationships')} divider />
+                <AccountRow icon="images-outline" label="Asset Library" onPress={() => navigation?.navigate('Assets')} divider />
+                <AccountRow icon="help-circle-outline" label="Help & Support" onPress={() => Linking.openURL('mailto:support@getcollab.in')} />
               </View>
 
               <Pressable

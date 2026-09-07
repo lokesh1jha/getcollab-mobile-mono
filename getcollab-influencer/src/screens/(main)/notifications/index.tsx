@@ -27,12 +27,12 @@ function formatTime(v?: string): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-const NotifItem = memo(({ item, index, onRead }: { item: any; index: number; onRead: (id: string) => void }) => {
+const NotifItem = memo(({ item, index, onRead, onOpen }: { item: any; index: number; onRead: (id: string) => void; onOpen: (item: any) => void }) => {
   const isUnread = !item.read
   const icon = notifIcon(item.type || '')
   return (
     <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
-      <Pressable onPress={() => onRead(item.id)} style={[styles.row, isUnread && styles.rowUnread]}>
+      <Pressable onPress={() => { onRead(item.id); onOpen(item) }} style={[styles.row, isUnread && styles.rowUnread]}>
         {isUnread && <View style={styles.unreadBar} />}
         <View style={[styles.iconWrap, isUnread && { backgroundColor: colors.blueSoft }]}>
           <Ionicons name={icon as any} size={18} color={isUnread ? colors.blue : colors.textMuted} />
@@ -50,6 +50,13 @@ export default function NotificationsScreen({ navigation }: any) {
   const { notifications, isLoading, fetchNotifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore()
 
   useFocusEffect(useCallback(() => { fetchNotifications() }, [fetchNotifications]))
+  const openNotification = (item: any) => {
+    const link = item.deepLink || ''
+    if (link.includes('chat') && item.roomId) navigation?.navigate('ChatDetail', { roomId: item.roomId })
+    else if (link.includes('campaign') && item.campaignId) navigation?.navigate('CampaignDetails', { id: item.campaignId })
+    else if (link.includes('earning') || link.includes('settlement')) navigation?.navigate('Earnings')
+    else if (link.includes('affiliate')) navigation?.navigate('Affiliate')
+  }
 
   if (isLoading && notifications.length === 0) return (
     <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -77,7 +84,7 @@ export default function NotificationsScreen({ navigation }: any) {
 
         <FlatList
           data={notifications}
-          renderItem={({ item, index }) => <NotifItem item={item} index={index} onRead={markAsRead} />}
+           renderItem={({ item, index }) => <NotifItem item={item} index={index} onRead={markAsRead} onOpen={openNotification} />}
           keyExtractor={n => String(n.id)}
           contentContainerStyle={{ paddingBottom: spacing.xxl }}
           showsVerticalScrollIndicator={false}

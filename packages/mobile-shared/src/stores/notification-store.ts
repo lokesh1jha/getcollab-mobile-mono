@@ -26,8 +26,14 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     set({ isLoading: true, error: null })
     try {
       const response = await apiService.getNotifications()
-      const notifications = response.data || []
-      const unreadCount = notifications.filter((n: Notification) => !n.read).length
+      const raw = response.notifications || response.data || []
+      const notifications = (Array.isArray(raw) ? raw : []).map((n: any) => ({
+        ...n,
+        type: n.type || n.eventType,
+        createdAt: n.createdAt || n.lastActivityAt,
+        read: n.read ?? String(n.status || '').toLowerCase() !== 'unread',
+      }))
+      const unreadCount = Number(response.unreadCount) || notifications.filter((n: Notification) => !n.read).length
       set({ notifications, unreadCount, isLoading: false })
     } catch (error: any) {
       set({
