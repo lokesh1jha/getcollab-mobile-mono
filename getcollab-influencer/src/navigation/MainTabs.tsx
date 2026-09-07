@@ -22,6 +22,13 @@ import VerifyEmailScreen from '../screens/(main)/verify-email'
 import ChangePasswordScreen from '../screens/(main)/change-password'
 import OnboardingScreen from '../screens/(main)/onboarding'
 import ProfilePreviewScreen from '../screens/(main)/profile-preview'
+import PayoutSettingsScreen from '../screens/(main)/payout-settings'
+import DealInvitesScreen from '../screens/(main)/deal-invites'
+import AffiliateScreen from '../screens/(main)/affiliate'
+import RelationshipsScreen from '../screens/(main)/relationships'
+import AssetsScreen from '../screens/(main)/assets'
+import SettlementsScreen from '../screens/(main)/settlements'
+import CollaborationsScreen from '../screens/(main)/collaborations'
 
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
@@ -134,6 +141,13 @@ function InfluencerStack() {
       <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ProfilePreview" component={ProfilePreviewScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Public Profile' }} />
       <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Analytics' }} />
+      <Stack.Screen name="PayoutSettings" component={PayoutSettingsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Payout Details' }} />
+      <Stack.Screen name="DealInvites" component={DealInvitesScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Campaign Invites' }} />
+      <Stack.Screen name="Affiliate" component={AffiliateScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Affiliate' }} />
+      <Stack.Screen name="Relationships" component={RelationshipsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Brand Relationships' }} />
+      <Stack.Screen name="Assets" component={AssetsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Asset Library' }} />
+      <Stack.Screen name="Settlements" component={SettlementsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Settlements' }} />
+      <Stack.Screen name="Collaborations" component={CollaborationsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Collaborations' }} />
     </Stack.Navigator>
   )
 }

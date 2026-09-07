@@ -7,7 +7,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 
-interface Settlement { id: string; amount: number; status: string; campaignId?: string; campaignTitle?: string; createdAt?: string; notes?: string }
+interface Settlement { id: string; dealId?: string; amount?: number; amountMinor?: number; status: string; campaignId?: string; campaignTitle?: string; createdAt?: string; date?: string; notes?: string }
 
 function formatDate(v?: string): string {
   if (!v) return '—'
@@ -19,29 +19,33 @@ export default function EarningsScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [showModal, setShowModal] = useState(false)
+  const [walletMinor, setWalletMinor] = useState<number | null>(null)
   const [amount, setAmount] = useState('')
   const [campaignId, setCampaignId] = useState('')
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const totalPaid = settlements.filter(s => s.status === 'paid' || s.status === 'completed').reduce((sum, s) => sum + Number(s.amount || 0), 0)
-  const totalPending = settlements.filter(s => s.status === 'pending' || s.status === 'processing').reduce((sum, s) => sum + Number(s.amount || 0), 0)
+  const displayAmount = (s: Settlement) => Number(s.amountMinor ?? s.amount ?? 0) / (s.amountMinor != null ? 100 : 1)
+  const totalPaid = settlements.filter(s => ['released', 'paid', 'completed', 'mark_paid'].includes(String(s.status).toLowerCase())).reduce((sum, s) => sum + displayAmount(s), 0)
+  const totalPending = settlements.filter(s => !['released', 'paid', 'completed', 'mark_paid'].includes(String(s.status).toLowerCase())).reduce((sum, s) => sum + displayAmount(s), 0)
 
   const load = useCallback(async (spinner = false) => {
     if (spinner) setLoading(true)
     try {
-      // getSettlements and getEarnings both serve /earnings — merge and dedupe by id.
-      const [earningsRes, settlementsRes] = await Promise.all([
+      const [earningsRes, settlementsRes, walletRes] = await Promise.all([
         apiService.getEarnings(),
         apiService.getSettlements().catch(() => null),
+        apiService.getCreatorWallet().catch(() => null),
       ])
-      const earningsList: Settlement[] = earningsRes?.data || earningsRes?.requests || earningsRes?.earnings || (Array.isArray(earningsRes) ? earningsRes : [])
-      const settlementsList: Settlement[] = settlementsRes?.data || settlementsRes?.requests || settlementsRes?.earnings || (Array.isArray(settlementsRes) ? settlementsRes : [])
+      const earningsList: Settlement[] = earningsRes?.earnings || earningsRes?.data || (Array.isArray(earningsRes) ? earningsRes : [])
+      const settlementsList: Settlement[] = settlementsRes?.settlementRequests || settlementsRes?.data || (Array.isArray(settlementsRes) ? settlementsRes : [])
       const byId = new Map<string, Settlement>()
       for (const s of [...(Array.isArray(earningsList) ? earningsList : []), ...(Array.isArray(settlementsList) ? settlementsList : [])]) {
-        if (s?.id) byId.set(s.id, s)
+        const id = s?.id || s?.dealId
+        if (id) byId.set(String(id), { ...s, id: String(id) })
       }
       setSettlements(Array.from(byId.values()))
+      setWalletMinor(typeof walletRes?.availableMinor === 'number' ? walletRes.availableMinor : null)
     } catch (err: any) {
       handleApiError(err, 'Failed to load earnings')
     } finally { setLoading(false); setRefreshing(false) }
@@ -54,7 +58,10 @@ export default function EarningsScreen({ navigation }: any) {
     if (!amount.trim()) return
     setSubmitting(true)
     try {
-      await apiService.requestPayout({ amount: Number(amount), campaignId: campaignId || undefined, message: notes || '' })
+      const amountMinor = Math.round(Number(amount) * 100)
+      if (!Number.isFinite(amountMinor) || amountMinor <= 0) throw new Error('Enter a valid payout amount')
+      if (walletMinor != null && amountMinor > walletMinor) throw new Error('Amount exceeds your available balance')
+      await apiService.withdrawPayout({ amountMinor, idempotencyKey: `mobile-${Date.now()}-${Math.random().toString(36).slice(2)}` })
       setShowModal(false)
       setAmount('')
       setCampaignId('')
@@ -75,11 +82,11 @@ export default function EarningsScreen({ navigation }: any) {
           </View>
           <View>
             <Text style={styles.cardTitle} numberOfLines={1}>{item.campaignTitle || `Campaign #${item.campaignId?.slice(-4) || '—'}`}</Text>
-            <Text style={styles.cardDate}>{formatDate(item.createdAt)}</Text>
+            <Text style={styles.cardDate}>{formatDate(item.createdAt || item.date)}</Text>
           </View>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
-          <Text style={styles.cardAmount}>₹{Number(item.amount || 0).toLocaleString()}</Text>
+          <Text style={styles.cardAmount}>₹{displayAmount(item).toLocaleString()}</Text>
           <View style={[styles.statusPill, { backgroundColor: s.bg }]}>
             <Text style={[styles.statusText, { color: s.fg }]}>{item.status?.charAt(0).toUpperCase() + item.status?.slice(1)}</Text>
           </View>
@@ -127,6 +134,7 @@ export default function EarningsScreen({ navigation }: any) {
                   <Text style={styles.statLabel}>Pending</Text>
                 </Animated.View>
               </View>
+              {walletMinor != null && <Text style={styles.balanceText}>Available to withdraw: ₹{(walletMinor / 100).toLocaleString()}</Text>}
 
               <Pressable
                 onPress={() => setShowModal(true)}
@@ -203,6 +211,7 @@ const styles = StyleSheet.create({
   cardTitle: { color: colors.text, fontSize: 14, fontWeight: '600', maxWidth: 160 },
   cardDate: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
   cardAmount: { color: colors.text, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
+  balanceText: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginBottom: spacing.md },
   statusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, marginTop: 4 },
   statusText: { fontSize: 10, fontWeight: '700' },
   empty: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.sm },

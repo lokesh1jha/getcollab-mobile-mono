@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View, ActivityIndicator } from 'react-native'
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View, ActivityIndicator, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
@@ -103,6 +103,7 @@ export default function SettingsScreen({ navigation }: any) {
           <View style={styles.listCard}>
             <LinkRow icon="lock-closed-outline" label="Change Password" onPress={() => navigation?.navigate('ChangePassword')} divider />
             <LinkRow icon="notifications-outline" label="Notification Preferences" onPress={() => navigation?.navigate('Notifications')} />
+            <LinkRow icon="card-outline" label="Payout Details" onPress={() => navigation?.navigate('PayoutSettings')} divider />
           </View>
 
           {/* Danger Zone */}
@@ -116,6 +117,9 @@ export default function SettingsScreen({ navigation }: any) {
             </Pressable>
           </View>
 
+          <Pressable onPress={() => Linking.openURL('mailto:support@getcollab.in')} style={({ pressed }) => [styles.supportLink, pressed && { opacity: 0.8 }]}>
+            <Text style={styles.supportText}>Need help? Contact support</Text>
+          </Pressable>
           <Text style={styles.versionText}>GetCollab v1.0.0 · For Creators</Text>
         </ScrollView>
       </SafeAreaView>
@@ -179,4 +183,6 @@ const styles = StyleSheet.create({
   dangerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   dangerText: { color: colors.error, fontSize: 15, fontWeight: '600' },
   versionText: { color: colors.textSubtle, fontSize: 12, textAlign: 'center', marginTop: spacing.xl },
+  supportLink: { alignItems: 'center', marginTop: spacing.xl },
+  supportText: { color: colors.blue, fontSize: 13, fontWeight: '600' },
 })

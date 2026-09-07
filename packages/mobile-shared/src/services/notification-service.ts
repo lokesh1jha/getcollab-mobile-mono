@@ -90,7 +90,9 @@ class NotificationService {
     try {
       // Bare workflow: getExpoPushTokenAsync throws ERR_NOTIFICATIONS_NO_EXPERIENCE_ID
       // unless an EAS projectId is configured (or passed explicitly).
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined
+      const projectId = (
+        Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId
+      ) as string | undefined
       if (!projectId) {
         console.warn('[notifications] No EAS projectId configured — skipping push token registration')
         return null
@@ -109,13 +111,7 @@ class NotificationService {
    */
   private async registerPushToken(token: string): Promise<void> {
     try {
-      await apiService.post('/notifications/subscribe', {
-        endpoint: token, // Using Expo token as endpoint for now
-        keys: {
-          op: 'expo', // Placeholder for backend compliance
-          auth: 'expo',   // Placeholder for backend compliance
-        },
-      })
+      await apiService.post('/notifications/device-tokens', { platform: 'expo', token })
       console.log('Push token registered with backend')
     } catch (error) {
       console.error('Failed to register push token:', error)
@@ -145,7 +141,7 @@ class NotificationService {
   async unregisterPushToken(): Promise<void> {
     try {
       if (this.pushToken) {
-        await apiService.delete(`/notifications/subscribe?endpoint=${this.pushToken}`)
+        await apiService.delete(`/notifications/push-subscription?token=${encodeURIComponent(this.pushToken)}`)
         this.pushToken = null
         console.log('Push token unregistered')
       }

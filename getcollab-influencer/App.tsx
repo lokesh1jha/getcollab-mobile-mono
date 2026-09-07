@@ -58,7 +58,7 @@ function SplashScreen() {
 export default function App() {
   const { appReady, apiError, initializeApp } = useAppInit({ splashDelayMs: 1500 })
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const onboardingCompleted = useAuthStore((s) => s.user?.onboardingCompleted !== false)
+  const onboardingCompleted = useAuthStore((s) => s.user?.onboardingCompleted === true)
 
   useEffect(() => {
     apiService.setOnUnauthorizedCallback(() => useAuthStore.getState().signOut())

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Image, TextInput, Pressable } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, Image, TextInput, Pressable, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
@@ -54,8 +54,11 @@ export default function OnboardingScreen({ navigation }: Props) {
   const [infStep1, setInfStep1] = useState({ bio: '', country: '', state: '', phoneNumber: '', categories: [] as string[], languages: [] as string[] })
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [expandedPlatform, setExpandedPlatform] = useState<string | null>(null)
   const [infStep2, setInfStep2] = useState({
     instagram: '',
+    facebook: '',
+    facebookFollowers: '',
     instagramFollowers: '',
     youtube: '',
     youtubeSubscribers: '',
@@ -143,7 +146,7 @@ export default function OnboardingScreen({ navigation }: Props) {
       await apiService.completeOnboarding('brand')
       await fetchCurrentUser()
       Alert.alert('Welcome aboard!', 'Your brand profile is set up. Manage billing from the web dashboard to launch campaigns.', [
-        { text: 'Go to Dashboard', onPress: () => navigation?.navigate('Dashboard') },
+        { text: 'Go to Dashboard', onPress: () => navigation?.navigate('Main', { screen: 'Dashboard' }) },
       ])
     } catch (e) {
       handleApiError(e, 'Failed to complete onboarding')
@@ -159,7 +162,7 @@ export default function OnboardingScreen({ navigation }: Props) {
       return
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -225,7 +228,7 @@ export default function OnboardingScreen({ navigation }: Props) {
   }
 
   const handleInfStep2 = async () => {
-    const hasAny = infStep2.instagram || infStep2.youtube || infStep2.tiktok
+    const hasAny = infStep2.instagram || infStep2.youtube || infStep2.tiktok || infStep2.facebook
     if (!hasAny) {
       Alert.alert('Add a handle', 'Link at least one social account.')
       return
@@ -236,17 +239,34 @@ export default function OnboardingScreen({ navigation }: Props) {
         role: 'influencer',
         step: 'influencer.socials',
         patch: {
+          // Draft rows mirror the web handles-block shape so resume
+          // pre-fills followers; socials is the normalized map the
+          // backend upserts into catalog social accounts.
+          handles: (['instagram', 'youtube', 'tiktok', 'facebook'] as const)
+            .filter((p) => infStep2[p])
+            .map((p) => ({
+              platform: p.charAt(0).toUpperCase() + p.slice(1),
+              handle: infStep2[p],
+              followers:
+                p === 'youtube' ? infStep2.youtubeSubscribers
+                : p === 'instagram' ? infStep2.instagramFollowers
+                : p === 'tiktok' ? infStep2.tiktokFollowers
+                : infStep2.facebookFollowers,
+              engagement: '',
+              verified: false,
+            })),
           socials: {
             instagram: infStep2.instagram || undefined,
             youtube: infStep2.youtube || undefined,
             tiktok: infStep2.tiktok || undefined,
+            facebook: infStep2.facebook || undefined,
           },
         },
       })
       await apiService.completeOnboarding('influencer')
       await fetchCurrentUser()
       Alert.alert('You\'re all set!', 'Time to find campaigns that match your style.', [
-        { text: 'Discover Campaigns', onPress: () => navigation?.navigate('Discover') },
+        { text: 'Discover Campaigns', onPress: () => navigation?.navigate('Main', { screen: 'Discover' }) },
       ])
     } catch (e) {
       handleApiError(e, 'Failed to complete onboarding')
@@ -257,7 +277,7 @@ export default function OnboardingScreen({ navigation }: Props) {
 
   const renderAvatarPicker = () => (
     <View style={styles.avatarWrap}>
-      <Pressable style={styles.avatar} onPress={pickAvatar} disabled={uploadingAvatar}>
+      <Pressable style={({ pressed }) => [styles.avatar, pressed && styles.pressed]} onPress={pickAvatar} disabled={uploadingAvatar}>
         {avatarUrl ? (
           <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
         ) : (
@@ -293,13 +313,13 @@ export default function OnboardingScreen({ navigation }: Props) {
   ) => (
     <View style={styles.chipGrid}>
       {options.map((o) => (
-        <TouchableOpacity
+        <Pressable
           key={o}
-          style={[styles.chip, selected.includes(o) && styles.chipActive]}
+          style={({ pressed }) => [styles.chip, selected.includes(o) && styles.chipActive, pressed && styles.pressed]}
           onPress={() => onToggle(o)}
         >
           <Text style={[styles.chipText, selected.includes(o) && styles.chipTextActive]}>{o}</Text>
-        </TouchableOpacity>
+        </Pressable>
       ))}
     </View>
   )
@@ -328,7 +348,7 @@ export default function OnboardingScreen({ navigation }: Props) {
         {renderProgress()}
 
         <SectionLabel label="Campaign Types *" />
-        {renderChips(campaignTypes.map(t => t.label), brandStep2.campaignTypes, (v) => setBrandStep2({ ...brandStep2, campaignTypes: toggle(brandStep2.campaignTypes, v) }))}
+        {renderChips(campaignTypes.map((t: any) => typeof t === 'string' ? t : t.label), brandStep2.campaignTypes, (v) => setBrandStep2({ ...brandStep2, campaignTypes: toggle(brandStep2.campaignTypes, v) }))}
 
         <SectionLabel label="Target Age Ranges *" />
         {renderChips(AGE_RANGES, brandStep2.ageRanges, (v) => setBrandStep2({ ...brandStep2, ageRanges: toggle(brandStep2.ageRanges, v) }))}
@@ -343,7 +363,7 @@ export default function OnboardingScreen({ navigation }: Props) {
         {renderChips(categories, brandStep2.creatorCategories, (v) => setBrandStep2({ ...brandStep2, creatorCategories: toggle(brandStep2.creatorCategories, v) }))}
 
         <SectionLabel label="Objectives *" />
-        {renderChips(objectives.map(o => o.label), brandStep2.objectives, (v) => setBrandStep2({ ...brandStep2, objectives: toggle(brandStep2.objectives, v) }))}
+        {renderChips(objectives.map((o: any) => typeof o === 'string' ? o : o.label), brandStep2.objectives, (v) => setBrandStep2({ ...brandStep2, objectives: toggle(brandStep2.objectives, v) }))}
 
         <View style={styles.actionRow}>
           <Button title="Back" variant="outline" onPress={() => setStep(1)} style={{ flex: 1 }} />
@@ -383,8 +403,8 @@ export default function OnboardingScreen({ navigation }: Props) {
       ? countries.map((c) => c.label)
       : FALLBACK_COUNTRIES
     ).map((label) => ({ label, value: label }))
-    const languageOptions = languages.map((l) => ({ label: l.label, value: l.slug }))
-    const categoryOptions = categories.map((label) => ({ label, value: label }))
+    const languageOptions = (languages as any[]).map((l: any) => typeof l === 'string' ? ({ label: l, value: l }) : ({ label: l.label, value: l.slug }))
+    const categoryOptions = (categories as any[]).map((label: any) => ({ label: typeof label === 'string' ? label : label.label, value: typeof label === 'string' ? label : label.slug }))
     return (
       <Wrapper>
         <Text style={styles.heading}>Tell brands about you</Text>
@@ -435,17 +455,61 @@ export default function OnboardingScreen({ navigation }: Props) {
         <Text style={styles.subheading}>Step 2 of 2 · Where you create</Text>
         {renderProgress()}
 
-        <SectionLabel label="Instagram" />
-        <Input value={infStep2.instagram} onChangeText={(v) => setInfStep2({ ...infStep2, instagram: v })} placeholder="@username" style={styles.input} />
-        <Input value={infStep2.instagramFollowers} onChangeText={(v) => setInfStep2({ ...infStep2, instagramFollowers: v })} placeholder="Followers (e.g. 12000)" keyboardType="numeric" style={styles.input} />
+        <PlatformCard
+          platform="Instagram"
+          icon="logo-instagram"
+          connectUrl="https://www.instagram.com"
+          value={infStep2.instagram}
+          followers={infStep2.instagramFollowers}
+          followersLabel="Followers (e.g. 12000)"
+          placeholder="Profile URL or @username"
+          expanded={expandedPlatform === 'instagram'}
+          onExpand={() => setExpandedPlatform(expandedPlatform === 'instagram' ? null : 'instagram')}
+          onChange={(v) => setInfStep2({ ...infStep2, instagram: v })}
+          onFollowersChange={(v) => setInfStep2({ ...infStep2, instagramFollowers: v })}
+        />
 
-        <SectionLabel label="YouTube" />
-        <Input value={infStep2.youtube} onChangeText={(v) => setInfStep2({ ...infStep2, youtube: v })} placeholder="Channel URL or @handle" style={styles.input} />
-        <Input value={infStep2.youtubeSubscribers} onChangeText={(v) => setInfStep2({ ...infStep2, youtubeSubscribers: v })} placeholder="Subscribers" keyboardType="numeric" style={styles.input} />
+        <PlatformCard
+          platform="YouTube"
+          icon="logo-youtube"
+          connectUrl="https://www.youtube.com"
+          value={infStep2.youtube}
+          followers={infStep2.youtubeSubscribers}
+          followersLabel="Subscribers"
+          placeholder="Channel URL or @handle"
+          expanded={expandedPlatform === 'youtube'}
+          onExpand={() => setExpandedPlatform(expandedPlatform === 'youtube' ? null : 'youtube')}
+          onChange={(v) => setInfStep2({ ...infStep2, youtube: v })}
+          onFollowersChange={(v) => setInfStep2({ ...infStep2, youtubeSubscribers: v })}
+        />
 
-        <SectionLabel label="TikTok" />
-        <Input value={infStep2.tiktok} onChangeText={(v) => setInfStep2({ ...infStep2, tiktok: v })} placeholder="@username" style={styles.input} />
-        <Input value={infStep2.tiktokFollowers} onChangeText={(v) => setInfStep2({ ...infStep2, tiktokFollowers: v })} placeholder="Followers" keyboardType="numeric" style={styles.input} />
+        <PlatformCard
+          platform="Facebook"
+          icon="logo-facebook"
+          connectUrl="https://www.facebook.com"
+          value={infStep2.facebook}
+          followers={infStep2.facebookFollowers}
+          followersLabel="Followers"
+          placeholder="Page URL or @username"
+          expanded={expandedPlatform === 'facebook'}
+          onExpand={() => setExpandedPlatform(expandedPlatform === 'facebook' ? null : 'facebook')}
+          onChange={(v) => setInfStep2({ ...infStep2, facebook: v })}
+          onFollowersChange={(v) => setInfStep2({ ...infStep2, facebookFollowers: v })}
+        />
+
+        <PlatformCard
+          platform="TikTok"
+          icon="logo-tiktok"
+          connectUrl="https://www.tiktok.com"
+          value={infStep2.tiktok}
+          followers={infStep2.tiktokFollowers}
+          followersLabel="Followers"
+          placeholder="Profile URL or @username"
+          expanded={expandedPlatform === 'tiktok'}
+          onExpand={() => setExpandedPlatform(expandedPlatform === 'tiktok' ? null : 'tiktok')}
+          onChange={(v) => setInfStep2({ ...infStep2, tiktok: v })}
+          onFollowersChange={(v) => setInfStep2({ ...infStep2, tiktokFollowers: v })}
+        />
 
         <View style={styles.actionRow}>
           <Button title="Back" variant="outline" onPress={() => setStep(1)} style={{ flex: 1 }} />
@@ -459,8 +523,14 @@ export default function OnboardingScreen({ navigation }: Props) {
 }
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
-  <SafeAreaView style={styles.container}>
-    <ScrollView contentContainerStyle={styles.content}>{children}</ScrollView>
+  <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+    <ScrollView
+      contentContainerStyle={styles.content}
+      bounces={false}
+      overScrollMode="never"
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+    >{children}</ScrollView>
   </SafeAreaView>
 )
 
@@ -506,7 +576,7 @@ function MultiSearchSelect({
           ))}
         </View>
       )}
-      <Pressable style={ss.field} onPress={() => setOpen(!open)}>
+      <Pressable style={({ pressed }) => [ss.field, pressed && ss.pressed]} onPress={() => setOpen(!open)}>
         <Ionicons name="search" size={18} color={colors.textMuted} />
         <Text
           style={[ss.fieldText, selectedLabels.length === 0 && ss.fieldPlaceholder]}
@@ -530,9 +600,9 @@ function MultiSearchSelect({
               <Text style={ss.suggestLabel}>Suggested</Text>
               <View style={ss.suggestChips}>
                 {suggested.map((o) => (
-                  <TouchableOpacity key={o.value} style={ss.suggestChip} onPress={() => onToggle(o.value)}>
+                  <Pressable key={o.value} style={({ pressed }) => [ss.suggestChip, pressed && ss.pressed]} onPress={() => onToggle(o.value)}>
                     <Text style={ss.suggestChipText}>+ {o.label}</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
             </View>
@@ -542,9 +612,9 @@ function MultiSearchSelect({
             {filtered.map((o) => {
               const isSel = selected.includes(o.value)
               return (
-                <TouchableOpacity
+                <Pressable
                   key={o.value}
-                  style={[ss.row, isSel && ss.rowSel]}
+                  style={({ pressed }) => [ss.row, isSel && ss.rowSel, pressed && ss.pressed]}
                   onPress={() => {
                     onToggle(o.value)
                     if (single) setOpen(false)
@@ -552,19 +622,19 @@ function MultiSearchSelect({
                 >
                   <Text style={[ss.rowText, isSel && ss.rowTextSel]}>{o.label}</Text>
                   {isSel && <Ionicons name="checkmark" size={18} color={colors.neon} />}
-                </TouchableOpacity>
+                </Pressable>
               )
             })}
           </ScrollView>
-          <TouchableOpacity
-            style={ss.doneBtn}
+          <Pressable
+            style={({ pressed }) => [ss.doneBtn, pressed && ss.pressed]}
             onPress={() => {
               setOpen(false)
               setQuery('')
             }}
           >
             <Text style={ss.doneText}>Done</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       )}
     </View>
@@ -572,6 +642,7 @@ function MultiSearchSelect({
 }
 
 const ss = StyleSheet.create({
+  pressed: { opacity: 0.85 },
   wrap: { marginBottom: spacing.md },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 6 },
   chip: {
@@ -637,9 +708,116 @@ const ss = StyleSheet.create({
   rowTextSel: { color: colors.neon, fontWeight: '600' },
   doneBtn: { alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border },
   doneText: { color: colors.neon, fontSize: 14, fontWeight: '700' },
+  card: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  cardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardName: { flex: 1, color: colors.text, fontSize: 16, fontWeight: '700' },
+  cardActions: { flexDirection: 'row', gap: 8 },
+  cardBtn: {
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: colors.neon,
+  },
+  cardBtnText: { color: colors.bg, fontSize: 13, fontWeight: '700' },
+  cardBtnManual: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
+  cardBtnManualText: { color: colors.text },
+  badgeOk: {
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: colors.neonSoft,
+  },
+  badgeOkText: { color: colors.neon, fontSize: 12, fontWeight: '700' },
+  cardForm: { marginTop: spacing.md },
 })
 
+// Web parity (handles-block): platform rows with a manual entry — handle/URL
+// plus follower count, and a Connect shortcut that opens the platform to copy
+// your profile URL. Verified badge state arrives later via audience fetch.
+function PlatformCard({
+  platform,
+  icon,
+  connectUrl,
+  value,
+  followers,
+  followersLabel,
+  placeholder,
+  expanded,
+  onExpand,
+  onChange,
+  onFollowersChange,
+}: {
+  platform: string
+  icon: keyof typeof Ionicons.glyphMap
+  connectUrl: string
+  value: string
+  followers: string
+  followersLabel: string
+  placeholder: string
+  expanded: boolean
+  onExpand: () => void
+  onChange: (v: string) => void
+  onFollowersChange: (v: string) => void
+}) {
+  const connected = value.trim().length > 0
+  return (
+    <View style={ss.card}>
+      <View style={ss.cardTop}>
+        <View style={ss.cardIcon}>
+          <Ionicons name={icon} size={20} color={colors.text} />
+        </View>
+        <Text style={ss.cardName}>{platform}</Text>
+        {connected ? (
+          <View style={ss.badgeOk}>
+            <Text style={ss.badgeOkText}>Added</Text>
+          </View>
+        ) : (
+          <View style={ss.cardActions}>
+            <Pressable
+              style={({ pressed }) => [ss.cardBtn, pressed && ss.pressed]}
+              onPress={() => {
+                onExpand()
+                Linking.openURL(connectUrl).catch(() => {})
+              }}
+            >
+              <Text style={ss.cardBtnText}>Connect</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [ss.cardBtn, ss.cardBtnManual, pressed && ss.pressed]}
+              onPress={onExpand}
+            >
+              <Text style={[ss.cardBtnText, ss.cardBtnManualText]}>Manual</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+      {expanded && (
+        <View style={ss.cardForm}>
+          <Input value={value} onChangeText={onChange} placeholder={placeholder} style={{ marginBottom: spacing.sm }} />
+          <Input value={followers} onChangeText={onFollowersChange} placeholder={followersLabel} keyboardType="numeric" />
+        </View>
+      )}
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
+  pressed: { opacity: 0.85 },
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, paddingBottom: spacing.xl },
   heading: { fontSize: 28, fontWeight: 'bold', color: colors.text, marginBottom: spacing.xs },

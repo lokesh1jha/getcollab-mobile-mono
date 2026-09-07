@@ -21,6 +21,7 @@ interface ButtonProps {
   textStyle?: StyleProp<TextStyle>;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  variant?: "primary" | "outline" | "secondary" | "ghost";
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -33,6 +34,7 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
   leftIcon,
   rightIcon,
+  variant = "primary",
 }) => {
   return (
     <TouchableOpacity
@@ -41,6 +43,9 @@ export const Button: React.FC<ButtonProps> = ({
       disabled={disabled || loading}
       style={[
         styles.button,
+        variant === "outline" && styles.outline,
+        variant === "secondary" && styles.secondary,
+        variant === "ghost" && styles.ghost,
         fullWidth && styles.fullWidth,
         (disabled || loading) && styles.disabled,
         style,
@@ -52,7 +57,7 @@ export const Button: React.FC<ButtonProps> = ({
         <View style={styles.inner}>
           {leftIcon}
 
-          <Text style={[styles.text, textStyle]}>{title}</Text>
+          <Text style={[styles.text, variant === "outline" && styles.outlineText, textStyle]}>{title}</Text>
 
           {rightIcon}
         </View>
@@ -90,5 +95,19 @@ const styles = StyleSheet.create({
 
   disabled: {
     opacity: 0.6,
+  },
+  outline: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  secondary: {
+    backgroundColor: colors.surface,
+  },
+  ghost: {
+    backgroundColor: "transparent",
+  },
+  outlineText: {
+    color: colors.text,
   },
 });

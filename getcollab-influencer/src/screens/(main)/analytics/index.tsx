@@ -68,8 +68,9 @@ export default function AnalyticsScreen() {
       for (const b of bidList) {
         const s = String(b.status || 'pending').toLowerCase()
         counts[s] = (counts[s] || 0) + 1
-        amountTotal += Number(b.amount) || 0
-        if (s === 'accepted') amountAccepted += Number(b.amount) || 0
+        const bidAmount = Number(b.amountMinor ?? b.amount ?? 0) / (b.amountMinor != null ? 100 : 1)
+        amountTotal += bidAmount
+        if (s === 'accepted') amountAccepted += bidAmount
       }
       setTotalBids(bidList.length)
       setStatusCounts(counts)
@@ -101,7 +102,7 @@ export default function AnalyticsScreen() {
           accepted: false,
         }
         entry.count += 1
-        entry.amount += Number(b.amount) || 0
+        entry.amount += Number(b.amountMinor ?? b.amount ?? 0) / (b.amountMinor != null ? 100 : 1)
         const st = String(b.status || '').toLowerCase()
         if (st === 'accepted' || st === 'active') entry.accepted = true
         byCampaign.set(id, entry)
@@ -114,8 +115,9 @@ export default function AnalyticsScreen() {
       let pending = 0
       for (const s of settlementList) {
         const st = String(s.status || '').toLowerCase()
-        if (st === 'paid' || st === 'completed') paid += Number(s.amount) || 0
-        else if (st === 'pending' || st === 'processing') pending += Number(s.amount) || 0
+        const value = Number(s.amountMinor ?? s.amount ?? 0) / (s.amountMinor != null ? 100 : 1)
+        if (['released', 'paid', 'completed', 'mark_paid'].includes(st)) paid += value
+        else pending += value
       }
       setEarnings({ paid, pending, payouts: settlementList.length })
 
