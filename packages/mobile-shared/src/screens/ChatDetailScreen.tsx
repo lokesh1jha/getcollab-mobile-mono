@@ -179,7 +179,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
   const renderAttachment = (attachment: ChatAttachment) => {
     if (attachment.type === 'IMAGE') {
       return (
-        <Pressable key={attachment.id} onPress={() => setPreviewUri(attachment.url)}>
+        <Pressable key={attachment.id} onPress={() => setPreviewUri(attachment.url)} style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}>
           <Image source={{ uri: attachment.url }} style={styles.bubbleImage} />
         </Pressable>
       )
@@ -216,7 +216,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
             </View>
           )}
           {isLegacyImage ? (
-            <Pressable onPress={() => setPreviewUri(item.attachmentUrl || item.content)}>
+            <Pressable onPress={() => setPreviewUri(item.attachmentUrl || item.content)} style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}>
               <Image source={{ uri: item.attachmentUrl || item.content }} style={styles.bubbleImage} />
             </Pressable>
           ) : item.content ? (
@@ -293,13 +293,13 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
           ListHeaderComponent={
             hasMoreMessages ? (
-              <TouchableOpacity onPress={loadOlder} disabled={loadingOlder} style={styles.loadMoreBtn}>
+              <Pressable onPress={loadOlder} disabled={loadingOlder} style={({ pressed }) => [styles.loadMoreBtn, pressed && { opacity: 0.7 }]}>
                 {loadingOlder ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <Text style={styles.loadMoreText}>Load older messages</Text>
                 )}
-              </TouchableOpacity>
+              </Pressable>
             ) : messages.length > 0 ? (
               <View style={styles.chatStart}>
                 <Text style={styles.chatStartText}>Beginning of conversation</Text>
@@ -348,12 +348,12 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
 
       {/* Image preview modal */}
       <Modal visible={!!previewUri} transparent animationType="fade" onRequestClose={() => setPreviewUri(null)}>
-        <Pressable style={styles.previewOverlay} onPress={() => setPreviewUri(null)}>
+        <Pressable style={({ pressed }) => [styles.previewOverlay, pressed && { opacity: 0.9 }]} onPress={() => setPreviewUri(null)}>
           <SafeAreaView style={{ flex: 1 }}>
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
               {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
             </View>
-            <Pressable onPress={() => setPreviewUri(null)} style={styles.previewClose}>
+            <Pressable onPress={() => setPreviewUri(null)} style={({ pressed }) => [styles.previewClose, pressed && { opacity: 0.7 }]}>
               <Ionicons name="close" size={28} color={colors.white} />
             </Pressable>
           </SafeAreaView>
