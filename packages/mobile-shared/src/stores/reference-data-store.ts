@@ -64,7 +64,7 @@ function labelsOf(s: ReferenceDataState, key: keyof ReferenceData): string[] {
 export const selectCategories   = (s: ReferenceDataState) => labelsOf(s, 'categories')
 export const selectLanguages    = (s: ReferenceDataState) => s.data?.languages ?? EMPTY
 export const selectIndustries   = (s: ReferenceDataState) => labelsOf(s, 'industries')
-export const selectCampaignTypes = (s: ReferenceDataState) => s.data?.campaignTypes ?? EMPTY
-export const selectObjectives   = (s: ReferenceDataState) => s.data?.objectives ?? EMPTY
+export const selectCampaignTypes = (s: ReferenceDataState) => labelsOf(s, 'campaignTypes')
+export const selectObjectives   = (s: ReferenceDataState) => labelsOf(s, 'objectives')
 export const selectRegions      = (s: ReferenceDataState) => labelsOf(s, 'regions')
 export const selectDeliverables = (s: ReferenceDataState) => labelsOf(s, 'deliverables')

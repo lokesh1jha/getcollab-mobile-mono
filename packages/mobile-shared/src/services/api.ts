@@ -639,6 +639,28 @@ class ApiService {
     return this.request('/wallet/creator')
   }
 
+  async fetchWalletSummary(currency = 'INR'): Promise<any> {
+    return this.request(`/wallet?currency=${currency}`)
+  }
+
+  async topUpWallet(payload: { amountMinor: number; currency?: string; idempotencyKey: string; memo?: string }): Promise<any> {
+    return this.request('/wallet/topup', {
+      method: 'POST',
+      body: JSON.stringify({ currency: 'INR', ...payload }),
+    })
+  }
+
+  async fetchWalletTransactions(currency = 'INR', page = 1, limit = 25): Promise<any> {
+    return this.request(`/wallet/transactions?currency=${currency}&page=${page}&limit=${limit}`)
+  }
+
+  async requestWalletRefund(payload: { amountMinor: number; currency?: string; reason: string }): Promise<any> {
+    return this.request('/wallet/refund-request', {
+      method: 'POST',
+      body: JSON.stringify({ currency: 'INR', ...payload }),
+    })
+  }
+
   async withdrawPayout(data: { amountMinor: number; currency?: string; idempotencyKey: string }): Promise<any> {
     return this.request('/payouts/withdraw', {
       method: 'POST',
@@ -721,7 +743,11 @@ class ApiService {
     return this.request(`/collabs/invites/${encodeURIComponent(id)}/accept`, { method: 'POST', body: JSON.stringify({}) })
   }
 
-  // NOTE: no influencer-side decline endpoint exists — DELETE
+  async declineDealInvite(id: string, reason?: string): Promise<any> {
+    return this.request(`/collabs/invites/${encodeURIComponent(id)}/decline`, { method: 'POST', body: JSON.stringify(reason ? { reason } : {}) })
+  }
+
+  // NOTE: DELETE /collabs/invites/{id} requires a brand org (403 for creators)
   // /collabs/invites/{id} requires a brand org (403 for creators), so the
   // app only offers Accept for invites.
 
@@ -740,13 +766,79 @@ class ApiService {
     return this.request(`/documents/${encodeURIComponent(documentId)}/pdf`)
   }
 
-  async getRelationships(): Promise<any> {
-    return this.request('/relationships')
+  async getRelationships(params?: Record<string, any>): Promise<any> {
+    const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
+    return this.request(`/relationships${queryString}`)
+  }
+
+  async getRelationship(id: string): Promise<any> {
+    return this.request(`/relationships/${encodeURIComponent(id)}`)
+  }
+
+  async createRelationship(data: { targetUserId: string; message?: string }): Promise<any> {
+    return this.request('/relationships', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async searchRelationships(q: string, limit = 10): Promise<any> {
+    return this.request(`/relationships/search?q=${encodeURIComponent(q)}&limit=${limit}`)
+  }
+
+  async getRelationshipCollaborations(relationshipId: string, params?: Record<string, any>): Promise<any> {
+    const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
+    return this.request(`/relationships/${encodeURIComponent(relationshipId)}/collaborations${queryString}`)
+  }
+
+  async getRelationshipTimeline(relationshipId: string): Promise<any> {
+    return this.request(`/relationships/${encodeURIComponent(relationshipId)}/timeline`)
   }
 
   async getAffiliatePrograms(params?: Record<string, any>): Promise<any> {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
     return this.request(`/affiliate/programs${queryString}`)
+  }
+
+  async getAffiliateProgram(id: string): Promise<any> {
+    return this.request(`/affiliate/programs/${encodeURIComponent(id)}`)
+  }
+
+  async createAffiliateProgram(payload: Record<string, unknown>): Promise<any> {
+    return this.request('/affiliate/programs', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  async updateAffiliateProgram(id: string, payload: Record<string, unknown>): Promise<any> {
+    return this.request(`/affiliate/programs/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  async activateAffiliateProgram(id: string): Promise<any> {
+    return this.request(`/affiliate/programs/${encodeURIComponent(id)}/activate`, { method: 'POST' })
+  }
+
+  async pauseAffiliateProgram(id: string): Promise<any> {
+    return this.request(`/affiliate/programs/${encodeURIComponent(id)}/pause`, { method: 'POST' })
+  }
+
+  async resumeAffiliateProgram(id: string): Promise<any> {
+    return this.request(`/affiliate/programs/${encodeURIComponent(id)}/resume`, { method: 'POST' })
+  }
+
+  async closeAffiliateProgram(id: string): Promise<any> {
+    return this.request(`/affiliate/programs/${encodeURIComponent(id)}/close`, { method: 'POST' })
+  }
+
+  async increaseAffiliateBudget(id: string, additionalMinor: number): Promise<any> {
+    return this.request(`/affiliate/programs/${encodeURIComponent(id)}/budget`, {
+      method: 'POST',
+      body: JSON.stringify({ additionalMinor }),
+    })
   }
 
   async applyToAffiliateProgram(id: string): Promise<any> {
@@ -763,6 +855,60 @@ class ApiService {
 
   async acceptAffiliateLink(id: string): Promise<any> {
     return this.request(`/affiliate/links/${encodeURIComponent(id)}/accept`, { method: 'POST', body: JSON.stringify({}) })
+  }
+
+  async getAffiliateApplications(programId: string): Promise<any> {
+    return this.request(`/affiliate/programs/${encodeURIComponent(programId)}/applications`)
+  }
+
+  async reviewAffiliateApplication(id: string, approve: boolean, note = ''): Promise<any> {
+    return this.request(`/affiliate/applications/${encodeURIComponent(id)}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ approve, note }),
+    })
+  }
+
+  // ------- Invoices -------
+  async getInvoices(): Promise<any> {
+    return this.request('/subscriptions/invoices')
+  }
+
+  async downloadInvoice(invoiceId: string): Promise<any> {
+    return this.request(`/subscriptions/invoices/${encodeURIComponent(invoiceId)}/download`)
+  }
+
+  // ------- Brand Invites -------
+  async getBrandInvites(params?: Record<string, any>): Promise<any> {
+    const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
+    return this.request(`/brand-invites${queryString}`)
+  }
+
+  async createBrandInvite(data: { influencerId: string; campaignId?: string; message?: string }): Promise<any> {
+    return this.request('/brand-invites', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async cancelBrandInvite(id: string): Promise<any> {
+    return this.request(`/brand-invites/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  }
+
+  // ------- Team / Org -------
+  async getTeamMembers(orgId?: string): Promise<any> {
+    const query = orgId ? `?orgId=${encodeURIComponent(orgId)}` : ''
+    return this.request(`/orgs/members${query}`)
+  }
+
+  async inviteTeamMember(email: string, orgId?: string): Promise<any> {
+    return this.request('/orgs/invites', {
+      method: 'POST',
+      body: JSON.stringify({ email, ...(orgId ? { orgId } : {}) }),
+    })
+  }
+
+  async removeTeamMember(memberId: string): Promise<any> {
+    return this.request(`/orgs/members/${encodeURIComponent(memberId)}`, { method: 'DELETE' })
   }
 
   async getMediaLibrary(type?: string): Promise<any> {

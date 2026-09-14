@@ -324,7 +324,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
         {renderProgress()}
 
         <SectionLabel label="Campaign Types *" />
-        {renderChips(campaignTypes.map(t => t.label), brandStep2.campaignTypes, (v) => setBrandStep2({ ...brandStep2, campaignTypes: toggle(brandStep2.campaignTypes, v) }))}
+        {renderChips(campaignTypes, brandStep2.campaignTypes, (v) => setBrandStep2({ ...brandStep2, campaignTypes: toggle(brandStep2.campaignTypes, v) }))}
 
         <SectionLabel label="Target Age Ranges *" />
         {renderChips(AGE_RANGES, brandStep2.ageRanges, (v) => setBrandStep2({ ...brandStep2, ageRanges: toggle(brandStep2.ageRanges, v) }))}
@@ -339,7 +339,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
         {renderChips(categories, brandStep2.creatorCategories, (v) => setBrandStep2({ ...brandStep2, creatorCategories: toggle(brandStep2.creatorCategories, v) }))}
 
         <SectionLabel label="Objectives *" />
-        {renderChips(objectives.map(o => o.label), brandStep2.objectives, (v) => setBrandStep2({ ...brandStep2, objectives: toggle(brandStep2.objectives, v) }))}
+        {renderChips(objectives, brandStep2.objectives, (v) => setBrandStep2({ ...brandStep2, objectives: toggle(brandStep2.objectives, v) }))}
 
         <View style={styles.actionRow}>
           <Button title="Back" variant="outline" onPress={() => setStep(1)} style={{ flex: 1 }} />

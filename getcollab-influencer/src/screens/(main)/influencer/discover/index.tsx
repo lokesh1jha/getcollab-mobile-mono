@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react'
 import {
   FlatList, Modal, Pressable, RefreshControl, ScrollView, StyleSheet,
-  Text, TextInput, View, ActivityIndicator, KeyboardAvoidingView, Platform,
+  Text, TextInput, View, ActivityIndicator, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -11,18 +11,34 @@ import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 
 const CATEGORIES = ['All', 'Fashion', 'Beauty', 'Fitness', 'Tech', 'Travel', 'Food', 'Lifestyle', 'Gaming']
+const SORTS = [
+  { key: 'newest', label: 'Newest' },
+  { key: 'budget_desc', label: 'Budget: High-Low' },
+  { key: 'budget_asc', label: 'Budget: Low-High' },
+]
+const BUDGET_RANGES = [
+  { key: 'all', label: 'Any budget' },
+  { key: '0-50000', label: 'Under ₹50K' },
+  { key: '50000-200000', label: '₹50K - ₹2L' },
+  { key: '200000-1000000', label: '₹2L - ₹10L' },
+  { key: '1000000+', label: '₹10L+' },
+]
 
 interface Campaign {
-  id: string; title: string; description?: string; budget: number
+  id: string; title: string; description?: string; budget?: number; budgetCurrency?: string; budgetDisclosed?: boolean
   status: string; category?: string; region?: string; deliverables?: string[]
-  startDate?: string; endDate?: string; brandName?: string
-  minFollowers?: number; maxBudget?: number
+  startDate?: string; endDate?: string; applicationDeadline?: string
+  brandName?: string; brand?: { name?: string; image?: string }
+  minFollowers?: number; maxFollowers?: number; platforms?: string[]
+  targetGender?: string; targetAgeMin?: number; targetAgeMax?: number
 }
 
-function formatBudget(n: number): string {
-  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`
-  if (n >= 1000) return `₹${(n / 1000).toFixed(0)}K`
-  return `₹${n}`
+function formatBudget(n?: number, currency?: string, disclosed = true): string {
+  if (!disclosed || n == null) return 'Undisclosed'
+  const c = currency || 'INR'
+  if (n >= 100000) return `${c === 'INR' ? '₹' : '$'}${(n / 100000).toFixed(1)}L`
+  if (n >= 1000) return `${c === 'INR' ? '₹' : '$'}${(n / 1000).toFixed(0)}K`
+  return `${c === 'INR' ? '₹' : '$'}${n}`
 }
 
 function timeLeft(end?: string): string | null {
@@ -41,6 +57,9 @@ export default function InfluencerDiscover({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('All')
+  const [sortKey, setSortKey] = useState('newest')
+  const [budgetRange, setBudgetRange] = useState('all')
+  const [showFilters, setShowFilters] = useState(false)
   const [bidTarget, setBidTarget] = useState<Campaign | null>(null)
   const [bidAmount, setBidAmount] = useState('')
   const [bidPitch, setBidPitch] = useState('')
@@ -51,6 +70,12 @@ export default function InfluencerDiscover({ navigation }: any) {
     try {
       const params: Record<string, any> = { status: 'active' }
       if (category !== 'All') params.category = category
+      if (budgetRange !== 'all') {
+        const [min, max] = budgetRange.split('-').map(x => x.replace('+', ''))
+        if (min) params.minBudget = min
+        if (max) params.maxBudget = max
+      }
+      params.sort = sortKey
       const res = await apiService.getCampaigns(params)
       const list: Campaign[] = res?.data || res?.campaigns || (Array.isArray(res) ? res : [])
       setCampaigns(Array.isArray(list) ? list : [])
@@ -60,7 +85,7 @@ export default function InfluencerDiscover({ navigation }: any) {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [category])
+  }, [category, sortKey, budgetRange])
 
   useFocusEffect(useCallback(() => { load(true) }, [load]))
   const onRefresh = () => { setRefreshing(true); load(false) }
@@ -70,7 +95,7 @@ export default function InfluencerDiscover({ navigation }: any) {
     const q = query.toLowerCase()
     return campaigns.filter(c =>
       c.title?.toLowerCase().includes(q) ||
-      c.brandName?.toLowerCase().includes(q) ||
+      (c.brandName || c.brand?.name)?.toLowerCase().includes(q) ||
       c.category?.toLowerCase().includes(q) ||
       c.region?.toLowerCase().includes(q) ||
       c.description?.toLowerCase().includes(q)
@@ -89,7 +114,7 @@ export default function InfluencerDiscover({ navigation }: any) {
       setBidTarget(null)
       setBidAmount('')
       setBidPitch('')
-      load(false)
+      Alert.alert('Applied!', 'Your application was submitted.')
     } catch (err: any) {
       handleApiError(err, 'Failed to submit bid')
     } finally {
@@ -99,66 +124,63 @@ export default function InfluencerDiscover({ navigation }: any) {
 
   const renderCampaign = ({ item, index }: { item: Campaign; index: number }) => {
     const s = statusColor(item.status)
-    const tl = timeLeft(item.endDate)
+    const tl = timeLeft(item.applicationDeadline || item.endDate)
+    const brand = item.brandName || item.brand?.name || 'Brand'
     return (
       <Animated.View entering={FadeInDown.delay(index * 50).duration(320)} style={styles.campaignCard}>
-        {/* Card header row */}
-        <View style={styles.cardTop}>
-          <View style={styles.brandAvatarWrap}>
-            <Text style={styles.brandAvatarText}>{(item.brandName || item.title)?.charAt(0).toUpperCase()}</Text>
+        <Pressable
+          onPress={() => navigation?.navigate('CampaignDetails', { id: item.id })}
+          style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+        >
+          <View style={styles.cardTop}>
+            <View style={styles.brandAvatarWrap}>
+              <Text style={styles.brandAvatarText}>{brand.charAt(0).toUpperCase()}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.campaignTitle} numberOfLines={1}>{item.title}</Text>
+              <Text style={styles.brandName}>{brand}</Text>
+            </View>
+            <View style={[styles.statusPill, { backgroundColor: s.bg }]}>
+              <View style={[styles.statusDot, { backgroundColor: s.dot }]} />
+              <Text style={[styles.statusText, { color: s.fg }]}>
+                {item.status?.charAt(0).toUpperCase() + item.status?.slice(1)}
+              </Text>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.campaignTitle} numberOfLines={1}>{item.title}</Text>
-            <Text style={styles.brandName}>{item.brandName || 'Brand'}</Text>
-          </View>
-          <View style={[styles.statusPill, { backgroundColor: s.bg }]}>
-            <View style={[styles.statusDot, { backgroundColor: s.dot }]} />
-            <Text style={[styles.statusText, { color: s.fg }]}>
-              {item.status?.charAt(0).toUpperCase() + item.status?.slice(1)}
-            </Text>
-          </View>
-        </View>
 
-        {/* Description */}
-        {item.description ? (
-          <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
-        ) : null}
+          {item.description ? (
+            <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
+          ) : null}
 
-        {/* Tags */}
-        <View style={styles.tagsRow}>
-          {item.category ? <Tag text={item.category} icon="pricetag-outline" /> : null}
-          {item.region ? <Tag text={item.region} icon="location-outline" /> : null}
-          {item.deliverables?.slice(0, 1).map(d => <Tag key={d} text={d} icon="camera-outline" />) ?? null}
-        </View>
+          <View style={styles.tagsRow}>
+            {item.category ? <Tag text={item.category} icon="pricetag-outline" /> : null}
+            {item.region ? <Tag text={item.region} icon="location-outline" /> : null}
+            {item.platforms?.slice(0, 1).map(p => <Tag key={p} text={p} icon="camera-outline" />) ?? null}
+            {item.deliverables?.slice(0, 1).map(d => <Tag key={d} text={d} icon="checkbox-outline" />) ?? null}
+          </View>
 
-        {/* Footer */}
-        <View style={styles.cardFooter}>
-          <View>
-            <Text style={styles.budgetLabel}>Budget</Text>
-            <Text style={styles.budgetValue}>{formatBudget(item.budget)}</Text>
+          <View style={styles.cardFooter}>
+            <View>
+              <Text style={styles.budgetLabel}>Budget</Text>
+              <Text style={styles.budgetValue}>{formatBudget(item.budget, item.budgetCurrency, item.budgetDisclosed !== false)}</Text>
+            </View>
+            <View style={styles.cardActions}>
+              {tl && (
+                <View style={[styles.urgencyPill, tl === 'Ends today' && { backgroundColor: colors.errorSoft }]}>
+                  <Ionicons name="time-outline" size={11} color={tl === 'Ends today' ? colors.error : colors.textMuted} />
+                  <Text style={[styles.urgencyText, tl === 'Ends today' && { color: colors.error }]}>{tl}</Text>
+                </View>
+              )}
+              <Pressable
+                onPress={() => { setBidTarget(item); setBidAmount(String(item.budget || '')); setBidPitch('') }}
+                style={({ pressed }) => [styles.applyBtn, pressed && { opacity: 0.85 }]}
+              >
+                <Ionicons name="flash" size={14} color="#000" />
+                <Text style={styles.applyBtnText}>Apply</Text>
+              </Pressable>
+            </View>
           </View>
-          <View style={styles.cardActions}>
-            {tl && (
-              <View style={[styles.urgencyPill, tl === 'Ends today' && { backgroundColor: colors.errorSoft }]}>
-                <Ionicons name="time-outline" size={11} color={tl === 'Ends today' ? colors.error : colors.textMuted} />
-                <Text style={[styles.urgencyText, tl === 'Ends today' && { color: colors.error }]}>{tl}</Text>
-              </View>
-            )}
-            <Pressable
-              onPress={() => navigation?.navigate('CampaignDetails', { id: item.id, campaign: item })}
-              style={({ pressed }) => [styles.viewBtn, pressed && { opacity: 0.8 }]}
-            >
-              <Text style={styles.viewBtnText}>Details</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => { setBidTarget(item); setBidAmount(String(item.budget || '')); setBidPitch('') }}
-              style={({ pressed }) => [styles.applyBtn, pressed && { opacity: 0.85 }]}
-            >
-              <Ionicons name="flash" size={14} color="#000" />
-              <Text style={styles.applyBtnText}>Apply</Text>
-            </Pressable>
-          </View>
-        </View>
+        </Pressable>
       </Animated.View>
     )
   }
@@ -166,10 +188,10 @@ export default function InfluencerDiscover({ navigation }: any) {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        {/* Sticky header */}
+        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Discover</Text>
-          <Pressable style={styles.iconBtn}>
+          <Pressable onPress={() => setShowFilters(true)} style={styles.iconBtn}>
             <Ionicons name="options-outline" size={20} color={colors.text} />
           </Pressable>
         </View>
@@ -227,7 +249,7 @@ export default function InfluencerDiscover({ navigation }: any) {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.aiBannerTitle}>{filtered.length} campaigns available for you</Text>
-                      <Text style={styles.aiBannerSub}>{category !== 'All' ? category : 'All categories'} · Active now</Text>
+                      <Text style={styles.aiBannerSub}>{category !== 'All' ? category : 'All categories'} · {sortKey === 'newest' ? 'Newest first' : sortKey === 'budget_desc' ? 'Highest budget' : 'Lowest budget'}</Text>
                     </View>
                   </View>
                 </Animated.View>
@@ -239,11 +261,46 @@ export default function InfluencerDiscover({ navigation }: any) {
                   <Ionicons name="compass-outline" size={26} color={colors.textMuted} />
                 </View>
                 <Text style={styles.emptyTitle}>No campaigns found</Text>
-                <Text style={styles.emptySub}>Try a different category or clear your search.</Text>
+                <Text style={styles.emptySub}>Try a different category, budget filter, or clear your search.</Text>
               </View>
             }
           />
         )}
+
+        {/* Filters Modal */}
+        <Modal visible={showFilters} animationType="slide" transparent>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+            <Pressable style={styles.overlay} onPress={() => setShowFilters(false)} />
+            <View style={styles.sheet}>
+              <View style={styles.sheetHandle} />
+              <Text style={styles.sheetTitle}>Filters</Text>
+
+              <Text style={styles.sheetLabel}>Sort by</Text>
+              <View style={styles.sheetOptions}>
+                {SORTS.map(s => (
+                  <Pressable key={s.key} onPress={() => setSortKey(s.key)} style={[styles.sheetOption, sortKey === s.key && styles.sheetOptionActive]}>
+                    <Text style={[styles.sheetOptionText, sortKey === s.key && styles.sheetOptionTextActive]}>{s.label}</Text>
+                    {sortKey === s.key && <Ionicons name="checkmark" size={16} color={colors.neon} />}
+                  </Pressable>
+                ))}
+              </View>
+
+              <Text style={styles.sheetLabel}>Budget range</Text>
+              <View style={styles.sheetOptions}>
+                {BUDGET_RANGES.map(b => (
+                  <Pressable key={b.key} onPress={() => setBudgetRange(b.key)} style={[styles.sheetOption, budgetRange === b.key && styles.sheetOptionActive]}>
+                    <Text style={[styles.sheetOptionText, budgetRange === b.key && styles.sheetOptionTextActive]}>{b.label}</Text>
+                    {budgetRange === b.key && <Ionicons name="checkmark" size={16} color={colors.neon} />}
+                  </Pressable>
+                ))}
+              </View>
+
+              <Pressable onPress={() => setShowFilters(false)} style={styles.submitBtn}>
+                <Text style={styles.submitBtnText}>Show results</Text>
+              </Pressable>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
 
         {/* Bid Modal */}
         <Modal visible={!!bidTarget} animationType="slide" transparent>
@@ -252,7 +309,7 @@ export default function InfluencerDiscover({ navigation }: any) {
             <View style={styles.sheet}>
               <View style={styles.sheetHandle} />
               <Text style={styles.sheetTitle}>{bidTarget?.title}</Text>
-              <Text style={styles.sheetSubtitle}>Budget: {formatBudget(bidTarget?.budget ?? 0)}</Text>
+              <Text style={styles.sheetSubtitle}>Budget: {formatBudget(bidTarget?.budget, bidTarget?.budgetCurrency, bidTarget?.budgetDisclosed !== false)}</Text>
 
               <Text style={styles.sheetLabel}>Your bid amount (₹)</Text>
               <View style={styles.sheetInput}>
@@ -347,8 +404,6 @@ const styles = StyleSheet.create({
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   urgencyPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.elevated, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   urgencyText: { color: colors.textMuted, fontSize: 11, fontWeight: '600' },
-  viewBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: colors.borderStrong },
-  viewBtnText: { color: colors.text, fontSize: 12, fontWeight: '600' },
   applyBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.neon, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 },
   applyBtnText: { color: '#000', fontSize: 12, fontWeight: '700' },
 
@@ -367,4 +422,10 @@ const styles = StyleSheet.create({
   sheetInputText: { flex: 1, color: colors.text, fontSize: 15, padding: 0 },
   submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 16, marginTop: spacing.xl },
   submitBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
+
+  sheetOptions: { gap: spacing.sm },
+  sheetOption: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.elevated },
+  sheetOptionActive: { borderColor: colors.neon, backgroundColor: colors.neonSoft },
+  sheetOptionText: { color: colors.text, fontSize: 14 },
+  sheetOptionTextActive: { color: colors.neon, fontWeight: '700' },
 })

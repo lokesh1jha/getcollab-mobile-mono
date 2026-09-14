@@ -1,5 +1,7 @@
 import React, { useState, useCallback } from 'react'
-import { FlatList, Modal, Pressable, RefreshControl, StyleSheet, Text, TextInput, View, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import {
+  FlatList, Modal, Pressable, RefreshControl, StyleSheet, Text, TextInput, View, ActivityIndicator, KeyboardAvoidingView, Platform, Alert,
+} from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -7,19 +9,39 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 
-interface Settlement { id: string; dealId?: string; amount?: number; amountMinor?: number; status: string; campaignId?: string; campaignTitle?: string; createdAt?: string; date?: string; notes?: string }
+interface Settlement {
+  id: string
+  dealId?: string
+  amount?: number
+  amountMinor?: number
+  status: string
+  campaignId?: string
+  campaignTitle?: string
+  createdAt?: string
+  date?: string
+  notes?: string
+  entryType?: string
+  type?: string
+}
 
 function formatDate(v?: string): string {
   if (!v) return '—'
   try { return new Date(v).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) } catch { return v }
 }
 
+function money(minor?: number, amount?: number): string {
+  const val = minor != null ? minor / 100 : amount || 0
+  return `₹${Number(val).toLocaleString()}`
+}
+
 export default function EarningsScreen({ navigation }: any) {
   const [settlements, setSettlements] = useState<Settlement[]>([])
+  const [transactions, setTransactions] = useState<Settlement[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [walletMinor, setWalletMinor] = useState<number | null>(null)
+  const [reservedMinor, setReservedMinor] = useState<number | null>(null)
   const [amount, setAmount] = useState('')
   const [campaignId, setCampaignId] = useState('')
   const [notes, setNotes] = useState('')
@@ -39,13 +61,17 @@ export default function EarningsScreen({ navigation }: any) {
       ])
       const earningsList: Settlement[] = earningsRes?.earnings || earningsRes?.data || (Array.isArray(earningsRes) ? earningsRes : [])
       const settlementsList: Settlement[] = settlementsRes?.settlementRequests || settlementsRes?.data || (Array.isArray(settlementsRes) ? settlementsRes : [])
+      const txList: Settlement[] = earningsRes?.transactions || earningsRes?.data?.transactions || []
+
       const byId = new Map<string, Settlement>()
       for (const s of [...(Array.isArray(earningsList) ? earningsList : []), ...(Array.isArray(settlementsList) ? settlementsList : [])]) {
         const id = s?.id || s?.dealId
         if (id) byId.set(String(id), { ...s, id: String(id) })
       }
       setSettlements(Array.from(byId.values()))
+      setTransactions(Array.isArray(txList) ? txList : [])
       setWalletMinor(typeof walletRes?.availableMinor === 'number' ? walletRes.availableMinor : null)
+      setReservedMinor(typeof walletRes?.reservedMinor === 'number' ? walletRes.reservedMinor : (typeof walletRes?.heldMinor === 'number' ? walletRes.heldMinor : null))
     } catch (err: any) {
       handleApiError(err, 'Failed to load earnings')
     } finally { setLoading(false); setRefreshing(false) }
@@ -86,7 +112,7 @@ export default function EarningsScreen({ navigation }: any) {
           </View>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
-          <Text style={styles.cardAmount}>₹{displayAmount(item).toLocaleString()}</Text>
+          <Text style={styles.cardAmount}>{money(item.amountMinor, item.amount)}</Text>
           <View style={[styles.statusPill, { backgroundColor: s.bg }]}>
             <Text style={[styles.statusText, { color: s.fg }]}>{item.status?.charAt(0).toUpperCase() + item.status?.slice(1)}</Text>
           </View>
@@ -121,7 +147,7 @@ export default function EarningsScreen({ navigation }: any) {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
           ListHeaderComponent={
             <View>
-              {/* Stat cards */}
+              {/* Wallet stats */}
               <View style={styles.statsRow}>
                 <Animated.View entering={FadeInDown.delay(0).duration(320)} style={[styles.statCard, { borderColor: 'rgba(34,197,94,0.3)' }]}>
                   <View style={styles.statIconWrap}><Ionicons name="wallet-outline" size={18} color={colors.success} /></View>
@@ -134,7 +160,23 @@ export default function EarningsScreen({ navigation }: any) {
                   <Text style={styles.statLabel}>Pending</Text>
                 </Animated.View>
               </View>
-              {walletMinor != null && <Text style={styles.balanceText}>Available to withdraw: ₹{(walletMinor / 100).toLocaleString()}</Text>}
+
+              {walletMinor != null && (
+                <View style={styles.walletCard}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View>
+                      <Text style={styles.walletLabel}>Available to withdraw</Text>
+                      <Text style={styles.walletAmount}>₹{(walletMinor / 100).toLocaleString()}</Text>
+                    </View>
+                    {reservedMinor != null && reservedMinor > 0 && (
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={styles.walletLabel}>Reserved</Text>
+                        <Text style={[styles.walletAmount, { color: colors.textMuted, fontSize: 16 }]}>₹{(reservedMinor / 100).toLocaleString()}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
 
               <Pressable
                 onPress={() => setShowModal(true)}
@@ -202,6 +244,9 @@ const styles = StyleSheet.create({
   statIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.successSoft, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' },
   statValue: { fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
   statLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '500' },
+  walletCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md },
+  walletLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
+  walletAmount: { color: colors.text, fontSize: 22, fontWeight: '800', marginTop: 4 },
   requestBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 14 },
   requestBtnText: { color: '#000', fontSize: 15, fontWeight: '700' },
   sectionTitle: { color: colors.text, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
@@ -211,7 +256,6 @@ const styles = StyleSheet.create({
   cardTitle: { color: colors.text, fontSize: 14, fontWeight: '600', maxWidth: 160 },
   cardDate: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
   cardAmount: { color: colors.text, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
-  balanceText: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginBottom: spacing.md },
   statusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, marginTop: 4 },
   statusText: { fontSize: 10, fontWeight: '700' },
   empty: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.sm },

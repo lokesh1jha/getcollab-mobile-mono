@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import * as ImagePicker from 'expo-image-picker'
 import * as DocumentPicker from 'expo-document-picker'
 import { Ionicons } from '@expo/vector-icons'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError, uploadMediaBlob } from '@shared/services/api'
 
@@ -13,6 +14,7 @@ const ACCEPT_MIMES = [...IMAGE_MIMES, 'application/pdf', 'video/mp4', 'video/web
 export default function AssetsScreen() {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [uploading, setUploading] = useState(false)
 
   const load = useCallback(async () => {
@@ -20,9 +22,10 @@ export default function AssetsScreen() {
       const r = await apiService.getMediaLibrary()
       setItems(r?.items || r?.data || [])
     } catch (e) { handleApiError(e, 'Failed to load assets') }
-    finally { setLoading(false) }
+    finally { setLoading(false); setRefreshing(false) }
   }, [])
-  useFocusEffect(useCallback(() => { load() }, [load]))
+
+  useFocusEffect(useCallback(() => { setLoading(true); load() }, [load]))
 
   const upload = async (file: { uri: string; mime: string; size: number; width?: number; height?: number }) => {
     if (!ACCEPT_MIMES.includes(file.mime)) {
@@ -54,9 +57,14 @@ export default function AssetsScreen() {
     upload({ uri: a.uri, mime: a.mimeType || 'application/pdf', size: a.size || 0 })
   }
 
-  if (loading) return <View style={styles.center}><ActivityIndicator color={colors.neon} /></View>
+  if (loading) return (
+    <SafeAreaView style={styles.root} edges={['top']}>
+      <View style={styles.center}><ActivityIndicator color={colors.neon} /></View>
+    </SafeAreaView>
+  )
+
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.uploadRow}>
         <Pressable disabled={uploading} onPress={pickPhoto} style={({ pressed }) => [styles.uploadBtn, pressed && { opacity: 0.85 }, uploading && { opacity: 0.5 }]}>
           <Ionicons name="image-outline" size={16} color="#000" />
@@ -70,12 +78,18 @@ export default function AssetsScreen() {
       <FlatList
         style={styles.root}
         contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}
         data={items}
         keyExtractor={(x) => String(x.id)}
         numColumns={2}
         columnWrapperStyle={styles.columns}
-        ListEmptyComponent={<Text style={styles.empty}>No assets yet — upload your first one above.</Text>}
+        ListEmptyComponent={
+          <View style={styles.emptyWrap}>
+            <Ionicons name="images-outline" size={26} color={colors.textMuted} />
+            <Text style={styles.emptyTitle}>No assets yet</Text>
+            <Text style={styles.emptySub}>Upload your first one above.</Text>
+          </View>
+        }
         renderItem={({ item }) => (
           <View style={styles.card}>
             {item.preview_url || item.previewUrl ? <Image source={{ uri: item.preview_url || item.previewUrl }} style={styles.image} /> : (
@@ -85,13 +99,13 @@ export default function AssetsScreen() {
           </View>
         )}
       />
-    </View>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   uploadRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   uploadBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 12 },
   uploadText: { color: '#000', fontWeight: '800', fontSize: 13 },
@@ -104,5 +118,7 @@ const styles = StyleSheet.create({
   file: { aspectRatio: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.elevated, borderRadius: radius.sm },
   fileText: { color: colors.text, fontWeight: '800' },
   meta: { color: colors.textMuted, fontSize: 11, marginTop: spacing.sm },
-  empty: { color: colors.textMuted, textAlign: 'center', marginTop: spacing.xxxl },
+  emptyWrap: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.sm },
+  emptyTitle: { color: colors.text, fontSize: 15, fontWeight: '700', marginTop: spacing.sm },
+  emptySub: { color: colors.textMuted, fontSize: 13 },
 })

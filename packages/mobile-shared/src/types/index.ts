@@ -294,3 +294,152 @@ export interface CreateDisputeData {
   reason: string
   description: string
 }
+
+// Wallet
+export interface WalletSummary {
+  balance_minor: number
+  held_minor: number
+  reserved_minor?: number
+  available_minor: number
+  currency: string
+}
+
+export interface WalletTransaction {
+  id: string
+  account_id: string
+  deal_id?: string | null
+  milestone_id?: string | null
+  amount_minor: number
+  currency: string
+  entry_type: string
+  idempotency_key?: string | null
+  memo: string
+  created_by?: string | null
+  created_at: string
+}
+
+// Relationships
+export interface Relationship {
+  id: string
+  otherParty?: {
+    id: string
+    name: string
+    image?: string
+  }
+  status: string
+  totalCollaborations: number
+  totalSpend?: number
+  averageRating?: number
+  lastInteractionAt?: string
+  lastCampaign?: string
+}
+
+export interface RelationshipDetail extends Relationship {
+  collaborations?: Array<{
+    id: string
+    campaignTitle: string
+    status: string
+    startDate?: string
+    endDate?: string
+  }>
+  timeline?: Array<{
+    type: string
+    createdAt: string
+    description?: string
+  }>
+}
+
+// Invoices
+export interface Invoice {
+  id: string
+  amount: number
+  currency: string
+  status: string
+  description?: string
+  createdAt: string
+  paidAt?: string
+  pdfUrl?: string
+}
+
+// Affiliate
+export interface RewardRule {
+  eventType: string
+  rewardType: string
+  rewardValue: number
+  threshold?: number
+  currency?: string
+  platformShareBps?: number
+}
+
+export interface AffiliateProgram {
+  id: string
+  name: string
+  description: string
+  ownerType: string
+  fundingSource: string
+  screeningMode: string
+  status: string
+  haltReason?: string | null
+  attributionWindowDays: number
+  currency: string
+  productName: string
+  destinationUrl: string
+  terms: string
+  budget?: {
+    totalMinor: number
+    reservedMinor: number
+    consumedMinor: number
+    reservationId?: string | null
+  }
+  rewardRules?: RewardRule[]
+}
+
+export interface AffiliateLink {
+  id: string
+  programId: string
+  influencerId: string
+  code: string
+  url: string
+  status: string
+}
+
+export interface AffiliateReward {
+  id: string
+  programId: string
+  status: string
+  amountMinor: number
+  currency: string
+  rejectReason?: string | null
+  createdAt: string
+}
+
+// Team
+export interface TeamMember {
+  id: string
+  userId: string
+  name: string
+  email: string
+  image?: string
+  role: 'owner' | 'admin' | 'member'
+  joinedAt: string
+}
+
+export interface TeamInvite {
+  id: string
+  email: string
+  role: string
+  status: string
+  createdAt: string
+}
+
+// Brand Invites
+export interface BrandInvite {
+  id: string
+  influencerId: string
+  influencerName?: string
+  campaignId?: string
+  campaignTitle?: string
+  message?: string
+  status: string
+  createdAt: string
+}
