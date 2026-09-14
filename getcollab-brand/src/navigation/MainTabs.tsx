@@ -11,15 +11,37 @@ import BrandDashboard from '../app/(main)/brand/dashboard'
 import BrandCampaigns from '../app/(main)/brand/campaigns'
 import BrandCampaignDetails from '../app/(main)/brand/campaigns/[id]'
 import CampaignAnalytics from '../app/(main)/brand/campaigns/[id]/analytics'
+import CampaignEdit from '../app/(main)/brand/campaigns/[id]/edit'
+import CampaignDiscover from '../app/(main)/brand/campaigns/[id]/discover'
+import CampaignResponses from '../app/(main)/brand/campaigns/[id]/responses'
+import CampaignExecute from '../app/(main)/brand/campaigns/[id]/execute'
+import CampaignOutreach from '../app/(main)/brand/campaigns/[id]/outreach'
+import CampaignEscrow from '../app/(main)/brand/campaigns/[id]/escrow'
+import CampaignCircle from '../app/(main)/brand/campaigns/[id]/circle'
 import CreateCampaign from '../app/(main)/brand/campaigns/create'
 import BrandChat from '../app/(main)/brand/chat'
 import ChatDetail from '../app/(main)/brand/chat-detail/[id]'
 import BrandBids from '../app/(main)/brand/bids'
 import BrowseCreators from '../app/(main)/brand/creators'
+import CreatorReport from '../app/(main)/brand/creators/[id]/report'
+import AnalyticsScreen from '../app/(main)/brand/analytics'
 import InviteCreator from '../app/(main)/brand/invite-creator'
 import BrandProfile from '../app/(main)/brand/profile'
+import WalletScreen from '../app/(main)/brand/wallet'
+import RelationshipsScreen from '../app/(main)/brand/relationships'
+import RelationshipDetailScreen from '../app/(main)/brand/relationships/[id]'
+import InvitesScreen from '../app/(main)/brand/invites'
+import AffiliateProgramsScreen from '../app/(main)/brand/affiliate'
+import AffiliateLinksScreen from '../app/(main)/brand/affiliate/links'
+import AffiliateCommissionsScreen from '../app/(main)/brand/affiliate/commissions'
 import DisputesScreen from '../app/(main)/disputes'
 import SettingsScreen from '../app/(main)/settings'
+import ProfileSettingsScreen from '../app/(main)/settings/profile'
+import AccountSettingsScreen from '../app/(main)/settings/account'
+import SecuritySettingsScreen from '../app/(main)/settings/security'
+import TeamSettingsScreen from '../app/(main)/settings/team'
+import BillingSettingsScreen from '../app/(main)/settings/billing'
+import NotificationsSettingsScreen from '../app/(main)/settings/notifications'
 import NotificationsScreen from '../app/(main)/notifications'
 import SubscriptionScreen from '../app/(main)/subscription'
 import VerifyEmailScreen from '../app/(main)/verify-email'
@@ -216,6 +238,41 @@ function BrandStackInner() {
         options={{ headerTitle: 'Campaign Analytics', ...stackHeaderOptions }}
       />
       <Stack.Screen
+        name="CampaignEdit"
+        component={CampaignEdit}
+        options={{ headerTitle: 'Edit Campaign', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="CampaignDiscover"
+        component={CampaignDiscover}
+        options={{ headerTitle: 'Discover Creators', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="CampaignResponses"
+        component={CampaignResponses}
+        options={{ headerTitle: 'Responses', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="CampaignExecute"
+        component={CampaignExecute}
+        options={{ headerTitle: 'Execute', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="CampaignOutreach"
+        component={CampaignOutreach}
+        options={{ headerTitle: 'Outreach', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="CampaignEscrow"
+        component={CampaignEscrow}
+        options={{ headerTitle: 'Escrow', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="CampaignCircle"
+        component={CampaignCircle}
+        options={{ headerTitle: 'Creator Circle', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
         name="CreateCampaign"
         component={CreateCampaign}
         options={{ headerTitle: 'New Campaign', ...stackHeaderOptions }}
@@ -241,6 +298,36 @@ function BrandStackInner() {
         options={{ headerTitle: 'Settings', ...stackHeaderOptions }}
       />
       <Stack.Screen
+        name="Profile"
+        component={ProfileSettingsScreen}
+        options={{ headerTitle: 'Profile', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="Account"
+        component={AccountSettingsScreen}
+        options={{ headerTitle: 'Account', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="Security"
+        component={SecuritySettingsScreen}
+        options={{ headerTitle: 'Security', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="Team"
+        component={TeamSettingsScreen}
+        options={{ headerTitle: 'Team', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="Billing"
+        component={BillingSettingsScreen}
+        options={{ headerTitle: 'Billing', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="NotificationSettings"
+        component={NotificationsSettingsScreen}
+        options={{ headerTitle: 'Notifications', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
         name="Notifications"
         component={NotificationsScreen}
         options={{ headerTitle: 'Notifications', ...stackHeaderOptions }}
@@ -264,6 +351,51 @@ function BrandStackInner() {
         name="ProfilePreview"
         component={ProfilePreviewScreen}
         options={{ headerTitle: 'Public Profile', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="Wallet"
+        component={WalletScreen}
+        options={{ headerTitle: 'Wallet', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="Relationships"
+        component={RelationshipsScreen}
+        options={{ headerTitle: 'Relationships', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="RelationshipDetail"
+        component={RelationshipDetailScreen}
+        options={{ headerTitle: 'Relationship', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="Invites"
+        component={InvitesScreen}
+        options={{ headerTitle: 'Invites', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="Analytics"
+        component={AnalyticsScreen}
+        options={{ headerTitle: 'Analytics', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="Affiliate"
+        component={AffiliateProgramsScreen}
+        options={{ headerTitle: 'Affiliate', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="AffiliateLinks"
+        component={AffiliateLinksScreen}
+        options={{ headerTitle: 'Links', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="AffiliateCommissions"
+        component={AffiliateCommissionsScreen}
+        options={{ headerTitle: 'Commissions', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="CreatorReport"
+        component={CreatorReport}
+        options={{ headerTitle: 'Creator Report', ...stackHeaderOptions }}
       />
     </Stack.Navigator>
   )

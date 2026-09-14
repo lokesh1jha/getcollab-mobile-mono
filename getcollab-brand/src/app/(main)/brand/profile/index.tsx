@@ -11,6 +11,10 @@ import { useSubscriptionStore } from '../../../../stores/subscription-store'
 import apiService, { handleApiError } from '@shared/services/api'
 
 const SETTINGS_ROWS = [
+  { id: 'wallet', icon: 'wallet-outline', label: 'Wallet' },
+  { id: 'relationships', icon: 'people-outline', label: 'Relationships' },
+  { id: 'invites', icon: 'mail-outline', label: 'Invites' },
+  { id: 'affiliate', icon: 'link-outline', label: 'Affiliate' },
   { id: 'notifications', icon: 'notifications-outline', label: 'Notifications' },
   { id: 'settings', icon: 'settings-outline', label: 'Settings' },
   { id: 'disputes', icon: 'shield-outline', label: 'Disputes' },

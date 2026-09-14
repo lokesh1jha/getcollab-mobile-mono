@@ -234,12 +234,9 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
               <ActionCard icon="add-circle" label="Create Campaign" onPress={() => navigation?.navigate('CreateCampaign')} />
               <ActionCard icon="person-add" label="Messages" onPress={() => navigation?.navigate('Chat')} />
               <ActionCard icon="document-text" label="View Bids" onPress={() => navigation?.navigate('Bids')} />
-              <ActionCard icon="stats-chart" label="Analytics" onPress={() => {
-                const first = myCampaigns[0]
-                if (first) navigation?.navigate('CampaignAnalytics', { id: first.id, campaign: first })
-                else navigation?.navigate('Campaigns')
-              }} />
-              <ActionCard icon="card" label="Billing" onPress={() => navigation?.navigate('Subscription')} />
+              <ActionCard icon="wallet-outline" label="Wallet" onPress={() => navigation?.navigate('Wallet')} />
+              <ActionCard icon="people-outline" label="Relationships" onPress={() => navigation?.navigate('Relationships')} />
+              <ActionCard icon="stats-chart" label="Analytics" onPress={() => navigation?.navigate('Analytics')} />
             </View>
           </View>
         </ScrollView>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Dimensions } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -102,9 +102,31 @@ export default function BrandCampaignDetailsScreen() {
               <Text style={styles.dateValue}>{new Date(campaign.endDate).toLocaleDateString()}</Text>
             </View>
           </View>
+
+          <View style={styles.actionsGrid}>
+            <DetailAction icon="create-outline" label="Edit" onPress={() => (navigation as any).navigate('CampaignEdit', { id: campaign.id })} />
+            <DetailAction icon="search-outline" label="Discover" onPress={() => (navigation as any).navigate('CampaignDiscover', { id: campaign.id, title: campaign.title })} />
+            <DetailAction icon="document-text-outline" label="Responses" onPress={() => (navigation as any).navigate('CampaignResponses', { id: campaign.id, title: campaign.title })} />
+            <DetailAction icon="list-outline" label="Execute" onPress={() => (navigation as any).navigate('CampaignExecute', { id: campaign.id, title: campaign.title })} />
+            <DetailAction icon="send-outline" label="Outreach" onPress={() => (navigation as any).navigate('CampaignOutreach', { id: campaign.id, title: campaign.title })} />
+            <DetailAction icon="cash-outline" label="Escrow" onPress={() => (navigation as any).navigate('CampaignEscrow', { id: campaign.id, title: campaign.title })} />
+            <DetailAction icon="people-outline" label="Circle" onPress={() => (navigation as any).navigate('CampaignCircle', { id: campaign.id, title: campaign.title })} />
+            <DetailAction icon="stats-chart-outline" label="Analytics" onPress={() => (navigation as any).navigate('CampaignAnalytics', { id: campaign.id, title: campaign.title })} />
+          </View>
         </Animated.View>
       </ScrollView>
     </SafeAreaView>
+  )
+}
+
+function DetailAction({ icon, label, onPress }: { icon: any; label: string; onPress?: () => void }) {
+  return (
+    <Pressable style={({ pressed }) => [styles.actionCard, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]} onPress={onPress}>
+      <View style={styles.actionIcon}>
+        <Ionicons name={icon} size={18} color="#fff" />
+      </View>
+      <Text style={styles.actionLabel}>{label}</Text>
+    </Pressable>
   )
 }
 
@@ -127,6 +149,10 @@ const styles = StyleSheet.create({
   deliverableText: { color: '#fff', fontSize: 14 },
 
   dateRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.lg },
+  actionCard: { width: (Dimensions.get('window').width - spacing.lg * 2 - spacing.md * 3) / 4, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, alignItems: 'center', gap: 8, minHeight: 80 },
+  actionIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+  actionLabel: { color: '#fff', fontSize: 11, fontWeight: '600' },
   dateCard: { flex: 1, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, alignItems: 'center' },
   dateLabel: { color: colors.textMuted, fontSize: 12, marginBottom: spacing.xs },
   dateValue: { color: '#fff', fontSize: 14, fontWeight: '600' },

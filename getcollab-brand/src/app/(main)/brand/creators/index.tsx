@@ -11,7 +11,7 @@ import apiService, { handleApiError } from '@shared/services/api'
 interface Creator { id: string; name: string; avatar?: string; image?: string; bio?: string; location?: string; categories?: string[]; audienceSize?: number; engagementRate?: number; verified?: boolean; instagramHandle?: string; instagramMetrics?: { followers?: number }; matchScore?: number }
 interface Props { navigation?: any }
 
-const CATEGORIES = ['All', 'Skincare', 'Fashion', 'Fitness', 'Tech', 'Travel', 'Food', 'Beauty']
+const CATEGORIES = ['All', 'Saved', 'Skincare', 'Fashion', 'Fitness', 'Tech', 'Travel', 'Food', 'Beauty']
 
 export default function BrowseCreatorsScreen({ navigation }: Props) {
   const [creators, setCreators] = useState<Creator[]>([])
@@ -25,7 +25,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
     try {
       const params: Record<string, any> = {}
       if (searchQuery.trim()) params.q = searchQuery.trim()
-      if (selectedCategory) params.category = selectedCategory
+      if (selectedCategory && selectedCategory !== 'Saved') params.category = selectedCategory
       const response = await apiService.getMarketplace(params)
       const list = response?.influencers || response?.data || (Array.isArray(response) ? response : [])
       setCreators(Array.isArray(list) ? list : [])
@@ -39,10 +39,14 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
   const onRefresh = async () => { setRefreshing(true); await loadCreators(); setRefreshing(false) }
 
   const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return creators
+    let list = creators
+    if (selectedCategory === 'Saved') {
+      list = creators.filter((c) => shortlisted[c.id])
+    }
+    if (!searchQuery.trim()) return list
     const q = searchQuery.toLowerCase()
-    return creators.filter((c) => c.name?.toLowerCase().includes(q) || c.bio?.toLowerCase().includes(q) || c.instagramHandle?.toLowerCase().includes(q) || c.categories?.some((cat) => cat.toLowerCase().includes(q)))
-  }, [creators, searchQuery])
+    return list.filter((c) => c.name?.toLowerCase().includes(q) || c.bio?.toLowerCase().includes(q) || c.instagramHandle?.toLowerCase().includes(q) || c.categories?.some((cat) => cat.toLowerCase().includes(q)))
+  }, [creators, searchQuery, selectedCategory, shortlisted])
 
   const handleStartChat = async (creator: Creator) => {
     try {
@@ -101,6 +105,9 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
             <Text style={styles.priceValue}>Variable</Text>
           </View>
           <View style={styles.creatorActions}>
+            <Pressable style={({ pressed }) => [styles.viewBtn, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('CreatorReport', { id: item.id })}>
+              <Text style={styles.viewBtnText}>Report</Text>
+            </Pressable>
             <Pressable style={({ pressed }) => [styles.viewBtn, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('InviteCreator', { creatorId: item.id, creator: item })}>
               <Text style={styles.viewBtnText}>Invite</Text>
             </Pressable>
@@ -194,8 +201,14 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
             ListEmptyComponent={
               <View style={styles.empty}>
                 <View style={styles.emptyIcon}><Ionicons name="search" size={26} color={colors.textMuted} /></View>
-                <Text style={styles.emptyTitle}>No creators found</Text>
-                <Text style={styles.emptySub}>Try adjusting your search or category filter.</Text>
+                <Text style={styles.emptyTitle}>
+                  {selectedCategory === 'Saved' ? 'No saved creators yet' : 'No creators found'}
+                </Text>
+                <Text style={styles.emptySub}>
+                  {selectedCategory === 'Saved'
+                    ? 'Star profiles to build a saved list.'
+                    : 'Try adjusting your search or category filter.'}
+                </Text>
               </View>
             }
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}

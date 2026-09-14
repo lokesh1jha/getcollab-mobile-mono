@@ -7,36 +7,66 @@ import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 
+interface NotificationSettings {
+  emailNotifications?: boolean
+  pushNotifications?: boolean
+  campaignUpdates?: boolean
+  messageNotifications?: boolean
+  paymentNotifications?: boolean
+}
+
 interface SettingsState {
   twoFactorEnabled: boolean
-  emailNotifications: boolean
-  campaignUpdates: boolean
-  pushNotifications: boolean
+  notifications: NotificationSettings
 }
 
 export default function SettingsScreen({ navigation }: any) {
   const { signOut } = useAuthStore()
-  const [settings, setSettings] = useState<SettingsState>({ twoFactorEnabled: false, emailNotifications: true, campaignUpdates: true, pushNotifications: true })
+  const [settings, setSettings] = useState<SettingsState>({
+    twoFactorEnabled: false,
+    notifications: {
+      emailNotifications: true,
+      pushNotifications: true,
+      campaignUpdates: true,
+      messageNotifications: true,
+      paymentNotifications: true,
+    },
+  })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
-      const res = await (apiService as any).getSettings?.()
-      if (res) setSettings(prev => ({ ...prev, ...res }))
+      const [settingsRes, notifRes] = await Promise.all([
+        apiService.getSettings().catch(() => null),
+        apiService.getNotifications().catch(() => null),
+      ])
+      const s = settingsRes?.data || settingsRes || {}
+      const n = s.notifications || s.notificationSettings || {}
+      setSettings(prev => ({
+        twoFactorEnabled: s.twoFactorEnabled ?? s.two_factor_enabled ?? prev.twoFactorEnabled,
+        notifications: {
+          emailNotifications: n.emailNotifications ?? n.email ?? prev.notifications.emailNotifications,
+          pushNotifications: n.pushNotifications ?? n.push ?? prev.notifications.pushNotifications,
+          campaignUpdates: n.campaignUpdates ?? n.campaign ?? prev.notifications.campaignUpdates,
+          messageNotifications: n.messageNotifications ?? n.message ?? prev.notifications.messageNotifications,
+          paymentNotifications: n.paymentNotifications ?? n.payment ?? prev.notifications.paymentNotifications,
+        },
+      }))
     } catch {}
     finally { setLoading(false) }
   }, [])
 
-  useFocusEffect(useCallback(() => { load() }, [load]))
+  useFocusEffect(useCallback(() => { setLoading(true); load() }, [load]))
 
-  const toggle = async (key: keyof SettingsState) => {
-    const newVal = !settings[key]
-    setSettings(prev => ({ ...prev, [key]: newVal }))
+  const toggleNotif = async (key: keyof NotificationSettings) => {
+    const newVal = !settings.notifications[key]
+    setSettings(prev => ({ ...prev, notifications: { ...prev.notifications, [key]: newVal } }))
     setSaving(key)
-    try { await (apiService as any).updateSettings?.({ [key]: newVal }) }
-    catch (err: any) {
-      setSettings(prev => ({ ...prev, [key]: !newVal }))
+    try {
+      await apiService.updateNotificationSettings({ [key]: newVal })
+    } catch (err: any) {
+      setSettings(prev => ({ ...prev, notifications: { ...prev.notifications, [key]: !newVal } }))
       handleApiError(err, 'Failed to update setting')
     } finally { setSaving(null) }
   }
@@ -51,7 +81,7 @@ export default function SettingsScreen({ navigation }: any) {
           text: 'Delete Account',
           style: 'destructive',
           onPress: async () => {
-            try { await (apiService as any).deleteAccount?.(); await signOut() }
+            try { await apiService.deleteAccount(); await signOut() }
             catch (err: any) { handleApiError(err, 'Failed to delete account') }
           }
         }
@@ -85,7 +115,19 @@ export default function SettingsScreen({ navigation }: any) {
               label="Two-Factor Authentication"
               description="Add an extra layer of security"
               value={settings.twoFactorEnabled}
-              onToggle={() => toggle('twoFactorEnabled')}
+              onToggle={async () => {
+                const newVal = !settings.twoFactorEnabled
+                setSettings(prev => ({ ...prev, twoFactorEnabled: newVal }))
+                setSaving('twoFactorEnabled')
+                try {
+                  await apiService.updateSettings({ twoFactorEnabled: newVal })
+                } catch (err: any) {
+                  setSettings(prev => ({ ...prev, twoFactorEnabled: !newVal }))
+                  handleApiError(err, 'Failed to update 2FA setting')
+                } finally {
+                  setSaving(null)
+                }
+              }}
               loading={saving === 'twoFactorEnabled'}
             />
           </View>
@@ -93,17 +135,19 @@ export default function SettingsScreen({ navigation }: any) {
           {/* Notifications */}
           <SectionHeader title="Notifications" />
           <View style={styles.listCard}>
-            <ToggleRow icon="mail-outline" label="Email Notifications" value={settings.emailNotifications} onToggle={() => toggle('emailNotifications')} loading={saving === 'emailNotifications'} divider />
-            <ToggleRow icon="megaphone-outline" label="Campaign Updates" value={settings.campaignUpdates} onToggle={() => toggle('campaignUpdates')} loading={saving === 'campaignUpdates'} divider />
-            <ToggleRow icon="notifications-outline" label="Push Notifications" value={settings.pushNotifications} onToggle={() => toggle('pushNotifications')} loading={saving === 'pushNotifications'} />
+            <ToggleRow icon="mail-outline" label="Email Notifications" value={settings.notifications.emailNotifications ?? false} onToggle={() => toggleNotif('emailNotifications')} loading={saving === 'emailNotifications'} divider />
+            <ToggleRow icon="phone-portrait-outline" label="Push Notifications" value={settings.notifications.pushNotifications ?? false} onToggle={() => toggleNotif('pushNotifications')} loading={saving === 'pushNotifications'} divider />
+            <ToggleRow icon="megaphone-outline" label="Campaign Updates" value={settings.notifications.campaignUpdates ?? false} onToggle={() => toggleNotif('campaignUpdates')} loading={saving === 'campaignUpdates'} divider />
+            <ToggleRow icon="chatbubble-outline" label="Message Notifications" value={settings.notifications.messageNotifications ?? false} onToggle={() => toggleNotif('messageNotifications')} loading={saving === 'messageNotifications'} divider />
+            <ToggleRow icon="cash-outline" label="Payment Notifications" value={settings.notifications.paymentNotifications ?? false} onToggle={() => toggleNotif('paymentNotifications')} loading={saving === 'paymentNotifications'} />
           </View>
 
           {/* Account */}
           <SectionHeader title="Account" />
           <View style={styles.listCard}>
             <LinkRow icon="lock-closed-outline" label="Change Password" onPress={() => navigation?.navigate('ChangePassword')} divider />
-            <LinkRow icon="notifications-outline" label="Notification Preferences" onPress={() => navigation?.navigate('Notifications')} />
             <LinkRow icon="card-outline" label="Payout Details" onPress={() => navigation?.navigate('PayoutSettings')} divider />
+            <LinkRow icon="notifications-outline" label="Notification Preferences" onPress={() => navigation?.navigate('Notifications')} />
           </View>
 
           {/* Danger Zone */}

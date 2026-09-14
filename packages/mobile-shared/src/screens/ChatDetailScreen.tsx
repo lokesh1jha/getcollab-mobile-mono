@@ -12,10 +12,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Linking,
+  Modal,
+  Pressable,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePickerLib from 'expo-image-picker'
 import * as DocumentPickerLib from 'expo-document-picker'
+import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing } from '@shared/constants'
 import { useChatStore } from '@shared/stores/chat-store'
 import { useAuthStore } from '@shared/stores/auth-store'
@@ -26,6 +29,11 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function formatMessageTime(dateStr: string): string {
+  try { return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+  catch { return '' }
 }
 
 interface ChatDetailScreenProps {
@@ -46,9 +54,11 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     sendAttachments,
     isLoading,
     isSending,
+    hasMoreMessages,
     markRoomRead,
     setTyping,
     typingUsers,
+    readByUser,
     presence,
     socket,
     initializeSocket,
@@ -57,6 +67,8 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
   const [input, setInput] = useState('')
   const [searchMode, setSearchMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [previewUri, setPreviewUri] = useState<string | null>(null)
+  const [loadingOlder, setLoadingOlder] = useState(false)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const listRef = useRef<FlatList<Message>>(null)
 
@@ -141,8 +153,22 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     typingTimer.current = setTimeout(() => setTyping(roomId, false), 1500)
   }
 
+  const loadOlder = async () => {
+    if (!roomId || loadingOlder || !hasMoreMessages) return
+    setLoadingOlder(true)
+    try {
+      const oldest = messages[0]
+      await fetchMessages(roomId, { before: oldest?.id })
+    } catch (e) {
+      handleApiError(e, 'Failed to load older messages')
+    } finally {
+      setLoadingOlder(false)
+    }
+  }
+
   const isOtherTyping = otherUserId && typingUsers[roomId]?.has(otherUserId)
   const otherPresence = otherUserId ? presence[otherUserId] : undefined
+  const otherReadUpTo = otherUserId ? readByUser[otherUserId]?.[roomId] : undefined
 
   const filteredMessages = useMemo(() => {
     if (!searchQuery.trim()) return messages
@@ -152,7 +178,11 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
 
   const renderAttachment = (attachment: ChatAttachment) => {
     if (attachment.type === 'IMAGE') {
-      return <Image key={attachment.id} source={{ uri: attachment.url }} style={styles.bubbleImage} />
+      return (
+        <Pressable key={attachment.id} onPress={() => setPreviewUri(attachment.url)} style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}>
+          <Image source={{ uri: attachment.url }} style={styles.bubbleImage} />
+        </Pressable>
+      )
     }
     return (
       <TouchableOpacity
@@ -171,9 +201,12 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     )
   }
 
-  const renderMessage = ({ item }: { item: Message }) => {
+  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     const isMe = item.senderId === user?.id
     const isLegacyImage = !item.attachments?.length && (item.type === 'image' || item.attachmentUrl)
+    const isRead = isMe && otherReadUpTo && item.id && otherReadUpTo >= item.id
+    const showRead = isMe && index === filteredMessages.length - 1
+
     return (
       <View style={[styles.bubbleRow, isMe ? styles.bubbleRowMe : styles.bubbleRowOther]}>
         <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}>
@@ -183,16 +216,22 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
             </View>
           )}
           {isLegacyImage ? (
-            <Image source={{ uri: item.attachmentUrl || item.content }} style={styles.bubbleImage} />
+            <Pressable onPress={() => setPreviewUri(item.attachmentUrl || item.content)} style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}>
+              <Image source={{ uri: item.attachmentUrl || item.content }} style={styles.bubbleImage} />
+            </Pressable>
           ) : item.content ? (
             <Text style={[styles.bubbleText, isMe ? styles.bubbleTextMe : styles.bubbleTextOther]}>
               {item.content}
             </Text>
           ) : null}
-          <Text style={[styles.bubbleTime, isMe ? styles.bubbleTimeMe : styles.bubbleTimeOther]}>
-            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            {isMe ? ' · ✓' : ''}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: isMe ? 'flex-end' : 'flex-start', gap: 4 }}>
+            <Text style={[styles.bubbleTime, isMe ? styles.bubbleTimeMe : styles.bubbleTimeOther]}>
+              {formatMessageTime(item.createdAt)}
+            </Text>
+            {showRead && (
+              <Ionicons name={isRead ? 'checkmark-done' : 'checkmark'} size={12} color={isRead ? colors.success : 'rgba(255,255,255,0.6)'} />
+            )}
+          </View>
         </View>
       </View>
     )
@@ -212,18 +251,18 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.headerBar}>
         <TouchableOpacity onPress={() => navigation?.goBack()} style={styles.headerBack}>
-          <Text style={styles.headerBackText}>‹</Text>
+          <Ionicons name="chevron-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle} numberOfLines={1}>
-            {chatMeta?.influencerName || chatMeta?.name || 'Chat'}
+            {chatMeta?.influencerName || chatMeta?.name || chatMeta?.brandName || 'Chat'}
           </Text>
           <Text style={styles.headerStatus}>
-            {isOtherTyping ? 'typing…' : otherPresence?.online ? '● Online' : otherPresence?.lastSeen ? `Last seen ${new Date(otherPresence.lastSeen).toLocaleString()}` : ''}
+            {isOtherTyping ? 'typing…' : otherPresence?.online ? '● Online' : otherPresence?.lastSeen ? `Last seen ${new Date(otherPresence.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
           </Text>
         </View>
         <TouchableOpacity onPress={() => setSearchMode((s) => !s)} style={styles.headerAction}>
-          <Text style={styles.headerActionText}>{searchMode ? '×' : '🔍'}</Text>
+          <Ionicons name={searchMode ? 'close' : 'search'} size={20} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -251,7 +290,29 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
           renderItem={renderMessage}
           keyExtractor={(item, index) => item.id ?? String(index)}
           contentContainerStyle={styles.messagesList}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+          ListHeaderComponent={
+            hasMoreMessages ? (
+              <Pressable onPress={loadOlder} disabled={loadingOlder} style={({ pressed }) => [styles.loadMoreBtn, pressed && { opacity: 0.7 }]}>
+                {loadingOlder ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Text style={styles.loadMoreText}>Load older messages</Text>
+                )}
+              </Pressable>
+            ) : messages.length > 0 ? (
+              <View style={styles.chatStart}>
+                <Text style={styles.chatStartText}>Beginning of conversation</Text>
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyChat}>
+              <Ionicons name="chatbubbles-outline" size={40} color={colors.textMuted} />
+              <Text style={styles.emptyChatTitle}>No messages yet</Text>
+              <Text style={styles.emptyChatSub}>Say hello to start the conversation.</Text>
+            </View>
+          }
         />
 
         {isOtherTyping && (
@@ -262,10 +323,10 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
 
         <View style={styles.inputBar}>
           <TouchableOpacity style={styles.attachBtn} onPress={handleAttach}>
-            <Text style={styles.attachText}>🖼️</Text>
+            <Ionicons name="image-outline" size={22} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.attachBtn} onPress={handleAttachDocument}>
-            <Text style={styles.attachText}>📎</Text>
+            <Ionicons name="document-attach-outline" size={22} color={colors.textMuted} />
           </TouchableOpacity>
           <TextInput
             style={styles.input}
@@ -280,10 +341,24 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
             disabled={!input.trim() || isSending}
             onPress={handleSend}
           >
-            <Text style={styles.sendText}>{isSending ? '…' : '➤'}</Text>
+            <Ionicons name="send" size={18} color={colors.white} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Image preview modal */}
+      <Modal visible={!!previewUri} transparent animationType="fade" onRequestClose={() => setPreviewUri(null)}>
+        <Pressable style={({ pressed }) => [styles.previewOverlay, pressed && { opacity: 0.9 }]} onPress={() => setPreviewUri(null)}>
+          <SafeAreaView style={{ flex: 1 }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
+            </View>
+            <Pressable onPress={() => setPreviewUri(null)} style={({ pressed }) => [styles.previewClose, pressed && { opacity: 0.7 }]}>
+              <Ionicons name="close" size={28} color={colors.white} />
+            </Pressable>
+          </SafeAreaView>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -301,11 +376,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   headerBack: { paddingRight: spacing.sm },
-  headerBackText: { color: colors.primary, fontSize: 28, fontWeight: '300' },
   headerTitle: { color: colors.text, fontWeight: '700', fontSize: 16 },
   headerStatus: { color: colors.textMuted, fontSize: 12 },
   headerAction: { paddingHorizontal: spacing.sm },
-  headerActionText: { color: colors.text, fontSize: 18 },
   searchBar: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: colors.surface },
   searchInput: {
     backgroundColor: colors.surfaceLight,
@@ -351,7 +424,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   attachBtn: { padding: spacing.sm },
-  attachText: { fontSize: 22 },
   input: {
     flex: 1,
     backgroundColor: colors.surfaceLight,
@@ -372,5 +444,14 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
   },
   sendBtnDisabled: { opacity: 0.4 },
-  sendText: { color: colors.white, fontSize: 18 },
+  loadMoreBtn: { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 999, backgroundColor: colors.surface, marginBottom: spacing.sm },
+  loadMoreText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
+  chatStart: { alignSelf: 'center', marginBottom: spacing.md },
+  chatStartText: { color: colors.textMuted, fontSize: 12 },
+  emptyChat: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 8 },
+  emptyChatTitle: { color: colors.textMuted, fontSize: 16, fontWeight: '700' },
+  emptyChatSub: { color: colors.textMuted, fontSize: 13 },
+  previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
+  previewImage: { width: '100%', height: '80%' },
+  previewClose: { position: 'absolute', top: 16, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
 })
