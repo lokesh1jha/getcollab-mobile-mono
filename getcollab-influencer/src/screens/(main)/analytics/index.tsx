@@ -7,10 +7,6 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 
-// Analytics are derived from the influencer's own data (bids, earnings, profile
-// metrics). The backend /analytics endpoint is brand-org scoped, so it is
-// intentionally not used here.
-
 interface PlatformStat {
   key: string
   label: string
@@ -49,90 +45,106 @@ export default function AnalyticsScreen() {
   const [platforms, setPlatforms] = useState<PlatformStat[]>([])
   const [activity, setActivity] = useState<number[]>([])
   const [campaigns, setCampaigns] = useState<{ id: string; title: string; count: number; amount: number; accepted: boolean }[]>([])
+  const [backendAnalytics, setBackendAnalytics] = useState<any>(null)
 
   const load = useCallback(async (spinner = false) => {
     if (spinner) setLoading(true)
     setFailed(false)
     try {
-      const [bidsRes, earningsRes, profileRes] = await Promise.all([
+      const [bidsRes, earningsRes, profileRes, analyticsRes] = await Promise.all([
         apiService.getBids().catch(() => null),
         apiService.getEarnings().catch(() => null),
         apiService.getProfileWithMetrics().catch(() => apiService.getProfile().catch(() => null)),
+        apiService.getAnalytics({ scope: 'influencer' }).catch(() => null),
       ])
 
-      const bids = bidsRes?.data || bidsRes?.bids || (Array.isArray(bidsRes) ? bidsRes : [])
-      const bidList = Array.isArray(bids) ? bids : []
-      const counts: Record<string, number> = {}
-      let amountTotal = 0
-      let amountAccepted = 0
-      for (const b of bidList) {
-        const s = String(b.status || 'pending').toLowerCase()
-        counts[s] = (counts[s] || 0) + 1
-        const bidAmount = Number(b.amountMinor ?? b.amount ?? 0) / (b.amountMinor != null ? 100 : 1)
-        amountTotal += bidAmount
-        if (s === 'accepted') amountAccepted += bidAmount
-      }
-      setTotalBids(bidList.length)
-      setStatusCounts(counts)
-      setBidAmounts({ total: amountTotal, accepted: amountAccepted })
-
-      // 30-day application activity, bucketed client-side from bid dates
-      const buckets = new Array(30).fill(0) as number[]
-      let dated = 0
-      for (const b of bidList) {
-        const raw = b.createdAt || b.created_at || b.appliedAt
-        if (!raw) continue
-        const t = new Date(raw).getTime()
-        if (Number.isNaN(t)) continue
-        const daysAgo = Math.floor((Date.now() - t) / 86_400_000)
-        if (daysAgo >= 0 && daysAgo < 30) { buckets[29 - daysAgo] += 1; dated += 1 }
-      }
-      setActivity(dated > 0 ? buckets : [])
-
-      // Per-campaign bid aggregation
-      const byCampaign = new Map<string, { id: string; title: string; count: number; amount: number; accepted: boolean }>()
-      for (const b of bidList) {
-        const id = String(b.campaignId || b.campaign?.id || '')
-        if (!id) continue
-        const entry = byCampaign.get(id) || {
-          id,
-          title: b.campaignTitle || b.campaign?.title || `Campaign #${id.slice(-4)}`,
-          count: 0,
-          amount: 0,
-          accepted: false,
+      // Try backend analytics first
+      const backend = analyticsRes?.data || analyticsRes || null
+      if (backend && (backend.totalBids != null || backend.earnings != null || backend.platforms != null)) {
+        setBackendAnalytics(backend)
+        if (backend.totalBids != null) setTotalBids(backend.totalBids)
+        if (backend.statusCounts) setStatusCounts(backend.statusCounts)
+        if (backend.bidAmounts) setBidAmounts(backend.bidAmounts)
+        if (backend.earnings) setEarnings(backend.earnings)
+        if (backend.activity) setActivity(backend.activity)
+        if (backend.campaigns) setCampaigns(backend.campaigns)
+        if (backend.platforms) {
+          setPlatforms(backend.platforms.map((p: any) => ({
+            key: p.key || p.platform,
+            label: p.label || p.platform,
+            icon: p.icon || 'logo-instagram',
+            followers: p.followers || 0,
+            engagement: p.engagement != null ? p.engagement : null,
+          })))
         }
-        entry.count += 1
-        entry.amount += Number(b.amountMinor ?? b.amount ?? 0) / (b.amountMinor != null ? 100 : 1)
-        const st = String(b.status || '').toLowerCase()
-        if (st === 'accepted' || st === 'active') entry.accepted = true
-        byCampaign.set(id, entry)
-      }
-      setCampaigns([...byCampaign.values()].sort((a, b) => b.amount - a.amount).slice(0, 8))
-
-      const list = earningsRes?.data || earningsRes?.requests || earningsRes?.earnings || (Array.isArray(earningsRes) ? earningsRes : [])
-      const settlementList = Array.isArray(list) ? list : []
-      let paid = 0
-      let pending = 0
-      for (const s of settlementList) {
-        const st = String(s.status || '').toLowerCase()
-        const value = Number(s.amountMinor ?? s.amount ?? 0) / (s.amountMinor != null ? 100 : 1)
-        if (['released', 'paid', 'completed', 'mark_paid'].includes(st)) paid += value
-        else pending += value
-      }
-      setEarnings({ paid, pending, payouts: settlementList.length })
-
-      const profile = profileRes?.data || profileRes?.profile || profileRes?.influencerProfile || profileRes || {}
-      const stats: PlatformStat[] = PLATFORMS.map((p) => {
-        const m = (profile as any)[p.key] || {}
-        const followers = Number(m.followers) || 0
-        const engagement = Number(m.avgEngagement) || 0
-        return {
-          ...p,
-          followers,
-          engagement: engagement > 0 ? engagement : null,
+      } else {
+        setBackendAnalytics(null)
+        // Client-side derivation fallback
+        const bids = bidsRes?.data || bidsRes?.bids || (Array.isArray(bidsRes) ? bidsRes : [])
+        const bidList = Array.isArray(bids) ? bids : []
+        const counts: Record<string, number> = {}
+        let amountTotal = 0
+        let amountAccepted = 0
+        for (const b of bidList) {
+          const s = String(b.status || 'pending').toLowerCase()
+          counts[s] = (counts[s] || 0) + 1
+          const bidAmount = Number(b.amountMinor ?? b.amount ?? 0) / (b.amountMinor != null ? 100 : 1)
+          amountTotal += bidAmount
+          if (s === 'accepted') amountAccepted += bidAmount
         }
-      }).filter((p) => p.followers > 0)
-      setPlatforms(stats)
+        setTotalBids(bidList.length)
+        setStatusCounts(counts)
+        setBidAmounts({ total: amountTotal, accepted: amountAccepted })
+
+        const buckets = new Array(30).fill(0) as number[]
+        let dated = 0
+        for (const b of bidList) {
+          const raw = b.createdAt || b.created_at || b.appliedAt
+          if (!raw) continue
+          const t = new Date(raw).getTime()
+          if (Number.isNaN(t)) continue
+          const daysAgo = Math.floor((Date.now() - t) / 86_400_000)
+          if (daysAgo >= 0 && daysAgo < 30) { buckets[29 - daysAgo] += 1; dated += 1 }
+        }
+        setActivity(dated > 0 ? buckets : [])
+
+        const byCampaign = new Map<string, { id: string; title: string; count: number; amount: number; accepted: boolean }>()
+        for (const b of bidList) {
+          const id = String(b.campaignId || b.campaign?.id || '')
+          if (!id) continue
+          const entry = byCampaign.get(id) || {
+            id, title: b.campaignTitle || b.campaign?.title || `Campaign #${id.slice(-4)}`,
+            count: 0, amount: 0, accepted: false,
+          }
+          entry.count += 1
+          entry.amount += Number(b.amountMinor ?? b.amount ?? 0) / (b.amountMinor != null ? 100 : 1)
+          const st = String(b.status || '').toLowerCase()
+          if (st === 'accepted' || st === 'active') entry.accepted = true
+          byCampaign.set(id, entry)
+        }
+        setCampaigns([...byCampaign.values()].sort((a, b) => b.amount - a.amount).slice(0, 8))
+
+        const list = earningsRes?.data || earningsRes?.requests || earningsRes?.earnings || (Array.isArray(earningsRes) ? earningsRes : [])
+        const settlementList = Array.isArray(list) ? list : []
+        let paid = 0
+        let pending = 0
+        for (const s of settlementList) {
+          const st = String(s.status || '').toLowerCase()
+          const value = Number(s.amountMinor ?? s.amount ?? 0) / (s.amountMinor != null ? 100 : 1)
+          if (['released', 'paid', 'completed', 'mark_paid'].includes(st)) paid += value
+          else pending += value
+        }
+        setEarnings({ paid, pending, payouts: settlementList.length })
+
+        const profile = profileRes?.data || profileRes?.profile || profileRes?.influencerProfile || profileRes || {}
+        const stats: PlatformStat[] = PLATFORMS.map((p) => {
+          const m = (profile as any)[p.key] || {}
+          const followers = Number(m.followers) || 0
+          const engagement = Number(m.avgEngagement) || 0
+          return { ...p, followers, engagement: engagement > 0 ? engagement : null }
+        }).filter((p) => p.followers > 0)
+        setPlatforms(stats)
+      }
     } catch (err: any) {
       setFailed(true)
       handleApiError(err, 'Failed to load analytics')
@@ -173,6 +185,13 @@ export default function AnalyticsScreen() {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
         >
+          {backendAnalytics && (
+            <Animated.View entering={FadeInDown.delay(0).duration(320)} style={styles.backendBadge}>
+              <Ionicons name="server-outline" size={14} color={colors.blue} />
+              <Text style={styles.backendBadgeText}>Live analytics</Text>
+            </Animated.View>
+          )}
+
           {/* Performance hero */}
           <Animated.View entering={FadeInDown.delay(0).duration(320)} style={styles.statsRow}>
             <View style={styles.statCard}>
@@ -329,6 +348,8 @@ export default function AnalyticsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
+  backendBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: colors.blueSoft, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, marginTop: spacing.md, marginBottom: spacing.sm },
+  backendBadgeText: { color: colors.blue, fontSize: 12, fontWeight: '700' },
   statsRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
   statCard: { flex: 1, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg, gap: 4 },
   statValue: { color: colors.text, fontSize: 22, fontWeight: '800' },

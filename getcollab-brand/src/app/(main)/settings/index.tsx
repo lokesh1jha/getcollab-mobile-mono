@@ -1,8 +1,10 @@
 import React from 'react'
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, radius, spacing } from '@/src/theme'
+import { apiService, handleApiError } from '@shared/services/api'
+import { useAuthStore } from '@shared/stores/auth-store'
 
 const SETTINGS_SECTIONS = [
   { id: 'profile', icon: 'person-outline', label: 'Profile', description: 'Public brand info' },
@@ -16,6 +18,26 @@ const SETTINGS_SECTIONS = [
 interface Props { navigation?: any }
 
 export default function SettingsShellScreen({ navigation }: Props) {
+  const { signOut } = useAuthStore()
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This action is permanent. All your data, campaigns, and earnings history will be deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            try { await apiService.deleteAccount(); await signOut() }
+            catch (err: any) { handleApiError(err, 'Failed to delete account') }
+          }
+        }
+      ]
+    )
+  }
+
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
@@ -44,6 +66,17 @@ export default function SettingsShellScreen({ navigation }: Props) {
               </Pressable>
             ))}
           </View>
+
+          {/* Danger Zone */}
+          <Text style={styles.dangerHeader}>Danger Zone</Text>
+          <View style={styles.listCard}>
+            <Pressable onPress={handleDeleteAccount} style={({ pressed }) => [styles.dangerRow, pressed && { opacity: 0.85 }]}>
+              <View style={[styles.rowIcon, { backgroundColor: colors.errorSoft }]}>
+                <Ionicons name="trash-outline" size={18} color={colors.error} />
+              </View>
+              <Text style={styles.dangerText}>Delete Account</Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -60,4 +93,7 @@ const styles = StyleSheet.create({
   rowIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
   rowLabel: { color: '#fff', fontSize: 15, fontWeight: '600' },
   rowDescription: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  dangerHeader: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.sm },
+  dangerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: 14 },
+  dangerText: { color: colors.error, fontSize: 15, fontWeight: '600' },
 })

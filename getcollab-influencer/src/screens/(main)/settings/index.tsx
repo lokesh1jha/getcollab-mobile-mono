@@ -115,8 +115,20 @@ export default function SettingsScreen({ navigation }: any) {
               label="Two-Factor Authentication"
               description="Add an extra layer of security"
               value={settings.twoFactorEnabled}
-              onToggle={() => Alert.alert('Coming soon', 'Two-factor authentication will be available in a future update.')}
-              loading={false}
+              onToggle={async () => {
+                const newVal = !settings.twoFactorEnabled
+                setSettings(prev => ({ ...prev, twoFactorEnabled: newVal }))
+                setSaving('twoFactorEnabled')
+                try {
+                  await apiService.updateSettings({ twoFactorEnabled: newVal })
+                } catch (err: any) {
+                  setSettings(prev => ({ ...prev, twoFactorEnabled: !newVal }))
+                  handleApiError(err, 'Failed to update 2FA setting')
+                } finally {
+                  setSaving(null)
+                }
+              }}
+              loading={saving === 'twoFactorEnabled'}
             />
           </View>
 

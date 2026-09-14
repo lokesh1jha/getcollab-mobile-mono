@@ -149,10 +149,10 @@ export default function AnalyticsScreen({ navigation }: any) {
               </View>
 
               <View style={styles.tabRow}>
-                <Pressable onPress={() => setTab('campaigns')} style={[styles.tab, tab === 'campaigns' && styles.tabActive]}>
+                <Pressable onPress={() => setTab('campaigns')} style={({ pressed }) => [styles.tab, tab === 'campaigns' && styles.tabActive, pressed && { opacity: 0.7 }]}>
                   <Text style={[styles.tabText, tab === 'campaigns' && styles.tabTextActive]}>Campaigns</Text>
                 </Pressable>
-                <Pressable onPress={() => setTab('creators')} style={[styles.tab, tab === 'creators' && styles.tabActive]}>
+                <Pressable onPress={() => setTab('creators')} style={({ pressed }) => [styles.tab, tab === 'creators' && styles.tabActive, pressed && { opacity: 0.7 }]}>
                   <Text style={[styles.tabText, tab === 'creators' && styles.tabTextActive]}>Creators</Text>
                 </Pressable>
               </View>

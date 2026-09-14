@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
-  ActivityIndicator, Alert, FlatList, Image, Pressable, ScrollView,
+  ActivityIndicator, Alert, FlatList, Image, Modal, Pressable, ScrollView,
   StyleSheet, Text, TextInput, View, Dimensions, Linking,
 } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePickerLib from 'expo-image-picker'
 import { colors, radius, spacing } from '@/src/theme'
-import { apiService, handleApiError } from '@shared/services/api'
+import { apiService, handleApiError, uploadMediaBlob } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 
 const { width } = Dimensions.get('window')
@@ -24,15 +24,15 @@ const SOCIAL_PLATFORMS = [
 ]
 
 interface ProfileData {
-  name?: string; bio?: string; location?: string; categories?: string[]
+  name?: string; bio?: string; location?: string; categories?: string[]; languages?: string[]
   gender?: string; ageRange?: string
   pricePerPost?: number; pricePerReel?: number; pricePerStory?: number
   pricePerVideo?: number; pricePerCampaign?: number
   instagramHandle?: string; youtubeHandle?: string; tiktokHandle?: string; twitterHandle?: string
   avatar?: string; coverImage?: string; portfolio?: string[]
-  instagramMetrics?: { followers?: number }
-  youtubeMetrics?: { followers?: number }
-  tiktokMetrics?: { followers?: number }
+  instagramMetrics?: { followers?: number; avgEngagement?: number }
+  youtubeMetrics?: { followers?: number; avgEngagement?: number }
+  tiktokMetrics?: { followers?: number; avgEngagement?: number }
 }
 
 function formatFollowers(n?: number): string {
@@ -47,9 +47,10 @@ export default function InfluencerProfile({ navigation }: any) {
   const [profile, setProfile] = useState<ProfileData>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState<null | 'avatar' | 'coverImage'>(null)
+  const [uploading, setUploading] = useState<null | 'avatar' | 'coverImage' | 'portfolio'>(null)
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState<ProfileData>({})
+  const [previewUri, setPreviewUri] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -99,6 +100,32 @@ export default function InfluencerProfile({ navigation }: any) {
     } finally { setUploading(null) }
   }
 
+  const addPortfolioImage = async () => {
+    const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
+    if (status !== 'granted') { Alert.alert('Permission needed', 'Enable photo library access.'); return }
+    const result = await ImagePickerLib.launchImageLibraryAsync({ mediaTypes: ImagePickerLib.MediaTypeOptions.Images, quality: 0.85 })
+    if (result.canceled || !result.assets[0]) return
+    const a = result.assets[0]
+    setUploading('portfolio')
+    try {
+      const done = await uploadMediaBlob({ uri: a.uri, mime: a.mimeType || 'image/jpeg', sizeBytes: a.fileSize || 0, width: a.width, height: a.height })
+      const url = done?.url || done?.preview_url || done?.data?.url
+      if (!url) throw new Error('Upload returned no URL')
+      const next = [...(form.portfolio || []), url]
+      setForm(prev => ({ ...prev, portfolio: next }))
+      setProfile(prev => ({ ...prev, portfolio: next }))
+    } catch (err: any) {
+      handleApiError(err, 'Failed to upload portfolio image')
+    } finally { setUploading(null) }
+  }
+
+  const removePortfolioImage = (index: number) => {
+    const next = [...(form.portfolio || [])]
+    next.splice(index, 1)
+    setForm(prev => ({ ...prev, portfolio: next }))
+    setProfile(prev => ({ ...prev, portfolio: next }))
+  }
+
   const toggleCategory = (cat: string) => {
     setForm(prev => {
       const cats = prev.categories || []
@@ -111,6 +138,19 @@ export default function InfluencerProfile({ navigation }: any) {
     profile.youtubeMetrics?.followers,
     profile.tiktokMetrics?.followers,
   ].reduce((sum: number, n) => sum + (n || 0), 0)
+
+  const completion = (() => {
+    let score = 0
+    if (profile.name) score += 15
+    if (profile.bio) score += 15
+    if (profile.avatar) score += 10
+    if ((profile.categories || []).length > 0) score += 10
+    if ((profile.portfolio || []).length > 0) score += 15
+    if (SOCIAL_PLATFORMS.some(p => profile[p.key as keyof ProfileData])) score += 15
+    if (profile.pricePerPost || profile.pricePerCampaign) score += 10
+    if (profile.location) score += 10
+    return Math.min(score, 100)
+  })()
 
   if (loading) return (
     <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -134,7 +174,6 @@ export default function InfluencerProfile({ navigation }: any) {
                 {editing && <Ionicons name="camera-outline" size={24} color={colors.textMuted} />}
               </View>
             )}
-            {/* Header actions */}
             <View style={styles.coverActions}>
               <View style={{ flex: 1 }} />
               {editing ? (
@@ -167,7 +206,7 @@ export default function InfluencerProfile({ navigation }: any) {
               )}
               {editing && (
                 <View style={styles.avatarEditBadge}>
-                  {uploading === 'avatar' ? <ActivityIndicator size={10} color="#000" /> : <Ionicons name="camera" size={12} color="#000" />}
+                  {uploading === 'avatar' ? <ActivityIndicator size="small" color="#000" /> : <Ionicons name="camera" size={12} color="#000" />}
                 </View>
               )}
             </Pressable>
@@ -178,6 +217,19 @@ export default function InfluencerProfile({ navigation }: any) {
               <Text style={styles.displayName}>{displayName}</Text>
             )}
             <Text style={styles.handle}>{handle}</Text>
+
+            {/* Profile completion */}
+            {completion < 100 && (
+              <View style={styles.completionCard}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <Text style={styles.completionLabel}>Profile completion</Text>
+                  <Text style={styles.completionValue}>{completion}%</Text>
+                </View>
+                <View style={styles.completionTrack}>
+                  <View style={[styles.completionFill, { width: `${completion}%` }]} />
+                </View>
+              </View>
+            )}
 
             {/* Stats row */}
             <Animated.View entering={FadeInDown.delay(80).duration(360)} style={styles.statsCard}>
@@ -193,14 +245,7 @@ export default function InfluencerProfile({ navigation }: any) {
             {/* Bio */}
             <Section title="Bio">
               {editing ? (
-                <TextInput
-                  value={form.bio || ''}
-                  onChangeText={v => setForm(p => ({ ...p, bio: v }))}
-                  placeholder="Tell brands about yourself…"
-                  placeholderTextColor={colors.textSubtle}
-                  multiline
-                  style={styles.bioInput}
-                />
+                <TextInput value={form.bio || ''} onChangeText={v => setForm(p => ({ ...p, bio: v }))} placeholder="Tell brands about yourself…" placeholderTextColor={colors.textSubtle} multiline style={styles.bioInput} />
               ) : (
                 <Text style={styles.bioText}>{profile.bio || 'No bio yet. Tap Edit to add one.'}</Text>
               )}
@@ -216,12 +261,32 @@ export default function InfluencerProfile({ navigation }: any) {
               </Section>
             )}
 
+            {/* Languages */}
+            {editing && (
+              <Section title="Content Languages">
+                <View style={styles.categoryGrid}>
+                  {['English', 'Hindi', 'Spanish', 'French', 'German', 'Arabic', 'Portuguese', 'Russian', 'Japanese', 'Korean', 'Chinese'].map(lang => {
+                    const active = (form.languages || []).includes(lang)
+                    return (
+                      <Pressable key={lang} onPress={() => setForm(prev => {
+                        const langs = prev.languages || []
+                        return { ...prev, languages: langs.includes(lang) ? langs.filter(l => l !== lang) : [...langs, lang] }
+                      })} style={[styles.categoryChip, active && styles.categoryChipActive]}>
+                        <Text style={[styles.categoryText, active && styles.categoryTextActive]}>{lang}</Text>
+                      </Pressable>
+                    )
+                  })}
+                </View>
+              </Section>
+            )}
+
             {/* Social handles */}
             <Section title="Social Platforms">
               <View style={styles.socialList}>
                 {SOCIAL_PLATFORMS.map(p => {
                   const val = (editing ? form : profile)[p.key as keyof ProfileData] as string | undefined
                   if (!editing && !val) return null
+                  const metrics = (profile as any)[p.key.replace('Handle', 'Metrics')]
                   return (
                     <View key={p.key} style={styles.socialRow}>
                       <View style={[styles.socialIcon, { backgroundColor: p.color + '22' }]}>
@@ -237,7 +302,12 @@ export default function InfluencerProfile({ navigation }: any) {
                           style={styles.socialInput}
                         />
                       ) : (
-                        <Text style={styles.socialHandle}>{val}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.socialHandle}>{val}</Text>
+                          {metrics?.followers ? (
+                            <Text style={styles.socialMeta}>{formatFollowers(metrics.followers)} followers · {metrics.avgEngagement ? `${metrics.avgEngagement}% eng` : ''}</Text>
+                          ) : null}
+                        </View>
                       )}
                     </View>
                   )
@@ -332,15 +402,30 @@ export default function InfluencerProfile({ navigation }: any) {
             )}
 
             {/* Portfolio grid */}
-            {(profile.portfolio || []).length > 0 && (
-              <Section title="Portfolio">
+            <Section title="Portfolio">
+              {editing && (
+                <Pressable onPress={addPortfolioImage} disabled={uploading === 'portfolio'} style={({ pressed }) => [styles.addPortfolioBtn, pressed && { opacity: 0.85 }, uploading === 'portfolio' && { opacity: 0.5 }]}>
+                  <Ionicons name="add-circle-outline" size={18} color={colors.neon} />
+                  <Text style={styles.addPortfolioText}>{uploading === 'portfolio' ? 'Uploading…' : 'Add portfolio image'}</Text>
+                </Pressable>
+              )}
+              {(form.portfolio || []).length > 0 ? (
                 <View style={styles.portfolioGrid}>
-                  {(profile.portfolio || []).slice(0, 9).map((uri, i) => (
-                    <Image key={i} source={{ uri }} style={styles.portfolioItem} />
+                  {(form.portfolio || []).map((uri, i) => (
+                    <Pressable key={`${uri}-${i}`} onPress={() => setPreviewUri(uri)} style={styles.portfolioItemWrap}>
+                      <Image source={{ uri }} style={styles.portfolioItem} />
+                      {editing && (
+                        <Pressable onPress={() => removePortfolioImage(i)} style={styles.portfolioRemove} hitSlop={8}>
+                          <Ionicons name="close-circle" size={20} color={colors.error} />
+                        </Pressable>
+                      )}
+                    </Pressable>
                   ))}
                 </View>
-              </Section>
-            )}
+              ) : (
+                <Text style={styles.emptyNote}>{editing ? 'Tap above to add your first portfolio image.' : 'No portfolio images yet.'}</Text>
+              )}
+            </Section>
 
             {/* Account actions */}
             <Section title="Account">
@@ -366,6 +451,20 @@ export default function InfluencerProfile({ navigation }: any) {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Full-screen image preview */}
+      <Modal visible={!!previewUri} transparent animationType="fade" onRequestClose={() => setPreviewUri(null)}>
+        <Pressable style={styles.previewOverlay} onPress={() => setPreviewUri(null)}>
+          <SafeAreaView style={{ flex: 1 }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
+            </View>
+            <Pressable onPress={() => setPreviewUri(null)} style={styles.previewClose}>
+              <Ionicons name="close" size={28} color={colors.text} />
+            </Pressable>
+          </SafeAreaView>
+        </Pressable>
+      </Modal>
     </View>
   )
 }
@@ -414,6 +513,11 @@ const styles = StyleSheet.create({
   displayName: { color: colors.text, fontSize: 20, fontWeight: '700', letterSpacing: -0.4 },
   nameInput: { color: colors.text, fontSize: 20, fontWeight: '700', letterSpacing: -0.4, textAlign: 'center', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 4, minWidth: 200 },
   handle: { color: colors.textMuted, fontSize: 14, marginTop: 2, marginBottom: spacing.lg },
+  completionCard: { width: '100%', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg },
+  completionLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
+  completionValue: { color: colors.neon, fontSize: 13, fontWeight: '700' },
+  completionTrack: { height: 6, borderRadius: 3, backgroundColor: colors.elevated, overflow: 'hidden' },
+  completionFill: { height: '100%', borderRadius: 3, backgroundColor: colors.neon },
   statsCard: { flexDirection: 'row', alignItems: 'center', width: '100%', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, paddingVertical: spacing.lg },
   statDivider: { width: 1, height: 28, backgroundColor: colors.border },
   statValue: { color: colors.text, fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
@@ -431,6 +535,7 @@ const styles = StyleSheet.create({
   socialRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   socialIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   socialHandle: { color: colors.text, fontSize: 14, fontWeight: '500' },
+  socialMeta: { color: colors.textMuted, fontSize: 12, marginTop: 1 },
   socialInput: { flex: 1, color: colors.text, fontSize: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   emptyNote: { color: colors.textSubtle, fontSize: 13 },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
@@ -438,8 +543,12 @@ const styles = StyleSheet.create({
   categoryChipActive: { backgroundColor: colors.neon, borderColor: colors.neon },
   categoryText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   categoryTextActive: { color: '#000' },
+  addPortfolioBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.md, alignSelf: 'flex-start', backgroundColor: colors.neonSoft, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill },
+  addPortfolioText: { color: colors.neon, fontSize: 13, fontWeight: '700' },
   portfolioGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
+  portfolioItemWrap: { position: 'relative' },
   portfolioItem: { width: GRID_ITEM, height: GRID_ITEM, backgroundColor: colors.elevated },
+  portfolioRemove: { position: 'absolute', top: 4, right: 4, backgroundColor: colors.bg, borderRadius: 10 },
   listCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden' },
   accountRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   accountRowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
@@ -447,4 +556,7 @@ const styles = StyleSheet.create({
   accountLabel: { color: colors.text, fontSize: 15, fontWeight: '500', flex: 1 },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: spacing.lg, borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)', backgroundColor: colors.errorSoft, borderRadius: radius.md, paddingVertical: 14 },
   logoutText: { color: colors.error, fontSize: 15, fontWeight: '600' },
+  previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
+  previewImage: { width: '100%', height: '80%' },
+  previewClose: { position: 'absolute', top: 16, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
 })

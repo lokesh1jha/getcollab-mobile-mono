@@ -91,7 +91,7 @@ export default function BillingSettingsScreen() {
                 <Text style={styles.planLabel}>Current Plan</Text>
                 <Text style={styles.planValue}>{subscription?.plan || 'Free'}</Text>
                 <Text style={styles.planStatus}>{subscription?.status || 'Active'}</Text>
-                <Pressable style={({ pressed }) => [styles.manageBtn, pressed && { opacity: 0.85 }]} onPress={() => ({} as any)}>
+                <Pressable style={({ pressed }) => [styles.manageBtn, pressed && { opacity: 0.85 }]} onPress={() => useSubscriptionStore.getState().openBillingPortal()}>
                   <Text style={styles.manageBtnText}>Manage Subscription</Text>
                 </Pressable>
               </View>

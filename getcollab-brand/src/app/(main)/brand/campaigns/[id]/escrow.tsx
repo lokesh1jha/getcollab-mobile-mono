@@ -34,18 +34,27 @@ export default function CampaignEscrowScreen() {
       ])
       const c = campaignRes?.campaign || campaignRes || {}
       const budget = c.budget || 0
-      // Build a simple escrow view from available data
+      const wallet = walletRes?.summary || walletRes || {}
+      const available = wallet.available_minor || wallet.available || 0
+      const reserved = wallet.reserved_minor || wallet.reserved || wallet.held_minor || wallet.held || 0
+
+      // Only show what we know from real data
       const items: EscrowItem[] = []
       if (budget > 0) {
-        items.push({ id: '1', label: 'Campaign budget allocated', amount: budget, status: 'funded', date: c.createdAt })
-        items.push({ id: '2', label: 'Held in escrow', amount: budget * 0.8, status: 'held' })
-        items.push({ id: '3', label: 'Platform fee', amount: budget * 0.2, status: 'pending' })
+        items.push({ id: '1', label: 'Campaign budget', amount: budget, status: 'funded', date: c.createdAt })
       }
+      if (reserved > 0) {
+        items.push({ id: '2', label: 'Reserved from wallet', amount: reserved / 100, status: 'held' })
+      }
+      if (available > 0) {
+        items.push({ id: '3', label: 'Wallet available', amount: available / 100, status: 'released' })
+      }
+
       setEscrow({
         totalBudget: budget,
         funded: budget,
         released: 0,
-        held: budget * 0.8,
+        held: reserved / 100,
         items,
       })
     } catch (err) {
@@ -84,7 +93,7 @@ export default function CampaignEscrowScreen() {
               <Text style={styles.metricValue}>₹{(escrow?.totalBudget ?? 0).toLocaleString()}</Text>
             </View>
             <View style={styles.metricCard}>
-              <Text style={styles.metricLabel}>Held</Text>
+              <Text style={styles.metricLabel}>Reserved</Text>
               <Text style={styles.metricValue}>₹{(escrow?.held ?? 0).toLocaleString()}</Text>
             </View>
           </View>

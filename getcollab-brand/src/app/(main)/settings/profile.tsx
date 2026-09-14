@@ -40,7 +40,11 @@ export default function ProfileSettingsScreen() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      await updateProfile({ name: form.name })
+      await updateProfile({
+        name: form.name,
+        bio: form.bio,
+        location: form.location,
+      })
       await apiService.updateGeneralProfile({
         name: form.name,
         websiteUrl: form.websiteUrl,

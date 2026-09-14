@@ -86,7 +86,7 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
             <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
             <Text style={styles.meta}>{item.productName || 'Product'} · {item.currency}</Text>
           </View>
-          <Pressable onPress={() => handleToggleStatus(item)} style={[styles.statusPill, { backgroundColor: s.bg }]}>
+          <Pressable onPress={() => handleToggleStatus(item)} style={({ pressed }) => [styles.statusPill, { backgroundColor: s.bg }, pressed && { opacity: 0.7 }]}>
             <Text style={[styles.statusText, { color: s.fg }]}>{st.charAt(0).toUpperCase() + st.slice(1)}</Text>
           </Pressable>
         </View>
