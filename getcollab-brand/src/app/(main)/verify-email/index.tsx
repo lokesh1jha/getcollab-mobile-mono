@@ -1,9 +1,8 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, Alert, ScrollView, TextInput, Pressable, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing } from '@shared/constants'
-import { Button } from '@shared/components/ui/Button'
-import { Input } from '@shared/components/ui/Input'
+import Animated, { FadeInDown } from 'react-native-reanimated'
+import { colors, spacing, radius } from '@/src/theme'
 import { useAuthStore } from '@shared/stores/auth-store'
 import apiService, { handleApiError } from '@shared/services/api'
 
@@ -67,61 +66,52 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Verify your email</Text>
-        <Text style={styles.subtitle}>
-          We sent a verification code to <Text style={styles.email}>{email}</Text>.
-          Please enter the code below.
-        </Text>
+    <View style={styles.root}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+          <Animated.View entering={FadeInDown.duration(400)}>
+            <Text style={styles.title}>Verify your email</Text>
+            <Text style={styles.subtitle}>
+              We sent a verification code to <Text style={styles.email}>{email}</Text>.
+              Please enter the code below.
+            </Text>
+          </Animated.View>
 
-        <Input
-          label="Verification Code"
-          value={token}
-          onChangeText={setToken}
-          placeholder="Enter 6-digit code"
-          style={styles.input}
-        />
+          <View style={styles.field}>
+            <Text style={styles.label}>Verification Code</Text>
+            <TextInput
+              style={styles.input}
+              value={token}
+              onChangeText={setToken}
+              placeholder="Enter 6-digit code"
+              placeholderTextColor={colors.textSubtle}
+              keyboardType="number-pad"
+            />
+          </View>
 
-        <Button
-          title={submitting ? 'Verifying...' : 'Verify'}
-          onPress={handleVerify}
-          loading={submitting}
-          disabled={submitting}
-          fullWidth
-          style={styles.submitBtn}
-        />
+          <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={handleVerify} disabled={submitting}>
+            {submitting ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.primaryBtnText}>Verify</Text>}
+          </Pressable>
 
-        <Button
-          title={resending ? 'Sending...' : 'Resend Email'}
-          variant="outline"
-          onPress={handleResend}
-          loading={resending}
-          disabled={resending}
-          fullWidth
-        />
-      </ScrollView>
-    </SafeAreaView>
+          <Pressable style={({ pressed }) => [styles.secondaryBtn, pressed && { opacity: 0.75 }]} onPress={handleResend} disabled={resending}>
+            <Text style={styles.secondaryBtnText}>{resending ? 'Sending…' : 'Resend Email'}</Text>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginBottom: spacing.xl,
-    lineHeight: 20,
-  },
+  root: { flex: 1, backgroundColor: colors.bg },
+  title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8, marginTop: spacing.lg, marginBottom: spacing.sm },
+  subtitle: { fontSize: 14, color: colors.textMuted, marginBottom: spacing.xl, lineHeight: 20 },
   email: { color: colors.text, fontWeight: '600' },
-  input: { marginBottom: spacing.lg },
-  submitBtn: { marginBottom: spacing.md },
+  field: { marginBottom: spacing.lg },
+  label: { fontSize: 12, fontWeight: '600', color: colors.textMuted, letterSpacing: 0.4, marginBottom: spacing.sm },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 12, color: colors.text, fontSize: 14, backgroundColor: colors.bg },
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 14, marginBottom: spacing.md },
+  primaryBtnText: { color: '#000', fontSize: 14, fontWeight: '700' },
+  secondaryBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.borderStrong, borderRadius: radius.pill, paddingVertical: 14 },
+  secondaryBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
 })

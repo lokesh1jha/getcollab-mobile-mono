@@ -1,11 +1,23 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, ScrollView, Alert, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform } from 'react-native'
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  TextInput,
+  Pressable,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'
 import * as ImagePickerLib from 'expo-image-picker'
-import { colors, spacing } from '@shared/constants'
-import { Button } from '@shared/components/ui/Button'
-import { Input } from '@shared/components/ui/Input'
+import { Ionicons } from '@expo/vector-icons'
+import { colors, spacing, radius } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useReferenceDataStore, selectCategories, selectRegions, selectDeliverables } from '@shared/stores/reference-data-store'
 import { TrialGuard } from '../../../../../components/TrialGuard'
@@ -16,7 +28,6 @@ interface CreateCampaignScreenProps {
 
 const toIsoDate = (value: string): string | null => {
   if (!value) return null
-  // Accept YYYY-MM-DD or full ISO
   const match = /^\d{4}-\d{2}-\d{2}$/.test(value)
   const date = match ? new Date(`${value}T12:00:00Z`) : new Date(value)
   if (isNaN(date.getTime())) return null
@@ -63,7 +74,6 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
     }
 
     if (selectedDate) {
-      const iso = selectedDate.toISOString()
       if (field === 'start') {
         setStartDateObj(selectedDate)
         setFormData((prev) => ({ ...prev, startDate: selectedDate.toISOString() }))
@@ -138,8 +148,8 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
     }
     const startIso = toIsoDate(formData.startDate)
     const endIso = toIsoDate(formData.endDate)
-    if (!startIso) newErrors.startDate = 'Start date is required (YYYY-MM-DD)'
-    if (!endIso) newErrors.endDate = 'End date is required (YYYY-MM-DD)'
+    if (!startIso) newErrors.startDate = 'Start date is required'
+    if (!endIso) newErrors.endDate = 'End date is required'
     if (startIso && endIso && new Date(endIso) <= new Date(startIso)) {
       newErrors.endDate = 'End date must be after start date'
     }
@@ -195,378 +205,319 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <TrialGuard feature="campaign:create">
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
-      <ScrollView
-        style={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>Create New Campaign</Text>
-          <Text style={styles.subtitle}>Fill in the details for your campaign</Text>
-        </View>
-
-        <View style={styles.form}>
-          <TouchableOpacity style={styles.coverPicker} onPress={pickCoverImage}>
-            {coverImage ? (
-              <Image source={{ uri: coverImage }} style={styles.coverImage} />
-            ) : (
-              <View style={styles.coverPlaceholder}>
-                <Text style={styles.coverPlaceholderIcon}>📸</Text>
-                <Text style={styles.coverPlaceholderText}>Tap to add a cover image</Text>
-                <Text style={styles.coverPlaceholderHint}>16:9 ratio recommended</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <Input
-            label="Campaign Title"
-            placeholder="Enter campaign title"
-            value={formData.title}
-            onChangeText={(value) => handleInputChange('title', value)}
-            error={errors.title}
-            style={styles.input}
-          />
-
-          <View style={styles.textAreaContainer}>
-            <Text style={styles.label}>Description</Text>
-            <View style={[styles.textArea, errors.description && styles.errorBorder]}>
-              <TextInput
-                style={styles.textAreaInput}
-                placeholder="Describe your campaign (min 20 characters)..."
-                placeholderTextColor={colors.textMuted}
-                value={formData.description}
-                onChangeText={(value) => handleInputChange('description', value)}
-                multiline
-                numberOfLines={4}
-              />
-            </View>
-            {errors.description ? <Text style={styles.errorText}>{errors.description}</Text> : null}
-          </View>
-
-          <Input
-            label="Budget (₹)"
-            placeholder="Enter budget amount"
-            value={formData.budget}
-            onChangeText={(value) => handleInputChange('budget', value)}
-            keyboardType="numeric"
-            error={errors.budget}
-            style={styles.input}
-          />
-
-          <View style={styles.dateRow}>
-            <View style={styles.dateField}>
-              <Text style={styles.label}>Start Date</Text>
-              <TouchableOpacity
-                style={[styles.dateButton, errors.startDate ? styles.dateButtonError : null]}
-                onPress={() => setShowDatePicker('start')}
-                accessibilityRole="button"
-                accessibilityLabel="Pick start date"
-              >
-                <Text style={[styles.dateButtonText, startDateObj ? styles.dateButtonTextFilled : null]}>
-                  {startDateObj ? formatDisplayDate(startDateObj) : 'Select start date'}
-                </Text>
-              </TouchableOpacity>
-              {errors.startDate ? <Text style={styles.errorText}>{errors.startDate}</Text> : null}
-            </View>
-            <View style={styles.dateField}>
-              <Text style={styles.label}>End Date</Text>
-              <TouchableOpacity
-                style={[styles.dateButton, errors.endDate ? styles.dateButtonError : null]}
-                onPress={() => setShowDatePicker('end')}
-                accessibilityRole="button"
-                accessibilityLabel="Pick end date"
-              >
-                <Text style={[styles.dateButtonText, endDateObj ? styles.dateButtonTextFilled : null]}>
-                  {endDateObj ? formatDisplayDate(endDateObj) : 'Select end date'}
-                </Text>
-              </TouchableOpacity>
-              {errors.endDate ? <Text style={styles.errorText}>{errors.endDate}</Text> : null}
-            </View>
-          </View>
-
-          {showDatePicker && (
-            <DateTimePicker
-              value={showDatePicker === 'start' ? (startDateObj || new Date()) : (endDateObj || new Date())}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              minimumDate={showDatePicker === 'end' && startDateObj ? startDateObj : undefined}
-              onChange={onDateChange}
-            />
-          )}
-          {Platform.OS === 'ios' && showDatePicker && (
-            <TouchableOpacity
-              style={styles.dateDoneButton}
-              onPress={() => setShowDatePicker(null)}
-              accessibilityRole="button"
-              accessibilityLabel="Done picking date"
+    <View style={styles.root}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <TrialGuard feature="campaign:create">
+          <KeyboardAvoidingView
+            style={styles.flex}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+          >
+            <ScrollView
+              style={styles.flex}
+              contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}
+              keyboardShouldPersistTaps="handled"
             >
-              <Text style={styles.dateDoneButtonText}>Done</Text>
-            </TouchableOpacity>
-          )}
+              <Animated.View entering={FadeInDown.duration(400)}>
+                <Text style={styles.title}>Create New Campaign</Text>
+                <Text style={styles.subtitle}>Fill in the details for your campaign</Text>
+              </Animated.View>
 
-          <View style={styles.categoryContainer}>
-            <Text style={styles.label}>Region</Text>
-            <View style={styles.categoryGrid}>
-              {regions.map((region) => (
-                <TouchableOpacity
-                  key={region}
-                  style={[styles.categoryButton, formData.region === region && styles.selectedCategory]}
-                  onPress={() => handleInputChange('region', region)}
-                >
-                  <Text style={[styles.categoryText, formData.region === region && styles.selectedCategoryText]}>
-                    {region}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+              <Pressable style={({ pressed }) => [styles.coverPicker, pressed && { opacity: 0.85 }]} onPress={pickCoverImage}>
+                {coverImage ? (
+                  <Image source={{ uri: coverImage }} style={styles.coverImage} />
+                ) : (
+                  <View style={styles.coverPlaceholder}>
+                    <Ionicons name="camera-outline" size={32} color={colors.textMuted} />
+                    <Text style={styles.coverPlaceholderText}>Tap to add a cover image</Text>
+                    <Text style={styles.coverPlaceholderHint}>16:9 ratio recommended</Text>
+                  </View>
+                )}
+              </Pressable>
 
-          <View style={styles.categoryContainer}>
-            <Text style={styles.label}>Categories</Text>
-            <View style={styles.categoryGrid}>
-              {categories.map((category) => (
-                <TouchableOpacity
-                  key={category}
-                  style={[
-                    styles.categoryButton,
-                    formData.categories.includes(category) && styles.selectedCategory,
-                  ]}
-                  onPress={() => toggleSelection('categories', category)}
-                >
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      formData.categories.includes(category) && styles.selectedCategoryText,
-                    ]}
+              {/* Title */}
+              <View style={styles.field}>
+                <Text style={styles.label}>Campaign Title</Text>
+                <TextInput
+                  style={[styles.input, errors.title && styles.inputError]}
+                  placeholder="Enter campaign title"
+                  placeholderTextColor={colors.textSubtle}
+                  value={formData.title}
+                  onChangeText={(v) => handleInputChange('title', v)}
+                />
+                {errors.title ? <Text style={styles.errorText}>{errors.title}</Text> : null}
+              </View>
+
+              {/* Description */}
+              <View style={styles.field}>
+                <Text style={styles.label}>Description</Text>
+                <View style={[styles.textArea, errors.description && styles.inputError]}>
+                  <TextInput
+                    style={styles.textAreaInput}
+                    placeholder="Describe your campaign (min 20 characters)..."
+                    placeholderTextColor={colors.textSubtle}
+                    value={formData.description}
+                    onChangeText={(v) => handleInputChange('description', v)}
+                    multiline
+                    numberOfLines={4}
+                  />
+                </View>
+                {errors.description ? <Text style={styles.errorText}>{errors.description}</Text> : null}
+              </View>
+
+              {/* Budget */}
+              <View style={styles.field}>
+                <Text style={styles.label}>Budget (₹)</Text>
+                <TextInput
+                  style={[styles.input, errors.budget && styles.inputError]}
+                  placeholder="Enter budget amount"
+                  placeholderTextColor={colors.textSubtle}
+                  value={formData.budget}
+                  onChangeText={(v) => handleInputChange('budget', v)}
+                  keyboardType="numeric"
+                />
+                {errors.budget ? <Text style={styles.errorText}>{errors.budget}</Text> : null}
+              </View>
+
+              {/* Dates */}
+              <View style={styles.dateRow}>
+                <View style={styles.dateField}>
+                  <Text style={styles.label}>Start Date</Text>
+                  <Pressable
+                    style={[styles.dateButton, errors.startDate && styles.inputError]}
+                    onPress={() => setShowDatePicker('start')}
                   >
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            {errors.categories ? <Text style={styles.errorText}>{errors.categories}</Text> : null}
-          </View>
-
-          <View style={styles.categoryContainer}>
-            <Text style={styles.label}>Deliverables</Text>
-            <View style={styles.categoryGrid}>
-              {deliverables.map((deliverable) => (
-                <TouchableOpacity
-                  key={deliverable}
-                  style={[
-                    styles.categoryButton,
-                    formData.deliverables.includes(deliverable) && styles.selectedCategory,
-                  ]}
-                  onPress={() => toggleSelection('deliverables', deliverable)}
-                >
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      formData.deliverables.includes(deliverable) && styles.selectedCategoryText,
-                    ]}
+                    <Text style={[styles.dateButtonText, startDateObj && { color: colors.text }]}>
+                      {startDateObj ? formatDisplayDate(startDateObj) : 'Select start date'}
+                    </Text>
+                  </Pressable>
+                  {errors.startDate ? <Text style={styles.errorText}>{errors.startDate}</Text> : null}
+                </View>
+                <View style={styles.dateField}>
+                  <Text style={styles.label}>End Date</Text>
+                  <Pressable
+                    style={[styles.dateButton, errors.endDate && styles.inputError]}
+                    onPress={() => setShowDatePicker('end')}
                   >
-                    {deliverable}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            {errors.deliverables ? <Text style={styles.errorText}>{errors.deliverables}</Text> : null}
-          </View>
-        </View>
+                    <Text style={[styles.dateButtonText, endDateObj && { color: colors.text }]}>
+                      {endDateObj ? formatDisplayDate(endDateObj) : 'Select end date'}
+                    </Text>
+                  </Pressable>
+                  {errors.endDate ? <Text style={styles.errorText}>{errors.endDate}</Text> : null}
+                </View>
+              </View>
 
-        <View style={styles.buttonContainer}>
-          <Button
-            title="Create Campaign"
-            onPress={handleCreateCampaign}
-            loading={loading}
-            disabled={loading}
-            fullWidth
-          />
+              {showDatePicker && (
+                <DateTimePicker
+                  value={showDatePicker === 'start' ? (startDateObj || new Date()) : (endDateObj || new Date())}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  minimumDate={showDatePicker === 'end' && startDateObj ? startDateObj : undefined}
+                  onChange={onDateChange}
+                />
+              )}
+              {Platform.OS === 'ios' && showDatePicker && (
+                <Pressable style={styles.dateDoneButton} onPress={() => setShowDatePicker(null)}>
+                  <Text style={styles.dateDoneButtonText}>Done</Text>
+                </Pressable>
+              )}
 
-          <Button
-            title="Cancel"
-            variant="outline"
-            onPress={() => navigation?.goBack()}
-            style={styles.cancelButton}
-            fullWidth
-          />
-        </View>
-      </ScrollView>
-      </KeyboardAvoidingView>
-      </TrialGuard>
-    </SafeAreaView>
+              {/* Region */}
+              <View style={styles.field}>
+                <Text style={styles.label}>Region</Text>
+                <View style={styles.chipGrid}>
+                  {regions.map((region) => (
+                    <Pressable
+                      key={region}
+                      style={({ pressed }) => [
+                        styles.chip,
+                        formData.region === region && styles.chipActive,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                      onPress={() => handleInputChange('region', region)}
+                    >
+                      <Text style={[styles.chipText, formData.region === region && styles.chipTextActive]}>
+                        {region}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              {/* Categories */}
+              <View style={styles.field}>
+                <Text style={styles.label}>Categories</Text>
+                <View style={styles.chipGrid}>
+                  {categories.map((category) => (
+                    <Pressable
+                      key={category}
+                      style={({ pressed }) => [
+                        styles.chip,
+                        formData.categories.includes(category) && styles.chipActive,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                      onPress={() => toggleSelection('categories', category)}
+                    >
+                      <Text style={[styles.chipText, formData.categories.includes(category) && styles.chipTextActive]}>
+                        {category}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                {errors.categories ? <Text style={styles.errorText}>{errors.categories}</Text> : null}
+              </View>
+
+              {/* Deliverables */}
+              <View style={styles.field}>
+                <Text style={styles.label}>Deliverables</Text>
+                <View style={styles.chipGrid}>
+                  {deliverables.map((deliverable) => (
+                    <Pressable
+                      key={deliverable}
+                      style={({ pressed }) => [
+                        styles.chip,
+                        formData.deliverables.includes(deliverable) && styles.chipActive,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                      onPress={() => toggleSelection('deliverables', deliverable)}
+                    >
+                      <Text style={[styles.chipText, formData.deliverables.includes(deliverable) && styles.chipTextActive]}>
+                        {deliverable}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                {errors.deliverables ? <Text style={styles.errorText}>{errors.deliverables}</Text> : null}
+              </View>
+
+              {/* Actions */}
+              <View style={styles.actions}>
+                <Pressable
+                  style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
+                  onPress={handleCreateCampaign}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#000" />
+                  ) : (
+                    <Text style={styles.primaryBtnText}>Create Campaign</Text>
+                  )}
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.secondaryBtn, pressed && { opacity: 0.75 }]}
+                  onPress={() => navigation?.goBack()}
+                >
+                  <Text style={styles.secondaryBtnText}>Cancel</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </TrialGuard>
+      </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    flex: 1,
-    padding: spacing.lg,
-  },
-  header: {
-    marginBottom: spacing.xl,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textMuted,
-  },
-  form: {
-    marginBottom: spacing.xl,
-  },
+  title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8, marginBottom: spacing.xs },
+  subtitle: { color: colors.textMuted, fontSize: 13, marginBottom: spacing.xl },
+
   coverPicker: {
     marginBottom: spacing.lg,
-    borderRadius: 12,
+    borderRadius: radius.md,
     overflow: 'hidden',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
     aspectRatio: 16 / 9,
   },
-  coverImage: {
-    width: '100%',
-    height: '100%',
-  },
+  coverImage: { width: '100%', height: '100%' },
   coverPlaceholder: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,
+    gap: spacing.sm,
   },
-  coverPlaceholderIcon: {
-    fontSize: 36,
-    marginBottom: spacing.sm,
-  },
-  coverPlaceholderText: {
-    fontSize: 16,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  coverPlaceholderHint: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
+  coverPlaceholderText: { fontSize: 15, color: colors.text, fontWeight: '600' },
+  coverPlaceholderHint: { fontSize: 12, color: colors.textMuted },
+
+  field: { marginBottom: spacing.lg },
+  label: { fontSize: 12, fontWeight: '600', color: colors.textMuted, letterSpacing: 0.4, marginBottom: spacing.sm },
   input: {
-    marginBottom: spacing.lg,
-  },
-  textAreaContainer: {
-    marginBottom: spacing.lg,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  textArea: {
-    backgroundColor: colors.surface,
-    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 12,
+    color: colors.text,
+    fontSize: 14,
+    backgroundColor: colors.bg,
   },
-  errorBorder: {
-    borderColor: colors.error,
+  inputError: { borderColor: colors.error },
+  errorText: { color: colors.error, fontSize: 12, marginTop: spacing.xs },
+
+  textArea: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.bg,
   },
   textAreaInput: {
-    fontSize: 16,
+    fontSize: 14,
     color: colors.text,
     minHeight: 100,
     textAlignVertical: 'top',
+    padding: 0,
   },
-  errorText: {
-    color: colors.error,
-    fontSize: 14,
-    marginTop: spacing.xs,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  dateField: {
-    flex: 1,
-  },
-  categoryContainer: {
-    marginBottom: spacing.lg,
-  },
-  categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  categoryButton: {
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  selectedCategory: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  categoryText: {
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  selectedCategoryText: {
-    color: colors.white,
-  },
-  buttonContainer: {
-    gap: spacing.md,
-    marginBottom: spacing.xl,
-  },
-  cancelButton: {
-    marginTop: spacing.sm,
-  },
+
+  dateRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
+  dateField: { flex: 1 },
   dateButton: {
-    backgroundColor: colors.surface,
-    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 12,
+    backgroundColor: colors.bg,
+  },
+  dateButtonText: { fontSize: 14, color: colors.textSubtle },
+  dateDoneButton: { alignSelf: 'flex-end', paddingVertical: spacing.sm },
+  dateDoneButtonText: { fontSize: 14, color: colors.blue, fontWeight: '600' },
+
+  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    backgroundColor: colors.card,
   },
-  dateButtonError: {
-    borderColor: colors.error,
+  chipActive: { backgroundColor: colors.neon, borderColor: colors.neon },
+  chipText: { fontSize: 13, color: colors.text, fontWeight: '500' },
+  chipTextActive: { color: '#000', fontWeight: '600' },
+
+  actions: { gap: spacing.md, marginTop: spacing.xl, marginBottom: spacing.xxxl },
+  primaryBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.neon,
+    borderRadius: radius.pill,
+    paddingVertical: 14,
   },
-  dateButtonText: {
-    fontSize: 16,
-    color: colors.textMuted,
+  primaryBtnText: { color: '#000', fontSize: 14, fontWeight: '700' },
+  secondaryBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.pill,
+    paddingVertical: 14,
   },
-  dateButtonTextFilled: {
-    color: colors.text,
-  },
-  dateDoneButton: {
-    alignSelf: 'flex-end',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  dateDoneButtonText: {
-    fontSize: 16,
-    color: colors.primary,
-    fontWeight: '600',
-  },
+  secondaryBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
 })

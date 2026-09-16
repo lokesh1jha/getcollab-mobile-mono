@@ -4,9 +4,12 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { colors, radius, spacing } from '@/src/theme'
 import { TrialGuard } from '../../../../components/TrialGuard'
 import apiService, { handleApiError } from '@shared/services/api'
+
+const SAVED_CREATORS_KEY = '@getcollab:brand:saved_creators'
 
 interface Creator { id: string; name: string; avatar?: string; image?: string; bio?: string; location?: string; categories?: string[]; audienceSize?: number; engagementRate?: number; verified?: boolean; instagramHandle?: string; instagramMetrics?: { followers?: number }; matchScore?: number }
 interface Props { navigation?: any }
@@ -20,6 +23,27 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [shortlisted, setShortlisted] = useState<Record<string, boolean>>({})
+
+  // Load persisted saved creators
+  useEffect(() => {
+    AsyncStorage.getItem(SAVED_CREATORS_KEY)
+      .then((raw) => {
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw)
+            if (parsed && typeof parsed === 'object') {
+              setShortlisted(parsed)
+            }
+          } catch { /* ignore corrupt storage */ }
+        }
+      })
+      .catch(() => undefined)
+  }, [])
+
+  // Persist saved creators whenever they change
+  useEffect(() => {
+    AsyncStorage.setItem(SAVED_CREATORS_KEY, JSON.stringify(shortlisted)).catch(() => undefined)
+  }, [shortlisted])
 
   const loadCreators = useCallback(async () => {
     try {
@@ -115,7 +139,13 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
               <Text style={styles.viewBtnText}>Message</Text>
             </Pressable>
             <Pressable
-              onPress={() => setShortlisted((s) => ({ ...s, [item.id]: !s[item.id] }))}
+              onPress={() => {
+                setShortlisted((s) => {
+                  const next = { ...s, [item.id]: !s[item.id] }
+                  if (!next[item.id]) delete next[item.id]
+                  return next
+                })
+              }}
               style={({ pressed }) => [styles.shortlistBtn, shortlisted[item.id] && styles.shortlistBtnActive, pressed && { opacity: 0.75 }]}
             >
               <Ionicons name={shortlisted[item.id] ? 'bookmark' : 'bookmark-outline'} size={16} color={shortlisted[item.id] ? '#000' : '#fff'} />

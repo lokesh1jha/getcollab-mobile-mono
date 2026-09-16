@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, FlatList, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, spacing } from '@shared/constants'
+import { colors, spacing, radius } from '@/src/theme'
 import { Button } from '@shared/components/ui/Button'
 import { Input } from '@shared/components/ui/Input'
 import { useAuthStore } from '@shared/stores/auth-store'
@@ -106,7 +106,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
   if (loadingState) {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.neon} />
       </SafeAreaView>
     )
   }
@@ -450,7 +450,7 @@ function IndustryPicker({ value, onChange }: { value: string[]; onChange: (v: st
             <View key={item} style={styles.pill}>
               <Text style={styles.pillText}>{item}</Text>
               <Pressable onPress={() => remove(item)} hitSlop={6}>
-                <Ionicons name="close" size={14} color={colors.primary} />
+                <Ionicons name="close" size={14} color={colors.neon} />
               </Pressable>
             </View>
           ))}
@@ -492,7 +492,7 @@ function IndustryPicker({ value, onChange }: { value: string[]; onChange: (v: st
                     {item}
                   </Text>
                   {selected
-                    ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                    ? <Ionicons name="checkmark-circle" size={20} color={colors.neon} />
                     : <View style={styles.modalOptionCircle} />
                   }
                 </Pressable>
@@ -515,13 +515,13 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => (
 const SectionLabel = ({ label }: { label: string }) => <Text style={styles.sectionLabel}>{label}</Text>
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, paddingBottom: spacing.xl },
   heading: { fontSize: 28, fontWeight: 'bold', color: colors.text, marginBottom: spacing.xs },
   subheading: { fontSize: 14, color: colors.textMuted, marginBottom: spacing.md },
   progressBar: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.lg },
   progressDot: { flex: 1, height: 4, backgroundColor: colors.border, borderRadius: 2 },
-  progressDotActive: { backgroundColor: colors.primary },
+  progressDotActive: { backgroundColor: colors.neon },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',
@@ -539,11 +539,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
   },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipActive: { backgroundColor: colors.neon, borderColor: colors.neon },
   chipText: { fontSize: 13, color: colors.text },
-  chipTextActive: { color: colors.white },
+  chipTextActive: { color: colors.text },
   actionRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
   termsRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg },
   termsBox: {
@@ -554,10 +554,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
   },
-  termsBoxActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  termsCheck: { color: colors.white, fontSize: 12, fontWeight: '700' },
+  termsBoxActive: { backgroundColor: colors.neon, borderColor: colors.neon },
+  termsCheck: { color: colors.text, fontSize: 12, fontWeight: '700' },
   termsText: { flex: 1, color: colors.textMuted, fontSize: 13, lineHeight: 18 },
 
   pickerField: {
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: spacing.md,
     paddingVertical: 14,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
     marginBottom: spacing.md,
   },
   pickerValue: { fontSize: 15, color: colors.text },
@@ -578,15 +578,15 @@ const styles = StyleSheet.create({
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: spacing.sm },
   pill: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: colors.primary + '22',
-    borderWidth: 1, borderColor: colors.primary,
+    backgroundColor: colors.neon + '22',
+    borderWidth: 1, borderColor: colors.neon,
     borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6,
   },
-  pillText: { fontSize: 13, color: colors.primary, fontWeight: '600' },
+  pillText: { fontSize: 13, color: colors.neon, fontWeight: '600' },
 
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
   modalSheet: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 40,
@@ -602,13 +602,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
   },
   modalTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
-  modalDone: { fontSize: 15, fontWeight: '700', color: colors.primary },
+  modalDone: { fontSize: 15, fontWeight: '700', color: colors.neon },
   modalOption: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.lg, paddingVertical: 15,
   },
   modalOptionText: { fontSize: 15, color: colors.text },
-  modalOptionTextActive: { color: colors.primary, fontWeight: '700' },
+  modalOptionTextActive: { color: colors.neon, fontWeight: '700' },
   modalOptionCircle: {
     width: 20, height: 20, borderRadius: 10,
     borderWidth: 1.5, borderColor: colors.border,

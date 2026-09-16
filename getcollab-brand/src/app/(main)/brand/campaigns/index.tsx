@@ -40,6 +40,18 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
     finally { setDeleting(false) }
   }
 
+  const handlePublish = async (campaign: Campaign) => {
+    try {
+      await apiService.publishCampaign(campaign.id)
+      setCampaigns((prev) =>
+        prev.map((c) => (c.id === campaign.id ? { ...c, status: 'active' } : c))
+      )
+      Alert.alert('Published', `"${campaign.title}" is now live.`)
+    } catch (err) {
+      handleApiError(err, 'Failed to publish campaign')
+    }
+  }
+
   const loadCampaigns = useCallback(async () => {
     try {
       const response = await apiService.getMyCampaigns()
@@ -87,6 +99,11 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
         </Pressable>
 
         <View style={styles.actionsRow}>
+          {item.status === 'draft' && (
+            <Pressable style={({ pressed }) => [styles.publishBtnSmall, pressed && { opacity: 0.85 }]} onPress={() => handlePublish(item)}>
+              <Text style={styles.publishBtnSmallText}>Publish</Text>
+            </Pressable>
+          )}
           <Pressable style={({ pressed }) => [styles.outlinedBtnSmall, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('Bids', { campaignId: item.id })}>
             <Text style={styles.outlinedBtnSmallText}>View Bids</Text>
           </Pressable>
@@ -229,4 +246,7 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: 'row', gap: spacing.md },
   deleteModalBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, backgroundColor: colors.error, alignItems: 'center', justifyContent: 'center' },
   deleteModalBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+
+  publishBtnSmall: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center' },
+  publishBtnSmallText: { color: '#000', fontSize: 12, fontWeight: '700' },
 })

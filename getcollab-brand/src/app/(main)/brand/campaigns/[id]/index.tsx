@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Dimensions } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Dimensions, Alert } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { useCampaignStore } from '@shared/stores/campaign-store'
+import { apiService, handleApiError } from '@shared/services/api'
 import type { Campaign } from '@shared/types'
 
 type RouteParams = RouteProp<{ campaignDetails: { id: string; campaign?: Campaign } }, 'campaignDetails'>
@@ -33,6 +34,25 @@ export default function BrandCampaignDetailsScreen() {
   const loadCampaign = async () => {
     try { await fetchCampaign(id); setCampaign(useCampaignStore.getState().currentCampaign) }
     catch (error) { console.error('Failed to load campaign:', error) }
+  }
+
+  const handlePublish = async () => {
+    if (!campaign) return
+    Alert.alert('Publish Campaign', `Make "${campaign.title}" live?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Publish',
+        onPress: async () => {
+          try {
+            await apiService.publishCampaign(campaign.id)
+            setCampaign((prev) => (prev ? { ...prev, status: 'active' } : prev))
+            Alert.alert('Published', 'Your campaign is now live.')
+          } catch (err) {
+            handleApiError(err, 'Failed to publish campaign')
+          }
+        },
+      },
+    ])
   }
 
   if (isLoading && !campaign) {
@@ -103,6 +123,13 @@ export default function BrandCampaignDetailsScreen() {
             </View>
           </View>
 
+          {st === 'draft' && (
+            <Pressable style={({ pressed }) => [styles.publishBtn, pressed && { opacity: 0.85 }]} onPress={handlePublish}>
+              <Ionicons name="rocket-outline" size={18} color="#000" />
+              <Text style={styles.publishBtnText}>Publish Campaign</Text>
+            </Pressable>
+          )}
+
           <View style={styles.actionsGrid}>
             <DetailAction icon="create-outline" label="Edit" onPress={() => (navigation as any).navigate('CampaignEdit', { id: campaign.id })} />
             <DetailAction icon="search-outline" label="Discover" onPress={() => (navigation as any).navigate('CampaignDiscover', { id: campaign.id, title: campaign.title })} />
@@ -159,4 +186,7 @@ const styles = StyleSheet.create({
 
   outlinedBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong },
   outlinedBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+
+  publishBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 14, marginBottom: spacing.lg },
+  publishBtnText: { color: '#000', fontSize: 14, fontWeight: '700' },
 })

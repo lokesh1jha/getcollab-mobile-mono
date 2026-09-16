@@ -1,9 +1,8 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, Alert, ScrollView, TextInput, Pressable, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing } from '@shared/constants'
-import { Button } from '@shared/components/ui/Button'
-import { Input } from '@shared/components/ui/Input'
+import Animated, { FadeInDown } from 'react-native-reanimated'
+import { colors, spacing, radius } from '@/src/theme'
 import apiService, { handleApiError } from '@shared/services/api'
 
 interface Props {
@@ -55,96 +54,63 @@ export default function ChangePasswordScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Change Password</Text>
-        <Text style={styles.subtitle}>Update the password on your account.</Text>
+    <View style={styles.root}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+          <Animated.View entering={FadeInDown.duration(400)}>
+            <Text style={styles.title}>Change Password</Text>
+            <Text style={styles.subtitle}>Update the password on your account.</Text>
+          </Animated.View>
 
-        <Input
-          label="Current Password"
-          value={current}
-          onChangeText={setCurrent}
-          secureTextEntry
-          style={styles.input}
-        />
-        <Input
-          label="New Password"
-          value={next}
-          onChangeText={setNext}
-          secureTextEntry
-          error={nextErr || undefined}
-          style={styles.input}
-        />
-        <Input
-          label="Confirm New Password"
-          value={confirm}
-          onChangeText={setConfirm}
-          secureTextEntry
-          style={styles.input}
-        />
+          <View style={styles.field}>
+            <Text style={styles.label}>Current Password</Text>
+            <TextInput style={styles.input} value={current} onChangeText={setCurrent} secureTextEntry placeholderTextColor={colors.textSubtle} />
+          </View>
 
-        <View style={styles.requirements}>
-          <Text style={styles.reqTitle}>Requirements</Text>
-          {[
-            'At least 8 characters',
-            'One uppercase letter',
-            'One lowercase letter',
-            'One number',
-            'One special character',
-          ].map((r) => (
-            <Text key={r} style={styles.reqText}>• {r}</Text>
-          ))}
-        </View>
+          <View style={styles.field}>
+            <Text style={styles.label}>New Password</Text>
+            <TextInput style={[styles.input, nextErr && { borderColor: colors.error }]} value={next} onChangeText={setNext} secureTextEntry placeholderTextColor={colors.textSubtle} />
+            {nextErr ? <Text style={styles.errorText}>{nextErr}</Text> : null}
+          </View>
 
-        <Button
-          title={submitting ? 'Updating...' : 'Update Password'}
-          onPress={handleSubmit}
-          disabled={submitting}
-          loading={submitting}
-          fullWidth
-          style={styles.submitBtn}
-        />
-      </ScrollView>
-    </SafeAreaView>
+          <View style={styles.field}>
+            <Text style={styles.label}>Confirm New Password</Text>
+            <TextInput style={styles.input} value={confirm} onChangeText={setConfirm} secureTextEntry placeholderTextColor={colors.textSubtle} />
+          </View>
+
+          <View style={styles.requirements}>
+            <Text style={styles.reqTitle}>Requirements</Text>
+            {[
+              'At least 8 characters',
+              'One uppercase letter',
+              'One lowercase letter',
+              'One number',
+              'One special character',
+            ].map((r) => (
+              <Text key={r} style={styles.reqText}>• {r}</Text>
+            ))}
+          </View>
+
+          <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={handleSubmit} disabled={submitting}>
+            {submitting ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.primaryBtnText}>Update Password</Text>}
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginBottom: spacing.xl,
-  },
-  input: { marginBottom: spacing.lg },
-  requirements: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.lg,
-  },
-  reqTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-  },
-  reqText: {
-    fontSize: 13,
-    color: colors.textMuted,
-    paddingVertical: 2,
-  },
-  submitBtn: { marginTop: spacing.md },
+  root: { flex: 1, backgroundColor: colors.bg },
+  title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8, marginTop: spacing.lg, marginBottom: spacing.sm },
+  subtitle: { fontSize: 14, color: colors.textMuted, marginBottom: spacing.xl },
+  field: { marginBottom: spacing.lg },
+  label: { fontSize: 12, fontWeight: '600', color: colors.textMuted, letterSpacing: 0.4, marginBottom: spacing.sm },
+  input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 12, color: colors.text, fontSize: 14, backgroundColor: colors.bg },
+  errorText: { color: colors.error, fontSize: 12, marginTop: spacing.xs },
+  requirements: { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg },
+  reqTitle: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.sm },
+  reqText: { fontSize: 13, color: colors.textMuted, paddingVertical: 2 },
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 14 },
+  primaryBtnText: { color: '#000', fontSize: 14, fontWeight: '700' },
 })

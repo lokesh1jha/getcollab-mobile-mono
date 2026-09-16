@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import * as ImagePickerLib from 'expo-image-picker'
-import { colors, spacing } from '@shared/constants'
+import { colors, spacing, radius } from '@/src/theme'
 import { Card, Button } from '@shared/components/ui'
 import apiService, { handleApiError } from '@shared/services/api'
 
@@ -227,7 +227,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={colors.neon} />
         </View>
       </SafeAreaView>
     )
@@ -318,7 +318,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
                       <Image source={{ uri: att.uri }} style={styles.attachmentImage} />
                       {att.uploading && (
                         <View style={styles.attachmentOverlay}>
-                          <ActivityIndicator color={colors.white} />
+                          <ActivityIndicator color={"#fff"} />
                         </View>
                       )}
                       {!att.uploading && (
@@ -359,7 +359,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
           </View>
         }
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.neon} />
         }
         showsVerticalScrollIndicator={false}
         initialNumToRender={10}
@@ -373,7 +373,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -404,13 +404,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 20,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
   },
   filterButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.neon,
+    borderColor: colors.neon,
   },
   filterText: {
     fontSize: 14,
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   filterTextActive: {
-    color: colors.white,
+    color: "#fff",
   },
   reportButton: {
     marginHorizontal: spacing.lg,
@@ -448,8 +448,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   input: {
-    backgroundColor: colors.surfaceLight,
-    borderRadius: 8,
+    backgroundColor: colors.elevated,
+    borderRadius: radius.sm,
     padding: spacing.md,
     color: colors.text,
     fontSize: 16,
@@ -471,9 +471,9 @@ const styles = StyleSheet.create({
   attachmentItem: {
     width: 80,
     height: 80,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     overflow: 'hidden',
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: colors.elevated,
     marginRight: spacing.sm,
   },
   attachmentImage: {
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   attachmentRemoveText: {
-    color: colors.white,
+    color: "#fff",
     fontSize: 14,
     fontWeight: 'bold',
     lineHeight: 16,
@@ -506,17 +506,17 @@ const styles = StyleSheet.create({
   attachmentAdd: {
     width: 80,
     height: 80,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     borderWidth: 2,
     borderColor: colors.border,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
   },
   attachmentAddIcon: {
     fontSize: 24,
-    color: colors.primary,
+    color: colors.neon,
   },
   attachmentAddText: {
     fontSize: 11,
@@ -571,12 +571,12 @@ const styles = StyleSheet.create({
   },
   disputeCampaign: {
     fontSize: 14,
-    color: colors.primary,
+    color: colors.neon,
   },
   statusBadge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   statusText: {
     fontSize: 12,
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
   },
   disputeDate: {
     fontSize: 12,
-    color: colors.textDark,
+    color: colors.textSubtle,
   },
   resolutionContainer: {
     flex: 1,

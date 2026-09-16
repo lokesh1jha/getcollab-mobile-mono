@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing } from '@shared/constants'
-import { Button, Card } from '@shared/components/ui'
+import Animated, { FadeInDown } from 'react-native-reanimated'
+import { Ionicons } from '@expo/vector-icons'
+import { colors, spacing, radius } from '@/src/theme'
 import { useSubscriptionStore, getTrialDaysRemaining } from '../../../stores/subscription-store'
 import { SubscriptionExpiredModal } from '../../../components/SubscriptionExpiredModal'
 
@@ -25,330 +26,161 @@ export default function SubscriptionScreen() {
 
   if (loading && !subscription) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </SafeAreaView>
+      <View style={styles.root}>
+        <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+          <View style={styles.loading}>
+            <ActivityIndicator size="large" color={colors.neon} />
+          </View>
+        </SafeAreaView>
+      </View>
     )
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Workspace</Text>
-          <Text style={styles.subtitle}>Manage your brand workspace and access.</Text>
-        </View>
-
-        {status === 'TRIALING' && daysLeft !== null && (
-          <Card style={[styles.statusCard, daysLeft <= 3 && styles.statusCardUrgent]}>
-            <Text style={[styles.statusLabel, daysLeft <= 3 && styles.statusLabelUrgent]}>
-              {daysLeft <= 3 ? 'Trial ending soon' : 'Trial active'}
-            </Text>
-            <Text style={styles.statusValue}>
-              {daysLeft} day{daysLeft === 1 ? '' : 's'} remaining
-            </Text>
-            <Text style={styles.statusDetail}>
-              Trial ends {subscription?.trialEndsAt?.slice(0, 10)}
-            </Text>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${Math.max(5, (daysLeft / 14) * 100)}%` }]} />
+    <View style={styles.root}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+          <Animated.View entering={FadeInDown.duration(400)}>
+            <View style={styles.header}>
+              <Text style={styles.title}>Workspace</Text>
+              <Text style={styles.subtitle}>Manage your brand workspace and access.</Text>
             </View>
-            <Button
-              title="Manage Workspace"
-              onPress={openBillingPortal}
-              variant="outline"
-              fullWidth
-              style={styles.statusAction}
-            />
-          </Card>
-        )}
+          </Animated.View>
 
-        {status === 'ACTIVE' && (
-          <Card style={styles.statusCard}>
-            <Text style={[styles.statusLabel, { color: colors.success }]}>Subscribed</Text>
-            <Text style={styles.statusValue}>
-              {subscription?.billing === 'YEARLY' ? 'Yearly plan' : 'Monthly plan'}
-            </Text>
-            <Text style={styles.statusDetail}>
-              Renews {subscription?.currentPeriodEnd?.slice(0, 10) || 'soon'}
-            </Text>
-            {subscription?.cancelAtPeriodEnd && (
-              <Text style={styles.statusWarn}>Cancellation scheduled</Text>
-            )}
-            <View style={styles.statusActions}>
-              <Button
-                title="Manage Subscription Online"
-                onPress={openBillingPortal}
-                variant="outline"
-                fullWidth
-              />
+          {status === 'TRIALING' && daysLeft !== null && (
+            <Animated.View entering={FadeInDown.delay(80).duration(400)} style={[styles.statusCard, daysLeft <= 3 && styles.statusCardUrgent]}>
+              <Text style={[styles.statusLabel, daysLeft <= 3 && { color: colors.warning }]}>
+                {daysLeft <= 3 ? 'Trial ending soon' : 'Trial active'}
+              </Text>
+              <Text style={styles.statusValue}>{daysLeft} day{daysLeft === 1 ? '' : 's'} remaining</Text>
+              <Text style={styles.statusDetail}>Trial ends {subscription?.trialEndsAt?.slice(0, 10)}</Text>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${Math.max(5, (daysLeft / 14) * 100)}%` }]} />
+              </View>
+              <Pressable style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.85 }]} onPress={openBillingPortal}>
+                <Text style={styles.outlinedBtnText}>Manage Workspace</Text>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {status === 'ACTIVE' && (
+            <Animated.View entering={FadeInDown.delay(80).duration(400)} style={styles.statusCard}>
+              <Text style={[styles.statusLabel, { color: colors.success }]}>Subscribed</Text>
+              <Text style={styles.statusValue}>{subscription?.billing === 'YEARLY' ? 'Yearly plan' : 'Monthly plan'}</Text>
+              <Text style={styles.statusDetail}>Renews {subscription?.currentPeriodEnd?.slice(0, 10) || 'soon'}</Text>
+              {subscription?.cancelAtPeriodEnd && (
+                <Text style={styles.statusWarn}>Cancellation scheduled</Text>
+              )}
+              <Pressable style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.85 }]} onPress={openBillingPortal}>
+                <Text style={styles.outlinedBtnText}>Manage Subscription Online</Text>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {status === 'PAST_DUE' && (
+            <Animated.View entering={FadeInDown.delay(80).duration(400)} style={[styles.statusCard, { borderColor: colors.error }]}>
+              <Text style={[styles.statusLabel, { color: colors.error }]}>Payment issue</Text>
+              <Text style={styles.statusValue}>Update billing to continue access</Text>
+              <Text style={styles.statusDetail}>Your subscription is paused due to a failed payment.</Text>
+              <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={openBillingPortal}>
+                <Text style={styles.primaryBtnText}>Open Billing Portal</Text>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {status !== 'TRIALING' && status !== 'ACTIVE' && status !== 'PAST_DUE' && subscription && (
+            <Animated.View entering={FadeInDown.delay(80).duration(400)} style={[styles.statusCard, { borderColor: colors.warning }]}>
+              <Text style={styles.statusValue}>Continue Access</Text>
+              <Text style={styles.statusDetail}>Your workspace access has ended. Manage your subscription on the web to continue collaborating with creators.</Text>
+              <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={() => setShowExpiredModal(true)}>
+                <Text style={styles.primaryBtnText}>Open Billing Portal</Text>
+              </Pressable>
+              <Pressable style={({ pressed }) => [styles.ghostBtn, pressed && { opacity: 0.75 }]} onPress={fetchStatus}>
+                <Text style={styles.ghostBtnText}>Sync Status</Text>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {!subscription && (
+            <Animated.View entering={FadeInDown.delay(80).duration(400)} style={styles.statusCard}>
+              <Text style={styles.statusValue}>Start your 14-day free trial</Text>
+              <Text style={styles.statusDetail}>No card required. Get full access to launch campaigns and connect with creators.</Text>
+              <Pressable
+                style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
+                onPress={() => useSubscriptionStore.getState().startTrial()}
+                disabled={loading}
+              >
+                <Text style={styles.primaryBtnText}>{loading ? 'Starting…' : 'Start Free Trial'}</Text>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          <View style={styles.infoSection}>
+            <Text style={styles.infoTitle}>Workspace features</Text>
+            <View style={styles.infoRow}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={styles.infoText}>Campaign creation & management</Text>
             </View>
-          </Card>
-        )}
-
-        {status === 'PAST_DUE' && (
-          <Card style={[styles.statusCard, { borderColor: colors.error }]}>
-            <Text style={[styles.statusLabel, { color: colors.error }]}>Payment issue</Text>
-            <Text style={styles.statusValue}>Update billing to continue access</Text>
-            <Text style={styles.statusDetail}>
-              Your subscription is paused due to a failed payment.
-            </Text>
-            <Button
-              title="Open Billing Portal"
-              onPress={openBillingPortal}
-              fullWidth
-              style={styles.statusAction}
-            />
-          </Card>
-        )}
-
-        {status !== 'TRIALING' && status !== 'ACTIVE' && status !== 'PAST_DUE' && subscription && (
-          <Card style={styles.expiredCard}>
-            <Text style={styles.expiredTitle}>Continue Access</Text>
-            <Text style={styles.expiredText}>
-              Your workspace access has ended. Manage your subscription on the web to continue collaborating with creators.
-            </Text>
-            <Button
-              title="Open Billing Portal"
-              onPress={() => setShowExpiredModal(true)}
-              fullWidth
-            />
-            <Button
-              title="Sync Status"
-              onPress={fetchStatus}
-              variant="ghost"
-              fullWidth
-              style={styles.syncButton}
-            />
-          </Card>
-        )}
-
-        {!subscription && (
-          <Card style={styles.trialPromoCard}>
-            <Text style={styles.trialPromoTitle}>Start your 14-day free trial</Text>
-            <Text style={styles.trialPromoText}>
-              No card required. Get full access to launch campaigns and connect with creators.
-            </Text>
-            <Button
-              title={loading ? 'Starting...' : 'Start Free Trial'}
-              onPress={useSubscriptionStore.getState().startTrial}
-              disabled={loading}
-              loading={loading}
-              fullWidth
-              style={styles.trialBtn}
-            />
-          </Card>
-        )}
-
-        <View style={styles.infoSection}>
-          <Text style={styles.infoTitle}>Workspace features</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoCheck}>✓</Text>
-            <Text style={styles.infoText}>Campaign creation & management</Text>
+            <View style={styles.infoRow}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={styles.infoText}>Creator discovery & outreach</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={styles.infoText}>Real-time messaging</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={styles.infoText}>Campaign analytics & insights</Text>
+            </View>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoCheck}>✓</Text>
-            <Text style={styles.infoText}>Creator discovery & outreach</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoCheck}>✓</Text>
-            <Text style={styles.infoText}>Real-time messaging</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoCheck}>✓</Text>
-            <Text style={styles.infoText}>Campaign analytics & insights</Text>
-          </View>
-        </View>
 
-        <Card style={styles.supportCard}>
-          <Text style={styles.supportTitle}>Need help?</Text>
-          <Text style={styles.supportText}>
-            For billing or subscription inquiries, visit our website or contact support.
-          </Text>
-          <Button
-            title="Visit getcollab.in"
-            onPress={openBillingPortal}
-            variant="ghost"
-            fullWidth
-          />
-        </Card>
-      </ScrollView>
-
-      <SubscriptionExpiredModal
-        visible={showExpiredModal}
-        onClose={() => setShowExpiredModal(false)}
-      />
-    </SafeAreaView>
+          <View style={styles.statusCard}>
+            <Text style={styles.statusValue}>Need help?</Text>
+            <Text style={styles.statusDetail}>For billing or subscription inquiries, visit our website or contact support.</Text>
+            <Pressable style={({ pressed }) => [styles.ghostBtn, pressed && { opacity: 0.75 }]} onPress={openBillingPortal}>
+              <Text style={styles.ghostBtnText}>Visit getcollab.in</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+      <SubscriptionExpiredModal visible={showExpiredModal} onClose={() => setShowExpiredModal(false)} />
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loading: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  header: {
-    marginBottom: spacing.lg,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-    lineHeight: 20,
-  },
+  root: { flex: 1, backgroundColor: colors.bg },
+  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  header: { marginBottom: spacing.lg },
+  title: { fontSize: 28, fontWeight: '700', color: '#fff', letterSpacing: -0.8 },
+  subtitle: { fontSize: 14, color: colors.textMuted, marginTop: spacing.xs, lineHeight: 20 },
+
   statusCard: {
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.primary,
+    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg,
   },
-  statusCardUrgent: {
-    borderColor: colors.warning,
-  },
-  statusLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  statusLabelUrgent: {
-    color: colors.warning,
-  },
-  statusValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginVertical: spacing.xs,
-  },
-  statusDetail: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginBottom: spacing.sm,
-  },
-  statusWarn: {
-    fontSize: 12,
-    color: colors.warning,
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  statusAction: {
-    marginTop: spacing.md,
-  },
-  statusActions: {
-    marginTop: spacing.md,
-    gap: spacing.sm,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: colors.surfaceLight,
-    borderRadius: 2,
-    marginTop: spacing.sm,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-  },
-  trialPromoCard: {
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  trialPromoTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  trialPromoText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginBottom: spacing.md,
-    lineHeight: 20,
-  },
-  trialBtn: {
-    marginTop: spacing.sm,
-  },
-  expiredCard: {
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    borderColor: colors.warning,
-  },
-  expiredTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  expiredText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginBottom: spacing.md,
-    lineHeight: 20,
-  },
-  syncButton: {
-    marginTop: spacing.sm,
-  },
+  statusCardUrgent: { borderColor: colors.warning },
+  statusLabel: { fontSize: 11, fontWeight: '700', color: colors.neon, textTransform: 'uppercase', letterSpacing: 1 },
+  statusValue: { fontSize: 20, fontWeight: '700', color: '#fff', marginVertical: spacing.xs },
+  statusDetail: { fontSize: 13, color: colors.textMuted, marginBottom: spacing.sm, lineHeight: 19 },
+  statusWarn: { fontSize: 12, color: colors.warning, marginTop: spacing.xs, marginBottom: spacing.sm },
+  progressBar: { height: 4, backgroundColor: colors.elevated, borderRadius: 2, marginTop: spacing.sm, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: colors.neon, borderRadius: 2 },
+
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 14, marginTop: spacing.md },
+  primaryBtnText: { color: '#000', fontSize: 14, fontWeight: '700' },
+  outlinedBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.borderStrong, borderRadius: radius.pill, paddingVertical: 14, marginTop: spacing.md },
+  outlinedBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  ghostBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, marginTop: spacing.sm },
+  ghostBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
+
   infoSection: {
-    marginBottom: spacing.lg,
-    padding: spacing.lg,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    marginBottom: spacing.lg, padding: spacing.lg,
+    backgroundColor: colors.card, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border,
   },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.xs,
-  },
-  infoCheck: {
-    color: colors.success,
-    marginRight: spacing.sm,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  infoText: {
-    color: colors.text,
-    fontSize: 14,
-  },
-  supportCard: {
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  supportTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  supportText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginBottom: spacing.md,
-    lineHeight: 20,
-  },
+  infoTitle: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: spacing.md },
+  infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs, gap: spacing.sm },
+  infoText: { color: colors.textMuted, fontSize: 14 },
 })

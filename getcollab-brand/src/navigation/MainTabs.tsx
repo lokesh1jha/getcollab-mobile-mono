@@ -34,6 +34,9 @@ import InvitesScreen from '../app/(main)/brand/invites'
 import AffiliateProgramsScreen from '../app/(main)/brand/affiliate'
 import AffiliateLinksScreen from '../app/(main)/brand/affiliate/links'
 import AffiliateCommissionsScreen from '../app/(main)/brand/affiliate/commissions'
+import AffiliateDetailScreen from '../app/(main)/brand/affiliate/[id]'
+import GrowthScreen from '../app/(main)/brand/growth'
+import InvoicesScreen from '../app/(main)/brand/invoices'
 import DisputesScreen from '../app/(main)/disputes'
 import SettingsScreen from '../app/(main)/settings'
 import ProfileSettingsScreen from '../app/(main)/settings/profile'
@@ -383,6 +386,11 @@ function BrandStackInner() {
         options={{ headerTitle: 'Affiliate', ...stackHeaderOptions }}
       />
       <Stack.Screen
+        name="AffiliateDetail"
+        component={AffiliateDetailScreen}
+        options={{ headerTitle: 'Program', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
         name="AffiliateLinks"
         component={AffiliateLinksScreen}
         options={{ headerTitle: 'Links', ...stackHeaderOptions }}
@@ -396,6 +404,16 @@ function BrandStackInner() {
         name="CreatorReport"
         component={CreatorReport}
         options={{ headerTitle: 'Creator Report', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="Growth"
+        component={GrowthScreen}
+        options={{ headerTitle: 'Growth', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="Invoices"
+        component={InvoicesScreen}
+        options={{ headerTitle: 'Invoices', ...stackHeaderOptions }}
       />
     </Stack.Navigator>
   )
