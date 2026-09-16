@@ -338,7 +338,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
             </View>
             <View style={{ gap: 2 }}>
               {checklist.map((task, i) => (
-                <Pressable key={task.title} onPress={() => (navigation as any)?.navigate(task.screen)} style={styles.checkRow}>
+                <Pressable key={task.title} onPress={() => navigation?.navigate(task.screen)} style={styles.checkRow}>
                   <View style={[styles.checkCircle, task.done && styles.checkCircleDone]}>
                     {task.done ? (
                       <Ionicons name="checkmark" size={14} color={colors.success} />

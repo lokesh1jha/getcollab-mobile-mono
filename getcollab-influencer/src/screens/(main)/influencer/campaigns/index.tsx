@@ -34,7 +34,6 @@ interface Bid {
     collaborationId?: string | null
   }
 }
-
 function formatBudget(n?: number, currency?: string, disclosed = true): string {
   if (!disclosed || n == null) return 'Undisclosed'
   const c = currency || 'INR'

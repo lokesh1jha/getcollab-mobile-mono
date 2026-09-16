@@ -16,6 +16,14 @@ interface NotificationSettings {
   paymentNotifications?: boolean
 }
 
+interface NotificationSettings {
+  emailNotifications?: boolean
+  pushNotifications?: boolean
+  campaignUpdates?: boolean
+  messageNotifications?: boolean
+  paymentNotifications?: boolean
+}
+
 interface SettingsState {
   twoFactorEnabled: boolean
   notifications: NotificationSettings
