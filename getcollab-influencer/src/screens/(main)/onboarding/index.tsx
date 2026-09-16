@@ -10,6 +10,7 @@ import { useAuthStore } from '@shared/stores/auth-store'
 import { useReferenceDataStore, selectCategories, selectLanguages, selectCampaignTypes, selectObjectives } from '@shared/stores/reference-data-store'
 import type { RefItem } from '@shared/stores/reference-data-store'
 import apiService, { handleApiError } from '@shared/services/api'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 // Web pins these first in the language picker (creator flow suggestions).
 const SUGGESTED_LANGUAGES = ['English', 'Hindi']
@@ -17,7 +18,7 @@ const SUGGESTED_LANGUAGES = ['English', 'Hindi']
 const FALLBACK_COUNTRIES = ['India', 'United States', 'United Kingdom', 'UAE']
 
 interface Props {
-  navigation?: any
+  navigation?: InfluencerNavigationProp
 }
 
 const AGE_RANGES = ['13-17', '18-24', '25-34', '35-44', '45-54', '55+']

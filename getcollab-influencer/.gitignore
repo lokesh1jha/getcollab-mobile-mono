@@ -31,11 +31,14 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
 *.tsbuildinfo
 
 # generated native folders
-/ios
-/android
+# NOTE: /ios and /android are kept in source control because this project
+# uses `expo prebuild` and custom native code. Do not uncomment these.
+# /ios
+# /android

@@ -44,7 +44,6 @@ const ProfileImagePicker = ({ onImageSelected }: Props) => {
         onImageSelected?.(uri);
       }
     } catch (error) {
-      console.log(error);
       Alert.alert("Error", "Failed to pick image");
     }
   };

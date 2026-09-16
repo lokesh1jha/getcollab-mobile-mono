@@ -10,6 +10,7 @@ import * as ImagePickerLib from 'expo-image-picker'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError, uploadMediaBlob } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 const { width } = Dimensions.get('window')
 const GRID_GAP = 2
@@ -42,7 +43,7 @@ function formatFollowers(n?: number): string {
   return String(n)
 }
 
-export default function InfluencerProfile({ navigation }: any) {
+export default function InfluencerProfile({ navigation }: { navigation: InfluencerNavigationProp }) {
   const { user } = useAuthStore()
   const [profile, setProfile] = useState<ProfileData>({})
   const [loading, setLoading] = useState(true)

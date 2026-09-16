@@ -1,0 +1,55 @@
+name: Influencer App CI
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'getcollab-mobile-mono/getcollab-influencer/**'
+      - 'getcollab-mobile-mono/packages/mobile-shared/**'
+      - 'getcollab-mobile-mono/.github/workflows/influencer-ci.yml'
+      - 'getcollab-mobile-mono/pnpm-lock.yaml'
+  pull_request:
+    paths:
+      - 'getcollab-mobile-mono/getcollab-influencer/**'
+      - 'getcollab-mobile-mono/packages/mobile-shared/**'
+      - 'getcollab-mobile-mono/.github/workflows/influencer-ci.yml'
+      - 'getcollab-mobile-mono/pnpm-lock.yaml'
+
+jobs:
+  typecheck-test:
+    name: Typecheck + Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: getcollab-mobile-mono/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: getcollab-mobile-mono
+
+      - name: Type check
+        run: pnpm --filter getcollab-influencer run tsc
+        working-directory: getcollab-mobile-mono
+
+      - name: Tests
+        run: pnpm --filter getcollab-influencer test -- --ci --coverage --maxWorkers=2
+        working-directory: getcollab-mobile-mono
+        env:
+          CI: true
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jest-coverage-influencer
+          path: getcollab-mobile-mono/getcollab-influencer/coverage
+          if-no-files-found: ignore

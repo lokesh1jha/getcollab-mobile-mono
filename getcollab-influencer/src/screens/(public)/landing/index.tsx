@@ -5,10 +5,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { spacing } from '@/src/theme'
 import { useAuthStore } from '@shared/stores/auth-store'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 const { width } = Dimensions.get('window')
 
-export default function LandingScreen({ navigation }: any) {
+export default function LandingScreen({ navigation }: { navigation: InfluencerNavigationProp }) {
   const { isAuthenticated } = useAuthStore()
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { Alert } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import { resolveApiBaseUrl } from '../utils/api-url'
+import { logger } from './logger'
 
 const API_BASE_URL = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api/v1')
 const TOKEN_KEY = 'getcollab_auth_token'
@@ -26,7 +27,7 @@ async function getOrCreateDeviceId(): Promise<string> {
     cachedDeviceId = deviceId
     return deviceId
   } catch (error) {
-    console.error('Failed to get/create device id:', error)
+    logger.error('Failed to get/create device id', error)
     return 'mobile_fallback_device_id'
   }
 }
@@ -91,7 +92,7 @@ class ApiService {
     try {
       return await SecureStore.getItemAsync(TOKEN_KEY)
     } catch (error) {
-      console.error('Failed to get token from SecureStore:', error)
+      logger.error('Failed to get token from SecureStore', error)
       return null
     }
   }
@@ -100,7 +101,7 @@ class ApiService {
     try {
       return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY)
     } catch (error) {
-      console.error('Failed to get refresh token from SecureStore:', error)
+      logger.error('Failed to get refresh token from SecureStore', error)
       return null
     }
   }
@@ -111,7 +112,7 @@ class ApiService {
       if (!value) return
       await SecureStore.setItemAsync(TOKEN_KEY, value)
     } catch (error) {
-      console.error('Failed to store token in SecureStore:', error)
+      logger.error('Failed to store token in SecureStore', error)
       throw error
     }
   }
@@ -135,7 +136,7 @@ class ApiService {
       if (!value) return
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, value)
     } catch (error) {
-      console.error('Failed to store refresh token:', error)
+      logger.error('Failed to store refresh token', error)
     }
   }
 
@@ -144,7 +145,7 @@ class ApiService {
       await SecureStore.deleteItemAsync(TOKEN_KEY)
       await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY)
     } catch (error) {
-      console.error('Failed to clear tokens:', error)
+      logger.error('Failed to clear tokens', error)
     }
   }
 
@@ -310,12 +311,7 @@ class ApiService {
       return await this.handleResponse<T>(response)
     } catch (error) {
       if (error instanceof Error && !isUnauthorizedError(error.message)) {
-        try {
-          const { logger } = await import('./logger')
-          logger.error(`API ${options.method || 'GET'} ${endpoint}`, error, { url })
-        } catch {
-          console.error('API Error:', error)
-        }
+        logger.error(`API ${options.method || 'GET'} ${endpoint}`, error, { url })
       }
       throw error
     }
@@ -747,9 +743,8 @@ class ApiService {
     return this.request(`/collabs/invites/${encodeURIComponent(id)}/decline`, { method: 'POST', body: JSON.stringify(reason ? { reason } : {}) })
   }
 
-  // NOTE: DELETE /collabs/invites/{id} requires a brand org (403 for creators)
-  // /collabs/invites/{id} requires a brand org (403 for creators), so the
-  // app only offers Accept for invites.
+  // NOTE: DELETE /collabs/invites/{id} is brand-org scoped (403 for creators).
+  // The influencer app only exposes Accept/Decline actions for invites.
 
   async getDocuments(dealId: string): Promise<any> {
     return this.request(`/deals/${encodeURIComponent(dealId)}/documents`)
@@ -1112,7 +1107,7 @@ class ApiService {
       }
       return null
     } catch (error) {
-      console.error('Failed to refresh token:', error)
+      logger.error('Failed to refresh token', error)
       return null
     }
   }

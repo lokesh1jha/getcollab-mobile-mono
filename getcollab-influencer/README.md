@@ -45,16 +45,16 @@ npx expo start -c
 # Press 'w' for Web
 ```
 
-For detailed setup, see [QUICK_START.md](./QUICK_START.md).
+For detailed setup, see the inline comments in `.env.example` and the monorepo README.
 
 ## 📚 Documentation
 
 | Document | Purpose |
 |----------|---------|
-| [QUICK_START.md](./QUICK_START.md) | 5-minute setup & basic testing |
-| [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md) | Complete technical reference |
-| [CHANGES_SUMMARY.md](./CHANGES_SUMMARY.md) | What was implemented |
-| [VERIFICATION.md](./VERIFICATION.md) | Quality checklist & status |
+| [BRAND_APP_REVAMP_PLAN.md](../BRAND_APP_REVAMP_PLAN.md) | Brand app feature parity plan |
+| `.env.example` | Environment configuration template |
+| `app.json` | Expo app configuration |
+| `eas.json` | EAS Build & Submit configuration |
 
 ## 🏗️ Architecture
 
@@ -133,30 +133,30 @@ Sign Up → Dashboard → Discover → Apply to Campaign → Chat
 4. Test message sending
 5. Check session persistence (hard close & reopen)
 
-See [QUICK_START.md](./QUICK_START.md) for complete testing checklist.
+See `.maestro/` for automated UI test flows.
 
 ## 🔧 Development
 
 ### Code Structure
 ```
 src/
-├─ app/                    # Screens (route-based)
+├─ screens/                # Screens by route group
 │  ├─ (auth)/              # Auth screens
 │  ├─ (main)/              # Main app screens
+│  ├─ (onboarding)/        # Onboarding steps
 │  └─ (public)/            # Public screens
+├─ navigation/             # Stack & tab navigators
 ├─ components/             # Reusable components
-├─ services/               # API & external services
 ├─ stores/                 # Zustand stores
-├─ types/                  # TypeScript definitions
-└─ constants/              # App constants
+└─ theme.ts                # App theme constants
 ```
 
 ### Commands
 ```bash
-npm install                 # Install dependencies
-npx expo start -c          # Start dev server with cache clear
-npx tsc --noEmit           # Check TypeScript types
-npm list                   # Verify dependencies
+pnpm install                       # Install dependencies (monorepo root)
+pnpm --filter getcollab-influencer run start    # Start dev server
+pnpm --filter getcollab-influencer run tsc      # Check TypeScript types
+pnpm --filter getcollab-influencer test         # Run tests
 ```
 
 ### Configuration
@@ -192,7 +192,7 @@ npx expo start -c
 - Check console: should see "Socket.io connected"
 - Verify CORS headers on backend
 
-See [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md) for detailed troubleshooting.
+See the monorepo `README.md` and Expo docs for detailed troubleshooting.
 
 ## 📋 Integration Checklist
 
@@ -204,7 +204,7 @@ Backend must implement:
 - [ ] Socket.io events (receiveMessage, readReceipt)
 - [ ] POST `/api/notifications/push-token` (register token)
 
-See [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md) for full API requirements.
+See the shared package API service for the full endpoint list.
 
 ## 🚀 Deployment
 
@@ -223,7 +223,7 @@ npx expo start -c
    ```
 4. Submit to App Store / Play Store
 
-See [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md) for deployment guide.
+See `eas.json` and the Expo deployment docs for build & submit configuration.
 
 ## 📊 Project Status
 
@@ -238,10 +238,9 @@ See [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md) for deployment guide.
 ## 📞 Support
 
 ### Documentation
-- [QUICK_START.md](./QUICK_START.md) - Getting started
-- [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md) - Technical details
-- [CHANGES_SUMMARY.md](./CHANGES_SUMMARY.md) - Implementation summary
-- [VERIFICATION.md](./VERIFICATION.md) - Quality checklist
+- `app.json` / `eas.json` - Expo & EAS configuration
+- `.env.example` - Environment setup
+- `.maestro/` - E2E test flows
 
 ### Resources
 - Expo Docs: https://docs.expo.dev/

@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications'
 import Constants from 'expo-constants'
 import { createNavigationContainerRef } from '@react-navigation/native'
 import apiService from './api'
+import { logger } from './logger'
 
 export const navigationRef = createNavigationContainerRef<any>()
 
@@ -34,7 +35,7 @@ class NotificationService {
   async initialize(): Promise<void> {
     if (this.initialized) return
     if (isExpoGo) {
-      if (__DEV__) console.log('[notifications] Skipping push setup in Expo Go — use a dev build')
+      logger.debug('[notifications] Skipping push setup in Expo Go — use a dev build')
       return
     }
 
@@ -43,7 +44,7 @@ class NotificationService {
       const { status } = await Notifications.requestPermissionsAsync()
 
       if (status !== 'granted') {
-        console.warn('Notification permission not granted')
+        logger.debug('Notification permission not granted')
         return
       }
 
@@ -52,7 +53,7 @@ class NotificationService {
 
       if (token) {
         this.pushToken = token
-        console.log('Push token obtained:', token)
+        logger.debug('Push token obtained')
 
         // Register push token with backend
         await this.registerPushToken(token)
@@ -62,7 +63,7 @@ class NotificationService {
       this.setupListeners()
       this.initialized = true
     } catch (error) {
-      console.error('Failed to initialize notifications:', error)
+      logger.error('Failed to initialize notifications', error)
     }
   }
 
@@ -72,12 +73,12 @@ class NotificationService {
    private setupListeners(): void {
      // Listen for notifications when app is in foreground
      this.notificationSubscription = Notifications.addNotificationReceivedListener((notification) => {
-       console.log('Notification received:', notification)
+       logger.debug('Notification received')
      })
 
      // Listen for notification taps
      this.responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-       console.log('Notification tapped:', response.notification)
+       logger.debug('Notification tapped')
        // Handle navigation or actions based on notification data
        this.handleNotificationTap(response.notification)
      })
@@ -94,14 +95,14 @@ class NotificationService {
         Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId
       ) as string | undefined
       if (!projectId) {
-        console.warn('[notifications] No EAS projectId configured — skipping push token registration')
+        logger.warn('[notifications] No EAS projectId configured — skipping push token registration')
         return null
       }
       const token = await Notifications.getExpoPushTokenAsync({ projectId })
       return token.data
     } catch (error) {
       // Non-fatal: expected on iOS simulators (no push support) and unconfigured builds.
-      console.warn('Failed to get push token:', error)
+      logger.warn('Failed to get push token', { error })
       return null
     }
   }
@@ -112,9 +113,9 @@ class NotificationService {
   private async registerPushToken(token: string): Promise<void> {
     try {
       await apiService.post('/notifications/device-tokens', { platform: 'expo', token })
-      console.log('Push token registered with backend')
+      logger.debug('Push token registered with backend')
     } catch (error) {
-      console.error('Failed to register push token:', error)
+      logger.error('Failed to register push token', error)
     }
   }
 
@@ -143,10 +144,10 @@ class NotificationService {
       if (this.pushToken) {
         await apiService.delete(`/notifications/push-subscription?token=${encodeURIComponent(this.pushToken)}`)
         this.pushToken = null
-        console.log('Push token unregistered')
+        logger.debug('Push token unregistered')
       }
     } catch (error) {
-      console.error('Failed to unregister push token:', error)
+      logger.error('Failed to unregister push token', error)
     }
   }
 
@@ -183,7 +184,7 @@ class NotificationService {
         trigger: { type: 'time' as any, seconds: 1 },
       })
     } catch (error) {
-      console.error('Failed to send local notification:', error)
+      logger.error('Failed to send local notification', error)
     }
   }
 }

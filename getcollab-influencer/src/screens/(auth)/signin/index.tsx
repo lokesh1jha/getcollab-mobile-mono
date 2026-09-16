@@ -6,8 +6,9 @@ import { Ionicons } from '@expo/vector-icons'
 import { spacing } from '@/src/theme'
 import { showSignInError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
-interface Props { navigation?: any }
+interface Props { navigation?: InfluencerNavigationProp }
 
 const palette = {
   bg: '#09090B',

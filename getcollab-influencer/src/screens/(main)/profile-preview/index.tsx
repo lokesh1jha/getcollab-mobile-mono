@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, spacing } from '@/src/theme'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 import { Card } from '@shared/components/ui'
 import { PortfolioGallery } from '@shared/components/PortfolioGallery'
 import apiService from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 
 interface Props {
-  navigation?: any
+  navigation?: InfluencerNavigationProp
 }
 
 export default function ProfilePreviewScreen({ navigation }: Props) {
@@ -25,7 +26,7 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
       const response = await apiService.getProfileWithMetrics().catch(() => apiService.getProfile())
       setProfile(response?.data || response?.profile || response || {})
     } catch (e) {
-      console.error('Failed to load profile preview:', e)
+      // silently handle; empty state will show
     } finally {
       setLoading(false)
     }

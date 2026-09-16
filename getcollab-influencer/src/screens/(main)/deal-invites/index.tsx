@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 interface Invite {
   id: string
@@ -17,7 +18,7 @@ interface Invite {
   created_at?: string
 }
 
-export default function DealInvitesScreen({ navigation }: any) {
+export default function DealInvitesScreen({ navigation }: { navigation: InfluencerNavigationProp }) {
   const [items, setItems] = useState<Invite[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)

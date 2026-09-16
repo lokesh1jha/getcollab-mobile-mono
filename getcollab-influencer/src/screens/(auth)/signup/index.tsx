@@ -6,8 +6,9 @@ import { Ionicons } from '@expo/vector-icons'
 import { spacing } from '@/src/theme'
 import { handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
-interface Props { navigation?: any; route?: any }
+interface Props { navigation?: InfluencerNavigationProp; route?: any }
 
 // Self-contained palette for the premium dark-luxury theme.
 // (Kept local so this screen renders consistently even if the shared

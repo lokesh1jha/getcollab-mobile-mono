@@ -11,7 +11,8 @@ import OnboardingHeader from "@/src/components/OnboardingHeader";
 import { colors, spacing } from "@/src/theme";
 import { Button } from "@shared/components/ui";
 import TermsAndConditionsCard from "@/src/components/TermsAndConditionsCard";
-export default function AcceptTerms({ navigation }: any) {
+import { InfluencerNavigationProp } from "@/src/types/navigation";
+export default function AcceptTerms({ navigation }: { navigation: InfluencerNavigationProp }) {
   const [accepted, setAccepted] = useState(true);
   return (
     <SafeAreaView style={styles.root} edges={["top", "bottom"]}>
