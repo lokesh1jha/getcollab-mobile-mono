@@ -6,6 +6,7 @@ import * as ImagePickerLib from 'expo-image-picker'
 import { colors, spacing } from '@/src/theme'
 import { Card, Button } from '@shared/components/ui'
 import apiService, { handleApiError } from '@shared/services/api'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 interface Dispute {
   id: string
@@ -21,7 +22,7 @@ interface Dispute {
 }
 
 interface DisputesScreenProps {
-  navigation?: any
+  navigation?: InfluencerNavigationProp
 }
 
 interface AttachmentDraft {
@@ -47,7 +48,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
       const list = response?.data || response?.disputes || (Array.isArray(response) ? response : [])
       setDisputes(Array.isArray(list) ? list : [])
     } catch (err) {
-      console.error('Error fetching disputes:', err)
+      // silently handle fetch error; UI loading state is cleared in finally
     } finally {
       setLoading(false)
     }
@@ -106,7 +107,6 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
         handleApiError(err, 'Upload failed')
       }
     } catch (err) {
-      console.error('Failed to pick image:', err)
       Alert.alert('Error', 'Failed to pick image')
     }
   }

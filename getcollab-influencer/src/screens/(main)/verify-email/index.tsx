@@ -6,9 +6,10 @@ import { Button } from '@shared/components/ui/Button'
 import { Input } from '@shared/components/ui/Input'
 import { useAuthStore } from '@shared/stores/auth-store'
 import apiService, { handleApiError } from '@shared/services/api'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 interface Props {
-  navigation?: any
+  navigation?: InfluencerNavigationProp
   route?: any
 }
 

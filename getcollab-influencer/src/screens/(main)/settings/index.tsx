@@ -6,6 +6,15 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
+
+interface NotificationSettings {
+  emailNotifications?: boolean
+  pushNotifications?: boolean
+  campaignUpdates?: boolean
+  messageNotifications?: boolean
+  paymentNotifications?: boolean
+}
 
 interface NotificationSettings {
   emailNotifications?: boolean
@@ -20,7 +29,7 @@ interface SettingsState {
   notifications: NotificationSettings
 }
 
-export default function SettingsScreen({ navigation }: any) {
+export default function SettingsScreen({ navigation }: { navigation: InfluencerNavigationProp }) {
   const { signOut } = useAuthStore()
   const [settings, setSettings] = useState<SettingsState>({
     twoFactorEnabled: false,

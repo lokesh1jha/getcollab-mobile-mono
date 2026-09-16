@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { useChatStore } from '@shared/stores/chat-store'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 function formatTime(value?: string): string {
   if (!value) return ''
@@ -20,7 +21,7 @@ function formatTime(value?: string): string {
   return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-export default function InfluencerChat({ navigation }: any) {
+export default function InfluencerChat({ navigation }: { navigation: InfluencerNavigationProp }) {
   const { rooms, fetchRooms, unreadByRoom, isLoading } = useChatStore()
   const [query, setQuery] = useState('')
 
@@ -40,7 +41,7 @@ export default function InfluencerChat({ navigation }: any) {
     return (
       <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
         <Pressable
-          onPress={() => navigation?.navigate('ChatDetail', { roomId: item.id, chat: { id: item.id, influencerName: name } })}
+          onPress={() => navigation?.navigate('ChatDetail', { id: item.id, roomId: item.id, chat: { id: item.id, influencerName: name } })}
           style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.elevated }]}
         >
           <View style={styles.avatarWrap}>

@@ -5,9 +5,10 @@ import { spacing } from '@/src/theme'
 import { Button } from '@shared/components/ui/Button'
 import { Input } from '@shared/components/ui/Input'
 import apiService, { handleApiError } from '@shared/services/api'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 interface ForgotPasswordScreenProps {
-  navigation?: any
+  navigation?: InfluencerNavigationProp
 }
 
 // Self-contained palette for the premium dark-luxury theme.

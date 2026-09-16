@@ -1,0 +1,52 @@
+name: Influencer App CI
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'getcollab-influencer/**'
+      - 'packages/mobile-shared/**'
+      - '.github/workflows/influencer-ci.yml'
+      - 'pnpm-lock.yaml'
+  pull_request:
+    paths:
+      - 'getcollab-influencer/**'
+      - 'packages/mobile-shared/**'
+      - '.github/workflows/influencer-ci.yml'
+      - 'pnpm-lock.yaml'
+
+jobs:
+  typecheck-test:
+    name: Typecheck + Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: pnpm/action-setup@53751a9789c7351e4924f01fe68370252a4f1f18 # v2.4.1
+        with:
+          version: 8
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm --filter getcollab-influencer run tsc
+
+      - name: Tests
+        run: pnpm --filter getcollab-influencer test -- --ci --coverage --maxWorkers=2
+        env:
+          CI: true
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: jest-coverage-influencer
+          path: getcollab-influencer/coverage
+          if-no-files-found: ignore

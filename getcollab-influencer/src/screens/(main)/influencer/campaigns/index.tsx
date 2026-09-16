@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 const FILTERS = ['All', 'applied', 'accepted', 'completed', 'rejected']
 const SORTS = [
@@ -33,7 +34,6 @@ interface Bid {
     collaborationId?: string | null
   }
 }
-
 function formatBudget(n?: number, currency?: string, disclosed = true): string {
   if (!disclosed || n == null) return 'Undisclosed'
   const c = currency || 'INR'
@@ -48,7 +48,7 @@ function formatDate(d?: string): string {
   catch { return d }
 }
 
-export default function InfluencerCampaigns({ navigation }: any) {
+export default function InfluencerCampaigns({ navigation }: { navigation: InfluencerNavigationProp }) {
   const [bids, setBids] = useState<Bid[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -105,7 +105,7 @@ export default function InfluencerCampaigns({ navigation }: any) {
             if (isAccepted && collabId) {
               navigation?.navigate('Collaborations')
             } else {
-              navigation?.navigate('CampaignDetails', { id: item.campaignId || item.campaign?.id })
+              navigation?.navigate('CampaignDetails', { id: item.campaignId || item.campaign?.id || '' })
             }
           }}
           style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}

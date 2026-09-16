@@ -4,8 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
-export default function PayoutSettingsScreen({ navigation }: any) {
+export default function PayoutSettingsScreen({ navigation }: { navigation: InfluencerNavigationProp }) {
   const [form, setForm] = useState({ bankAccount: '', ifscCode: '', panNumber: '', gstNumber: '' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)

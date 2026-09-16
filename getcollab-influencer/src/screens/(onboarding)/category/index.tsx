@@ -15,8 +15,9 @@ import SocialConnectCard from "@/src/components/SocialConnectCard";
 import { Button } from "@shared/components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import ContentLanguageSelector from "@/src/components/ContentLanguageSelector";
+import { InfluencerNavigationProp } from "@/src/types/navigation";
 
-export default function CategoryScreen({ navigation }: any) {
+export default function CategoryScreen({ navigation }: { navigation: InfluencerNavigationProp }) {
   const [categories, setCategories] = useState<string[]>([]);
   const [language, setLanguage] = useState("English");
   const [socialAccounts, setSocialAccounts] = useState({

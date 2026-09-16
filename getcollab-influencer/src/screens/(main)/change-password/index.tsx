@@ -5,9 +5,10 @@ import { colors, spacing } from '@/src/theme'
 import { Button } from '@shared/components/ui/Button'
 import { Input } from '@shared/components/ui/Input'
 import apiService, { handleApiError } from '@shared/services/api'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 interface Props {
-  navigation?: any
+  navigation?: InfluencerNavigationProp
 }
 
 const validatePassword = (value: string): string | null => {

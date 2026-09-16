@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 const CATEGORIES = ['All', 'Fashion', 'Beauty', 'Fitness', 'Tech', 'Travel', 'Food', 'Lifestyle', 'Gaming']
 const SORTS = [
@@ -51,7 +52,7 @@ function timeLeft(end?: string): string | null {
   return `${days}d left`
 }
 
-export default function InfluencerDiscover({ navigation }: any) {
+export default function InfluencerDiscover({ navigation }: { navigation: InfluencerNavigationProp }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)

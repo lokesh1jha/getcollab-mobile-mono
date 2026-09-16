@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { useNotificationStore } from '@shared/stores/notification-store'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 function notifIcon(type: string): string {
   if (type?.includes('bid') || type?.includes('campaign')) return 'megaphone-outline'
@@ -46,13 +47,13 @@ const NotifItem = memo(({ item, index, onRead, onOpen }: { item: any; index: num
   )
 })
 
-export default function NotificationsScreen({ navigation }: any) {
+export default function NotificationsScreen({ navigation }: { navigation: InfluencerNavigationProp }) {
   const { notifications, isLoading, fetchNotifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore()
 
   useFocusEffect(useCallback(() => { fetchNotifications() }, [fetchNotifications]))
   const openNotification = (item: any) => {
     const link = item.deepLink || ''
-    if (link.includes('chat') && item.roomId) navigation?.navigate('ChatDetail', { roomId: item.roomId })
+    if (link.includes('chat') && item.roomId) navigation?.navigate('ChatDetail', { id: item.roomId, roomId: item.roomId })
     else if (link.includes('campaign') && item.campaignId) navigation?.navigate('CampaignDetails', { id: item.campaignId })
     else if (link.includes('earning') || link.includes('settlement')) navigation?.navigate('Earnings')
     else if (link.includes('affiliate')) navigation?.navigate('Affiliate')

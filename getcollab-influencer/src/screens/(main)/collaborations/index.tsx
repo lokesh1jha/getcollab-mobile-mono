@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError, uploadMediaBlob } from '@shared/services/api'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 import * as ImagePicker from 'expo-image-picker'
 
 interface Deal {
@@ -23,7 +24,7 @@ interface Deal {
   createdAt?: string
 }
 
-export default function CollaborationsScreen({ navigation }: any) {
+export default function CollaborationsScreen({ navigation }: { navigation: InfluencerNavigationProp }) {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)

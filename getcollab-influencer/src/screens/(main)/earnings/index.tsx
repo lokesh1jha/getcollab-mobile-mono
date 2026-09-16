@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 interface Settlement {
   id: string
@@ -34,7 +35,7 @@ function money(minor?: number, amount?: number): string {
   return `₹${Number(val).toLocaleString()}`
 }
 
-export default function EarningsScreen({ navigation }: any) {
+export default function EarningsScreen({ navigation }: { navigation: InfluencerNavigationProp }) {
   const [settlements, setSettlements] = useState<Settlement[]>([])
   const [transactions, setTransactions] = useState<Settlement[]>([])
   const [loading, setLoading] = useState(true)

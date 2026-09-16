@@ -15,6 +15,7 @@ import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { useChatStore } from '@shared/stores/chat-store'
 import { EmailVerificationBanner } from '@shared/components/EmailVerificationBanner'
+import { InfluencerNavigationProp, InfluencerStackParamList } from '@/src/types/navigation'
 
 const { width } = Dimensions.get('window')
 
@@ -48,14 +49,16 @@ interface Deliverable {
   days?: number
 }
 
+type ScreenName = keyof InfluencerStackParamList & string
+
 interface ChecklistItem {
   title: string
   sub: string
   done: boolean
-  screen: string
+  screen: ScreenName
 }
 
-const QUICK_ACTIONS = [
+const QUICK_ACTIONS: { id: string; icon: string; label: string; screen: ScreenName }[] = [
   { id: 'discover', icon: 'compass-outline', label: 'Find\nCampaigns', screen: 'Discover' },
   { id: 'bids', icon: 'document-text-outline', label: 'My\nBids', screen: 'MyCampaigns' },
   { id: 'analytics', icon: 'stats-chart-outline', label: 'Analytics', screen: 'Analytics' },
@@ -87,7 +90,7 @@ function getGreeting(name?: string): string {
   return `Hey, ${firstName} 👋`
 }
 
-function ActionCard({ item, index, navigation }: { item: typeof QUICK_ACTIONS[0]; index: number; navigation: any }) {
+function ActionCard({ item, index, navigation }: { item: typeof QUICK_ACTIONS[0]; index: number; navigation: InfluencerNavigationProp }) {
   const scale = useSharedValue(1)
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: withSpring(scale.value, { damping: 14, stiffness: 280 }) }],
@@ -100,7 +103,7 @@ function ActionCard({ item, index, navigation }: { item: typeof QUICK_ACTIONS[0]
       <Pressable
         onPressIn={() => { scale.value = 0.94 }}
         onPressOut={() => { scale.value = 1 }}
-        onPress={() => navigation?.navigate(item.screen)}
+        onPress={() => (navigation as any)?.navigate(item.screen)}
         style={styles.actionCard}
       >
         <View style={styles.actionIcon}>
@@ -112,7 +115,7 @@ function ActionCard({ item, index, navigation }: { item: typeof QUICK_ACTIONS[0]
   )
 }
 
-export default function InfluencerDashboard({ navigation }: any) {
+export default function InfluencerDashboard({ navigation }: { navigation: InfluencerNavigationProp }) {
   const { user } = useAuthStore()
   const [stats, setStats] = useState<Stats>({
     campaigns: 0, applications: 0, active: 0, earnings: 0, pendingEarnings: 0,

@@ -1,0 +1,55 @@
+name: Influencer EAS Update Preview
+
+on:
+  pull_request:
+    paths:
+      - 'getcollab-influencer/**'
+      - 'packages/mobile-shared/**'
+      - 'pnpm-lock.yaml'
+
+jobs:
+  eas-update:
+    name: Publish EAS Update preview
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: pnpm/action-setup@53751a9789c7351e4924f01fe68370252a4f1f18 # v2.4.1
+        with:
+          version: 8
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e # v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Publish preview update
+        run: pnpm exec eas update --branch=pr-${{ github.event.number }} --message="PR #${{ github.event.number }} — ${{ github.event.pull_request.title }}"
+        working-directory: getcollab-influencer
+
+      - name: Comment QR codes on PR
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const channel = `pr-${context.issue.number}`
+            const link = `https://expo.dev/preview/update?channel-name=${channel}`
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `📱 **EAS preview ready (Influencer)**\n\nChannel: \`${channel}\`\nOpen in Expo Go: ${link}\n\nTo install on a device, scan the QR code at the link above.`
+            })

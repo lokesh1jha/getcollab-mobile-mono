@@ -15,7 +15,8 @@ import { Button, Input } from "@shared/components/ui";
 import CountryPickerField from "@shared/components/CountryPickerField";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/src/stores";
-export default function CreatorProfileScreen({ navigation }: any) {
+import { InfluencerNavigationProp } from "@/src/types/navigation";
+export default function CreatorProfileScreen({ navigation }: { navigation: InfluencerNavigationProp }) {
   const user = useAuthStore((state) => state.user);
 
   const [name, setName] = useState(user?.name ?? "");
@@ -29,8 +30,6 @@ export default function CreatorProfileScreen({ navigation }: any) {
   }, [user]);
 
   const handleImage = (uri: string) => {
-    console.log(uri);
-
     // send to API
   };
   return (

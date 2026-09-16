@@ -28,7 +28,6 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
       const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
       return status === 'granted'
     } catch (error) {
-      console.error('Failed to request permissions:', error)
       return false
     }
   }
@@ -56,7 +55,6 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to pick image')
-      console.error('Image picker error:', error)
     } finally {
       setIsLoading(false)
     }
@@ -84,7 +82,6 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to take photo')
-      console.error('Camera error:', error)
     } finally {
       setIsLoading(false)
     }

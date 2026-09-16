@@ -61,7 +61,7 @@ export function PortfolioGallery({ items, onChange, editable = false, maxItems =
         handleApiError(err, 'Portfolio upload failed')
       }
     } catch (err) {
-      console.error('Portfolio pick failed:', err)
+      // silently handled by outer catch; Alert already shown
     }
   }
 
