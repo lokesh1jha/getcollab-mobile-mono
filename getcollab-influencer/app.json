@@ -10,9 +10,6 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "updates": {
-      "url": "https://u.expo.dev/REPLACE_WITH_EAS_PROJECT_ID"
-    },
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
