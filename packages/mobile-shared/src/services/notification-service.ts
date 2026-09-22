@@ -3,14 +3,28 @@ import Constants from 'expo-constants'
 import { createNavigationContainerRef } from '@react-navigation/native'
 import apiService from './api'
 import { logger } from './logger'
+import { resolveNotificationRoute } from '../lib/notification-routes'
 
 export const navigationRef = createNavigationContainerRef<any>()
 
 const isExpoGo = Constants.appOwnership === 'expo'
 
-function navigateNested(screen: string, params?: Record<string, unknown>) {
-  if (!navigationRef.isReady()) return
+/** Navigate into the authenticated stack, if it is mounted. */
+function navigateNested(screen: string, params?: Record<string, unknown>): boolean {
+  if (!navigationRef.isReady()) return false
   navigationRef.navigate('Main', { screen, params })
+  return true
+}
+
+/**
+ * Route a notification payload (push or in-app) to its screen. Returns false when
+ * the payload maps to nothing, so callers can leave the user in place instead of
+ * bouncing them to the dashboard.
+ */
+export function navigateToNotification(payload: Record<string, any> | null | undefined): boolean {
+  const route = resolveNotificationRoute(payload)
+  if (!route) return false
+  return navigateNested(route.screen, route.params)
 }
 
 // Configure notification handler (dev builds only — push is unavailable in Expo Go)
@@ -124,16 +138,7 @@ class NotificationService {
    */
   private handleNotificationTap(notification: Notifications.Notification): void {
     const data = (notification.request.content.data || {}) as Record<string, any>
-
-    if (data.type === 'chat' && data.roomId) {
-      navigateNested('ChatDetail', { id: data.roomId, roomId: data.roomId, chat: data.chat })
-    } else if (data.type === 'campaign' && data.campaignId) {
-      navigateNested('CampaignDetails', { id: data.campaignId })
-    } else if (data.type === 'bid' && data.bidId) {
-      navigateNested('Bids', { bidId: data.bidId })
-    } else if (data.type === 'subscription') {
-      navigateNested('Dashboard')
-    }
+    navigateToNotification(data)
   }
 
   /**

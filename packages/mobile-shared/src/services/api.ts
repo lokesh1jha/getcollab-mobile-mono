@@ -790,6 +790,131 @@ class ApiService {
     return this.request(`/relationships/${encodeURIComponent(relationshipId)}/timeline`)
   }
 
+  // ------- Creator circles (a brand's reusable saved-creator lists) -------
+
+  async listCreatorCircles(): Promise<any> {
+    return this.request('/creator-circles')
+  }
+
+  async createCreatorCircle(payload: {
+    name: string
+    description?: string
+    tags?: string[]
+    campaignId?: string
+  }): Promise<any> {
+    return this.request('/creator-circles', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  async getCreatorCircleMembers(circleId: string): Promise<any> {
+    return this.request(`/creator-circles/${encodeURIComponent(circleId)}/members`)
+  }
+
+  async addCreatorCircleMembers(circleId: string, influencerIds: string[]): Promise<any> {
+    return this.request(`/creator-circles/${encodeURIComponent(circleId)}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ influencerIds }),
+    })
+  }
+
+  async removeCreatorCircleMember(circleId: string, influencerId: string): Promise<any> {
+    return this.request(
+      `/creator-circles/${encodeURIComponent(circleId)}/members/${encodeURIComponent(influencerId)}`,
+      { method: 'DELETE' },
+    )
+  }
+
+  // ------- Growth (website SEO, search, and AI-visibility workspace) -------
+
+  async getGrowthSite(): Promise<any> {
+    return this.request('/growth/sites')
+  }
+
+  async upsertGrowthSite(websiteUrl: string): Promise<any> {
+    return this.request('/growth/sites', {
+      method: 'POST',
+      body: JSON.stringify({ websiteUrl }),
+    })
+  }
+
+  async analyzeGrowthSite(siteId: string): Promise<any> {
+    return this.request(`/growth/sites/${encodeURIComponent(siteId)}/analyze`, { method: 'POST' })
+  }
+
+  async getGrowthJob(jobId: string): Promise<any> {
+    return this.request(`/growth/jobs/${encodeURIComponent(jobId)}`)
+  }
+
+  async getGrowthOverview(siteId: string): Promise<any> {
+    return this.request(`/growth/sites/${encodeURIComponent(siteId)}/overview`)
+  }
+
+  async getGrowthSeo(siteId: string, severity?: string): Promise<any> {
+    const queryString = severity ? `?severity=${encodeURIComponent(severity)}` : ''
+    return this.request(`/growth/sites/${encodeURIComponent(siteId)}/seo${queryString}`)
+  }
+
+  async getGrowthRecommendations(siteId: string, status?: string): Promise<any> {
+    const queryString = status ? `?status=${encodeURIComponent(status)}` : ''
+    return this.request(`/growth/sites/${encodeURIComponent(siteId)}/recommendations${queryString}`)
+  }
+
+  async setGrowthRecommendationStatus(recommendationId: string, status: string): Promise<any> {
+    return this.request(`/growth/recommendations/${encodeURIComponent(recommendationId)}`, {
+      method: 'POST',
+      body: JSON.stringify({ status }),
+    })
+  }
+
+  async connectGrowthSearchConsole(siteId: string): Promise<any> {
+    return this.request(`/growth/sites/${encodeURIComponent(siteId)}/gsc/connect`, { method: 'POST' })
+  }
+
+  async getGrowthSearchConsoleProperties(siteId: string): Promise<any> {
+    return this.request(`/growth/sites/${encodeURIComponent(siteId)}/gsc/properties`)
+  }
+
+  async selectGrowthSearchConsoleProperty(siteId: string, property: string): Promise<any> {
+    return this.request(`/growth/sites/${encodeURIComponent(siteId)}/gsc/properties`, {
+      method: 'POST',
+      body: JSON.stringify({ property }),
+    })
+  }
+
+  async syncGrowthSearchConsole(siteId: string): Promise<any> {
+    return this.request(`/growth/sites/${encodeURIComponent(siteId)}/gsc/sync`, { method: 'POST' })
+  }
+
+  async getGrowthSearchConsole(siteId: string): Promise<any> {
+    return this.request(`/growth/sites/${encodeURIComponent(siteId)}/search-console`)
+  }
+
+  async getGrowthOpportunities(siteId: string, kind?: string): Promise<any> {
+    const queryString = kind ? `?kind=${encodeURIComponent(kind)}` : ''
+    return this.request(`/growth/sites/${encodeURIComponent(siteId)}/opportunities${queryString}`)
+  }
+
+  async getGrowthAiVisibility(siteId: string): Promise<any> {
+    return this.request(`/growth/sites/${encodeURIComponent(siteId)}/ai-visibility`)
+  }
+
+  async scanGrowthAiVisibility(siteId: string): Promise<any> {
+    return this.request(`/growth/sites/${encodeURIComponent(siteId)}/ai-visibility/scan`, { method: 'POST' })
+  }
+
+  async askGrowthCopilot(siteId: string, question: string): Promise<any> {
+    return this.request(`/growth/sites/${encodeURIComponent(siteId)}/copilot`, {
+      method: 'POST',
+      body: JSON.stringify({ question }),
+    })
+  }
+
+  async getGrowthCreatorHandoff(recommendationId: string): Promise<any> {
+    return this.request(`/growth/recommendations/${encodeURIComponent(recommendationId)}/creators`)
+  }
+
   async getAffiliatePrograms(params?: Record<string, any>): Promise<any> {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
     return this.request(`/affiliate/programs${queryString}`)

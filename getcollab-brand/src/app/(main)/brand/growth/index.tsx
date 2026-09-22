@@ -1,97 +1,292 @@
-import React from 'react'
-import { View, Text, StyleSheet, ScrollView, Pressable, Linking } from 'react-native'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { View, Text, Pressable } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
-import { colors, radius, spacing } from '@/src/theme'
+import { apiService, handleApiError } from '@shared/services/api'
+import { colors } from '@/src/theme'
+import {
+  GrowthGate,
+  GrowthScreen,
+  GrowthEmpty,
+  growthStyles,
+  dimensionLabel,
+  scoreDisplay,
+  type GrowthSite,
+} from '../../../../components/growth/growth-shared'
 
-const TIPS = [
-  {
-    icon: 'globe-outline',
-    title: 'Connect your website',
-    body: 'Link your brand site so we can analyse SEO and creator-marketing alignment.',
-  },
-  {
-    icon: 'search-outline',
-    title: 'Run an SEO audit',
-    body: 'Get a simple score for how your website and creator marketing work together.',
-  },
-  {
-    icon: 'trending-up-outline',
-    title: 'Track AI visibility',
-    body: 'See how often your brand appears in AI search answers and recommendations.',
-  },
-  {
-    icon: 'bulb-outline',
-    title: 'Discover opportunities',
-    body: 'Find high-intent keywords and content gaps your creators can fill.',
-  },
-]
+const POLL_INTERVAL_MS = 2500
 
-export default function GrowthScreen({ navigation }: any) {
-  const openWebGrowth = () => {
-    Linking.openURL('https://app.getcollab.in/dashboard/growth').catch(() => {
-      // fallback silent
-    })
+interface Job {
+  id: string
+  status: string
+  pagesCrawled?: number
+  errorMessage?: string
+}
+
+function OverviewBody({ site, navigation }: { site: GrowthSite; navigation?: any }) {
+  const [overview, setOverview] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [job, setJob] = useState<Job | null>(null)
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const load = useCallback(async () => {
+    try {
+      const res = await apiService.getGrowthOverview(site.id)
+      setOverview(res?.overview || res?.data || res)
+    } catch (err) {
+      handleApiError(err, 'Could not load overview')
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }, [site.id])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  // Poll the crawl job while it runs, then pull the fresh overview.
+  useEffect(() => {
+    if (!job || (job.status !== 'queued' && job.status !== 'running')) return
+    pollRef.current = setTimeout(async () => {
+      try {
+        const res = await apiService.getGrowthJob(job.id)
+        const next: Job = res?.job || res?.data || res
+        setJob(next)
+        if (next?.status === 'succeeded' || next?.status === 'failed') {
+          setAnalyzing(false)
+          load()
+        }
+      } catch {
+        setAnalyzing(false)
+      }
+    }, POLL_INTERVAL_MS)
+    return () => {
+      if (pollRef.current) clearTimeout(pollRef.current)
+    }
+  }, [job, load])
+
+  const runAnalysis = async () => {
+    setAnalyzing(true)
+    try {
+      const res = await apiService.analyzeGrowthSite(site.id)
+      const jobId = res?.jobId || res?.job?.id
+      setJob({ id: jobId, status: res?.status || 'queued' })
+    } catch (err) {
+      setAnalyzing(false)
+      handleApiError(err, 'Could not start analysis')
+    }
   }
 
+  const score = overview?.score
+  const signals = score?.signals ?? []
+  const recommendations = overview?.topRecommendations ?? []
+  const clusters = overview?.contentClusters ?? []
+  const issueCounts = overview?.issueCounts ?? {}
+  const empty = !loading && !score && !analyzing
+
+  const issueCards = [
+    { label: 'Fix first', value: issueCounts.critical ?? 0, severity: 'critical' },
+    { label: 'Worth fixing', value: issueCounts.warning ?? 0, severity: 'warning' },
+    { label: 'Nice to have', value: issueCounts.info ?? 0, severity: 'info' },
+  ]
+
   return (
-    <View style={styles.root}>
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
-          <Animated.View entering={FadeInDown.duration(400)}>
-            <Text style={styles.title}>Growth</Text>
-            <Text style={styles.subtitle}>SEO, AI visibility & opportunities</Text>
-          </Animated.View>
+    <GrowthScreen
+      title="Overview"
+      subtitle="How your website and creator marketing work together"
+      active="Growth"
+      navigation={navigation}
+      host={site.host}
+      refreshing={refreshing}
+      onRefresh={() => {
+        setRefreshing(true)
+        load()
+      }}
+    >
+      <View style={growthStyles.btnRow}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={runAnalysis}
+          disabled={analyzing}
+          style={({ pressed }) => [growthStyles.primaryBtn, (pressed || analyzing) && { opacity: 0.7 }]}
+        >
+          <Text style={growthStyles.primaryBtnText}>{analyzing ? 'Analyzing…' : 'Run analysis'}</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => navigation?.navigate('GrowthSetup')}
+          style={({ pressed }) => [growthStyles.outlinedBtn, pressed && { opacity: 0.7 }]}
+        >
+          <Text style={growthStyles.outlinedBtnText}>Change website</Text>
+        </Pressable>
+      </View>
 
-          <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.webCard}>
-            <View style={styles.webIcon}>
-              <Ionicons name="desktop-outline" size={24} color={colors.blue} />
-            </View>
-            <Text style={styles.webTitle}>Open Growth Workspace</Text>
-            <Text style={styles.webBody}>
-              The full Growth suite — SEO audits, AI visibility, keyword opportunities and search console — is available on the web dashboard.
+      {analyzing ? (
+        <Text style={[growthStyles.meta, { marginBottom: 12 }]}>
+          Checking your pages{job?.pagesCrawled ? ` · ${job.pagesCrawled} pages so far` : ''}. This usually takes a minute.
+        </Text>
+      ) : null}
+
+      {job?.status === 'failed' ? (
+        <Text style={[growthStyles.meta, { color: '#EF4444' }]}>
+          {job.errorMessage || 'Analysis failed. Try again.'}
+        </Text>
+      ) : null}
+
+      {empty ? (
+        <GrowthEmpty
+          icon="analytics-outline"
+          title="No analysis yet"
+          body="Run an analysis to see scores, issues, and next steps."
+          ctaLabel="Analyze website"
+          onCta={runAnalysis}
+        />
+      ) : null}
+
+      {score ? (
+        <>
+          <Animated.View entering={FadeInDown.duration(320)} style={growthStyles.card}>
+            <Text style={growthStyles.metricLabel}>Growth Score</Text>
+            <Text style={growthStyles.scoreValue}>{score.overall}</Text>
+            <Text style={growthStyles.meta}>
+              Algorithm {score.algorithmVersion}
+              {typeof score.trend === 'number'
+                ? ` · ${score.trend > 0 ? '↑' : score.trend < 0 ? '↓' : '→'} ${Math.abs(score.trend)} vs last snapshot`
+                : ''}
+              {score.updatedAt ? ` · Updated ${new Date(score.updatedAt).toLocaleDateString()}` : ''}
             </Text>
-            <Pressable style={({ pressed }) => [styles.webBtn, pressed && { opacity: 0.85 }]} onPress={openWebGrowth}>
-              <Text style={styles.webBtnText}>Open in Browser</Text>
-              <Ionicons name="open-outline" size={14} color="#000" />
-            </Pressable>
           </Animated.View>
 
-          <Text style={styles.sectionLabel}>QUICK TIPS</Text>
-          {TIPS.map((tip, i) => (
-            <Animated.View key={tip.title} entering={FadeInDown.delay(150 + i * 60).duration(320)} style={styles.tipCard}>
-              <View style={styles.tipIcon}>
-                <Ionicons name={tip.icon as any} size={18} color={colors.blue} />
+          <View style={growthStyles.metricRow}>
+            {signals.slice(0, 3).map((sig: any) => (
+              <View key={sig.key} style={growthStyles.metricCard}>
+                <Text style={growthStyles.metricLabel} numberOfLines={1}>
+                  {sig.name}
+                </Text>
+                <Text style={growthStyles.metricValue}>{scoreDisplay(sig.score)}</Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.tipTitle}>{tip.title}</Text>
-                <Text style={styles.tipBody}>{tip.body}</Text>
-              </View>
-            </Animated.View>
-          ))}
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+            ))}
+          </View>
+          {signals.length > 3 ? (
+            <View style={growthStyles.metricRow}>
+              {signals.slice(3).map((sig: any) => (
+                <View key={sig.key} style={growthStyles.metricCard}>
+                  <Text style={growthStyles.metricLabel} numberOfLines={1}>
+                    {sig.name}
+                  </Text>
+                  <Text style={growthStyles.metricValue}>{scoreDisplay(sig.score)}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          <Text style={growthStyles.meta}>
+            Unavailable signals stay empty — we never show 0 for “not connected.” Connect Search Console or run an AI
+            Visibility scan to fill those cards.
+          </Text>
+
+          <View style={growthStyles.metricRow}>
+            {issueCards.map((c) => (
+              <Pressable
+                key={c.severity}
+                accessibilityRole="button"
+                onPress={() => navigation?.navigate('GrowthSeo', { severity: c.severity })}
+                style={({ pressed }) => [growthStyles.metricCard, pressed && { opacity: 0.8 }]}
+              >
+                <Text style={growthStyles.metricLabel}>{c.label}</Text>
+                <Text style={growthStyles.metricValue}>{c.value}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={growthStyles.card}>
+            <Text style={growthStyles.cardTitle}>Next steps</Text>
+            {recommendations.length === 0 ? (
+              <Text style={growthStyles.rowBody}>
+                No open recommendations. Re-run analysis after you ship changes.
+              </Text>
+            ) : (
+              recommendations.map((rec: any) => (
+                <View key={rec.id} style={{ marginBottom: 12 }}>
+                  <Text style={growthStyles.rowLabel}>{rec.title}</Text>
+                  <Text style={growthStyles.rowBody}>{rec.summary}</Text>
+                  <View style={[growthStyles.pill, { backgroundColor: colors.blueSoft }]}>
+                    <Text style={[growthStyles.pillText, { color: colors.blue }]}>{dimensionLabel(rec.dimension)}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => navigation?.navigate('GrowthRecommendations')}
+              style={({ pressed }) => [growthStyles.outlinedBtn, { marginTop: 4 }, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={growthStyles.outlinedBtnText}>All recommendations</Text>
+            </Pressable>
+          </View>
+
+          {clusters.length > 0 ? (
+            <View style={growthStyles.card}>
+              <Text style={growthStyles.cardTitle}>Content coverage</Text>
+              {clusters.map((c: any) => (
+                <View key={c.name} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <Text style={growthStyles.rowLabel}>{c.name}</Text>
+                  <Text style={growthStyles.rowBody}>{c.coverage}%</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          <View style={growthStyles.card}>
+            <Text style={growthStyles.cardTitle}>Search Performance</Text>
+            <Text style={growthStyles.rowBody}>
+              {overview?.searchConsole?.connected
+                ? `Connected${overview.searchConsole.selectedProperty ? ` · ${overview.searchConsole.selectedProperty}` : ''}`
+                : 'Connect Google Search Console'}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => navigation?.navigate('GrowthSearchConsole')}
+              style={({ pressed }) => [growthStyles.outlinedBtn, { marginTop: 12 }, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={growthStyles.outlinedBtnText}>Open</Text>
+            </Pressable>
+          </View>
+
+          <View style={growthStyles.card}>
+            <Text style={growthStyles.cardTitle}>AI Visibility</Text>
+            <Text style={growthStyles.rowBody}>
+              {overview?.aiVisibility?.score != null
+                ? `${overview.aiVisibility.score} from configured APIs (${(overview.aiVisibility.configuredProviders ?? []).join(', ') || 'none'})`
+                : overview?.aiVisibility?.reason ||
+                  'AI Visibility needs an official provider API and a scan. This is not ChatGPT ranking.'}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => navigation?.navigate('GrowthAiVisibility')}
+              style={({ pressed }) => [growthStyles.outlinedBtn, { marginTop: 12 }, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={growthStyles.outlinedBtnText}>Open</Text>
+            </Pressable>
+          </View>
+        </>
+      ) : null}
+
+      {!score && analyzing ? (
+        <Text style={growthStyles.meta}>Hang tight — first results appear when the crawl finishes.</Text>
+      ) : null}
+    </GrowthScreen>
   )
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
-  subtitle: { color: colors.textMuted, fontSize: 13, marginTop: 2, marginBottom: spacing.lg },
+const colors_blueSoft = 'rgba(59,130,246,0.12)'
 
-  webCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg, alignItems: 'center', marginBottom: spacing.lg },
-  webIcon: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: colors.blueSoft, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
-  webTitle: { color: '#fff', fontSize: 16, fontWeight: '700', textAlign: 'center' },
-  webBody: { color: colors.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 20, marginTop: spacing.sm },
-  webBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.neon, borderRadius: radius.pill, paddingHorizontal: 20, paddingVertical: 12, marginTop: spacing.lg },
-  webBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
-
-  sectionLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: spacing.sm, marginTop: spacing.md },
-
-  tipCard: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md },
-  tipIcon: { width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
-  tipTitle: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  tipBody: { color: colors.textMuted, fontSize: 13, lineHeight: 19, marginTop: 2 },
-})
+export default function GrowthOverviewScreen({ navigation }: { navigation?: any }) {
+  return (
+    <GrowthGate navigation={navigation}>
+      {(site) => <OverviewBody site={site} navigation={navigation} />}
+    </GrowthGate>
+  )
+}

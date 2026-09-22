@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { colors, spacing, radius } from '@/src/theme'
 import { useNotificationStore } from '@shared/stores/notification-store'
+import { navigateToNotification } from '@shared/services/notification-service'
 import type { Notification } from '@shared/types'
 
 interface NotificationItemProps {
@@ -71,6 +72,8 @@ export default function NotificationsScreen() {
     if (!notification.read) {
       await markAsRead(notification.id)
     }
+    // The row carries a web deep link (or an event type) for its target screen.
+    navigateToNotification({ ...(notification.data || {}), ...notification } as Record<string, any>)
   }, [markAsRead])
 
   const handleMarkAllRead = useCallback(async () => {

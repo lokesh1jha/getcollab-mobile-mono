@@ -10,10 +10,14 @@ jest.mock('@shared/services/notification-service', () => ({
 
 jest.mock('@shared/services/api', () => ({
   __esModule: true,
+  // Real predicate, not a stub: the store's silent-UNAUTHORIZED branch hinges on
+  // it, so a drifted copy here would let the test pass while the app broke.
+  isUnauthorizedError: jest.requireActual('@shared/services/api').isUnauthorizedError,
   default: {
     signin: jest.fn(),
     signup: jest.fn(),
     getCurrentUser: jest.fn(),
+    getToken: jest.fn(() => Promise.resolve('tok')),
     updateProfile: jest.fn(),
     setToken: jest.fn(() => Promise.resolve()),
     setRefreshToken: jest.fn(() => Promise.resolve()),
@@ -30,10 +34,11 @@ describe('auth-store', () => {
   })
 
   it('signIn stores user on success', async () => {
-    mockApi.signin.mockResolvedValueOnce({
+    // signIn persists the tokens and then re-reads the session via fetchCurrentUser,
+    // so the user object comes from getCurrentUser — not from the signin response.
+    mockApi.signin.mockResolvedValueOnce({ token: 'tok', refreshToken: 'ref' })
+    mockApi.getCurrentUser.mockResolvedValueOnce({
       user: { id: '1', name: 'Alice', email: 'a@a.com', role: 'brand' },
-      token: 'tok',
-      refreshToken: 'ref',
     })
 
     await useAuthStore.getState().signIn('a@a.com', 'pw')
