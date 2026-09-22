@@ -34,6 +34,15 @@ import InvitesScreen from '../app/(main)/brand/invites'
 import AffiliateProgramsScreen from '../app/(main)/brand/affiliate'
 import AffiliateLinksScreen from '../app/(main)/brand/affiliate/links'
 import AffiliateCommissionsScreen from '../app/(main)/brand/affiliate/commissions'
+import AffiliateDetailScreen from '../app/(main)/brand/affiliate/[id]'
+import GrowthScreen from '../app/(main)/brand/growth'
+import GrowthSetupScreen from '../app/(main)/brand/growth/setup'
+import GrowthSeoScreen from '../app/(main)/brand/growth/seo'
+import GrowthSearchConsoleScreen from '../app/(main)/brand/growth/search-console'
+import GrowthAiVisibilityScreen from '../app/(main)/brand/growth/ai-visibility'
+import GrowthOpportunitiesScreen from '../app/(main)/brand/growth/opportunities'
+import GrowthRecommendationsScreen from '../app/(main)/brand/growth/recommendations'
+import InvoicesScreen from '../app/(main)/brand/invoices'
 import DisputesScreen from '../app/(main)/disputes'
 import SettingsScreen from '../app/(main)/settings'
 import ProfileSettingsScreen from '../app/(main)/settings/profile'
@@ -383,6 +392,11 @@ function BrandStackInner() {
         options={{ headerTitle: 'Affiliate', ...stackHeaderOptions }}
       />
       <Stack.Screen
+        name="AffiliateDetail"
+        component={AffiliateDetailScreen}
+        options={{ headerTitle: 'Program', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
         name="AffiliateLinks"
         component={AffiliateLinksScreen}
         options={{ headerTitle: 'Links', ...stackHeaderOptions }}
@@ -396,6 +410,46 @@ function BrandStackInner() {
         name="CreatorReport"
         component={CreatorReport}
         options={{ headerTitle: 'Creator Report', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="Growth"
+        component={GrowthScreen}
+        options={{ headerTitle: 'Growth', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="GrowthSetup"
+        component={GrowthSetupScreen}
+        options={{ headerTitle: 'Set up Growth', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="GrowthSeo"
+        component={GrowthSeoScreen}
+        options={{ headerTitle: 'SEO', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="GrowthSearchConsole"
+        component={GrowthSearchConsoleScreen}
+        options={{ headerTitle: 'Search Console', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="GrowthAiVisibility"
+        component={GrowthAiVisibilityScreen}
+        options={{ headerTitle: 'AI Visibility', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="GrowthOpportunities"
+        component={GrowthOpportunitiesScreen}
+        options={{ headerTitle: 'Opportunities', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="GrowthRecommendations"
+        component={GrowthRecommendationsScreen}
+        options={{ headerTitle: 'Recommendations', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="Invoices"
+        component={InvoicesScreen}
+        options={{ headerTitle: 'Invoices', ...stackHeaderOptions }}
       />
     </Stack.Navigator>
   )

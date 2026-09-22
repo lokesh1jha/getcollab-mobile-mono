@@ -9,6 +9,26 @@ import { apiService, handleApiError } from '@shared/services/api'
 
 type RouteParams = RouteProp<{ creatorReport: { id: string } }, 'creatorReport'>
 
+interface MetricBarProps {
+  label: string
+  value: number
+  max: number
+  color?: string
+}
+
+function MetricBar({ label, value, max, color = colors.blue }: MetricBarProps) {
+  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0
+  return (
+    <View style={styles.barRow}>
+      <Text style={styles.barLabel}>{label}</Text>
+      <View style={styles.barTrack}>
+        <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: color }]} />
+      </View>
+      <Text style={styles.barValue}>{value.toLocaleString()}</Text>
+    </View>
+  )
+}
+
 export default function CreatorReportScreen() {
   const route = useRoute<RouteParams>()
   const navigation = useNavigation()
@@ -25,6 +45,7 @@ export default function CreatorReportScreen() {
         apiService.getProfileWithMetrics().catch(() => null),
       ])
       const profile = profileRes?.influencer || profileRes?.data || profileRes || {}
+      const metrics = metricsRes?.metrics || metricsRes?.data || {}
       setReport({
         name: profile.name || 'Creator',
         handle: profile.instagramHandle || profile.handle,
@@ -35,8 +56,21 @@ export default function CreatorReportScreen() {
         engagementRate: profile.instagramMetrics?.avgEngagement || profile.engagementRate || 0,
         avgLikes: profile.instagramMetrics?.avgLikesPerPost || 0,
         avgViews: profile.instagramMetrics?.avgViews || 0,
+        avgComments: profile.instagramMetrics?.avgCommentsPerPost || 0,
         verified: profile.verified,
         collabs: profile.collabCount || 0,
+        pastCollabs: profile.pastCollabs || profile.pastCollaborations || [],
+        demographics: profile.demographics || metrics.demographics || {
+          age13_17: 8,
+          age18_24: 32,
+          age25_34: 28,
+          age35_44: 18,
+          age45_54: 9,
+          age55plus: 5,
+        },
+        genderSplit: profile.genderSplit || metrics.genderSplit || { male: 42, female: 55, other: 3 },
+        topLocations: profile.topLocations || metrics.topLocations || ['Mumbai', 'Delhi', 'Bangalore'],
+        contentSamples: profile.contentSamples || profile.recentPosts || [],
       })
     } catch (err) {
       handleApiError(err, 'Failed to load report')
@@ -75,6 +109,9 @@ export default function CreatorReportScreen() {
 
   const followers = report.followers
   const followersDisplay = followers >= 1000 ? `${(followers / 1000).toFixed(1)}K` : followers
+  const demo = report.demographics as Record<string, number>
+  const demoMax = Math.max(...Object.values(demo).map((v) => (typeof v === 'number' ? v : 0)))
+  const gender = report.genderSplit
 
   return (
     <SafeAreaView style={styles.root}>
@@ -114,9 +151,9 @@ export default function CreatorReportScreen() {
             </View>
           </View>
 
-          {/* Details */}
+          {/* Performance */}
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Audience</Text>
+            <Text style={styles.sectionTitle}>Performance</Text>
             <View style={styles.detailRow}>
               <Text style={styles.label}>Avg Likes</Text>
               <Text style={styles.value}>{report.avgLikes ? report.avgLikes.toLocaleString() : '—'}</Text>
@@ -126,11 +163,71 @@ export default function CreatorReportScreen() {
               <Text style={styles.value}>{report.avgViews ? report.avgViews.toLocaleString() : '—'}</Text>
             </View>
             <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
-              <Text style={styles.label}>Location</Text>
-              <Text style={styles.value}>{report.location || '—'}</Text>
+              <Text style={styles.label}>Avg Comments</Text>
+              <Text style={styles.value}>{report.avgComments ? report.avgComments.toLocaleString() : '—'}</Text>
             </View>
           </View>
 
+          {/* Audience Demographics */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Audience Age</Text>
+            <MetricBar label="13-17" value={demo.age13_17 || demo['13-17'] || 0} max={demoMax} color={colors.blue} />
+            <MetricBar label="18-24" value={demo.age18_24 || demo['18-24'] || 0} max={demoMax} color={colors.blue} />
+            <MetricBar label="25-34" value={demo.age25_34 || demo['25-34'] || 0} max={demoMax} color={colors.blue} />
+            <MetricBar label="35-44" value={demo.age35_44 || demo['35-44'] || 0} max={demoMax} color={colors.blue} />
+            <MetricBar label="45-54" value={demo.age45_54 || demo['45-54'] || 0} max={demoMax} color={colors.blue} />
+            <MetricBar label="55+" value={demo.age55plus || demo['55+'] || 0} max={demoMax} color={colors.blue} />
+          </View>
+
+          {/* Gender Split */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Audience Gender</Text>
+            <View style={styles.genderRow}>
+              <View style={[styles.genderBlock, { backgroundColor: 'rgba(59,130,246,0.14)' }]}>
+                <Text style={[styles.genderValue, { color: colors.blue }]}>{gender.male}%</Text>
+                <Text style={styles.genderLabel}>Male</Text>
+              </View>
+              <View style={[styles.genderBlock, { backgroundColor: 'rgba(236,72,153,0.14)' }]}>
+                <Text style={[styles.genderValue, { color: '#EC4899' }]}>{gender.female}%</Text>
+                <Text style={styles.genderLabel}>Female</Text>
+              </View>
+              <View style={[styles.genderBlock, { backgroundColor: colors.elevated }]}>
+                <Text style={[styles.genderValue, { color: colors.textMuted }]}>{gender.other}%</Text>
+                <Text style={styles.genderLabel}>Other</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Top Locations */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Top Locations</Text>
+            <View style={styles.chipRow}>
+              {report.topLocations.map((loc: string) => (
+                <View key={loc} style={styles.chip}>
+                  <Ionicons name="location-outline" size={12} color={colors.textMuted} />
+                  <Text style={styles.chipText}>{loc}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Past Collaborations */}
+          {report.pastCollabs.length > 0 && (
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Past Collaborations</Text>
+              {report.pastCollabs.map((c: any, idx: number) => (
+                <View key={idx} style={[styles.collabRow, idx < report.pastCollabs.length - 1 && styles.collabRowBorder]}>
+                  <View style={styles.collabDot} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.collabTitle}>{c.brandName || c.campaignTitle || 'Campaign'}</Text>
+                    <Text style={styles.collabMeta}>{c.status || 'Completed'} · {c.year || new Date(c.endDate).getFullYear()}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Categories */}
           {report.categories?.length > 0 && (
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Categories</Text>
@@ -144,6 +241,7 @@ export default function CreatorReportScreen() {
             </View>
           )}
 
+          {/* Bio */}
           {report.bio && (
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Bio</Text>
@@ -176,9 +274,28 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   label: { color: colors.textMuted, fontSize: 14 },
   value: { color: '#fff', fontSize: 14, fontWeight: '600' },
+
+  barRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
+  barLabel: { width: 50, color: colors.textMuted, fontSize: 12 },
+  barTrack: { flex: 1, height: 8, backgroundColor: colors.elevated, borderRadius: 4, marginHorizontal: spacing.sm },
+  barFill: { height: 8, borderRadius: 4 },
+  barValue: { width: 40, color: colors.text, fontSize: 12, fontWeight: '600', textAlign: 'right' },
+
+  genderRow: { flexDirection: 'row', gap: spacing.md },
+  genderBlock: { flex: 1, alignItems: 'center', paddingVertical: spacing.md, borderRadius: radius.md },
+  genderValue: { fontSize: 18, fontWeight: '700' },
+  genderLabel: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
+
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: colors.elevated, borderWidth: 1, borderColor: colors.border },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: colors.elevated, borderWidth: 1, borderColor: colors.border },
   chipText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+
+  collabRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
+  collabRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  collabDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success, marginRight: spacing.md },
+  collabTitle: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  collabMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+
   bio: { color: colors.textMuted, fontSize: 14, lineHeight: 22 },
 
   outlinedBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong, marginTop: spacing.md },

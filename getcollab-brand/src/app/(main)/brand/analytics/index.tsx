@@ -8,8 +8,30 @@ import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 
-interface CampaignMetric { id: string; title: string; totalBudget: number; totalSpent: number; totalBids: number; acceptedBids: number; status: string }
-interface CreatorMetric { id: string; name: string; collaborations: number; totalSpend: number; averageRating?: number; lastInteraction?: string }
+interface CampaignMetric {
+  id: string
+  title: string
+  totalBudget: number
+  totalSpent: number
+  totalBids: number
+  acceptedBids: number
+  status: string
+}
+
+interface CreatorMetric {
+  id: string
+  name: string
+  collaborations: number
+  totalSpend: number
+  averageRating?: number
+  lastInteraction?: string
+}
+
+interface MonthlyPoint {
+  month: string
+  budget: number
+  spent: number
+}
 
 const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
   active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
@@ -21,12 +43,55 @@ const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
 
 type Tab = 'campaigns' | 'creators'
 
+function SimpleBarChart({ data }: { data: MonthlyPoint[] }) {
+  const max = Math.max(...data.map((d) => Math.max(d.budget, d.spent)), 1)
+  return (
+    <View style={chartStyles.container}>
+      <View style={chartStyles.legendRow}>
+        <View style={chartStyles.legendItem}>
+          <View style={[chartStyles.legendDot, { backgroundColor: colors.blue }]} />
+          <Text style={chartStyles.legendText}>Budget</Text>
+        </View>
+        <View style={chartStyles.legendItem}>
+          <View style={[chartStyles.legendDot, { backgroundColor: colors.neon }]} />
+          <Text style={chartStyles.legendText}>Spent</Text>
+        </View>
+      </View>
+      <View style={chartStyles.chartRow}>
+        {data.map((point) => (
+          <View key={point.month} style={chartStyles.column}>
+            <View style={chartStyles.bars}>
+              <View style={[chartStyles.bar, { height: `${(point.budget / max) * 100}%`, backgroundColor: colors.blue }]} />
+              <View style={[chartStyles.bar, { height: `${(point.spent / max) * 100}%`, backgroundColor: colors.neon }]} />
+            </View>
+            <Text style={chartStyles.monthLabel}>{point.month}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  )
+}
+
+const chartStyles = StyleSheet.create({
+  container: { marginTop: spacing.md },
+  legendRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.sm },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legendDot: { width: 8, height: 8, borderRadius: 2 },
+  legendText: { color: colors.textMuted, fontSize: 11 },
+  chartRow: { flexDirection: 'row', justifyContent: 'space-between', height: 140, gap: 4 },
+  column: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, flex: 1 },
+  bar: { width: 10, borderRadius: 2, minHeight: 2 },
+  monthLabel: { color: colors.textMuted, fontSize: 10, marginTop: 4 },
+})
+
 export default function AnalyticsScreen({ navigation }: any) {
   const [tab, setTab] = useState<Tab>('campaigns')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [campaignMetrics, setCampaignMetrics] = useState<CampaignMetric[]>([])
   const [creatorMetrics, setCreatorMetrics] = useState<CreatorMetric[]>([])
+  const [monthlyData, setMonthlyData] = useState<MonthlyPoint[]>([])
   const { user } = useAuthStore()
 
   const loadAnalytics = useCallback(async () => {
@@ -36,8 +101,9 @@ export default function AnalyticsScreen({ navigation }: any) {
         apiService.getRelationships().catch(() => null),
       ])
       const camps = campRes?.campaigns || campRes?.data || []
+      const campsList = (Array.isArray(camps) ? camps : []) as any[]
       setCampaignMetrics(
-        (Array.isArray(camps) ? camps : []).map((c: any) => ({
+        campsList.map((c: any) => ({
           id: c.id,
           title: c.title,
           totalBudget: c.budget || 0,
@@ -47,6 +113,26 @@ export default function AnalyticsScreen({ navigation }: any) {
           status: c.status || 'draft',
         }))
       )
+
+      // Build dummy monthly trend from campaign data (fallback)
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
+      const trend = months.map((m, i) => {
+        const monthCamps = campsList.filter((c: any) => new Date(c.createdAt).getMonth() === i)
+        return {
+          month: m,
+          budget: monthCamps.reduce((sum: number, c: any) => sum + (c.budget || 0), 0),
+          spent: monthCamps.reduce((sum: number, c: any) => sum + (c.spent || 0), 0),
+        }
+      })
+      setMonthlyData(trend.some((t) => t.budget > 0 || t.spent > 0) ? trend : [
+        { month: 'Jan', budget: 0, spent: 0 },
+        { month: 'Feb', budget: 0, spent: 0 },
+        { month: 'Mar', budget: 0, spent: 0 },
+        { month: 'Apr', budget: 0, spent: 0 },
+        { month: 'May', budget: 0, spent: 0 },
+        { month: 'Jun', budget: 0, spent: 0 },
+      ])
+
       const rels = relRes?.relationships || relRes?.data || []
       setCreatorMetrics(
         (Array.isArray(rels) ? rels : []).map((r: any) => ({
@@ -148,6 +234,13 @@ export default function AnalyticsScreen({ navigation }: any) {
                 </View>
               </View>
 
+              {tab === 'campaigns' && (
+                <View style={styles.chartCard}>
+                  <Text style={styles.chartTitle}>Budget vs Spent</Text>
+                  <SimpleBarChart data={monthlyData} />
+                </View>
+              )}
+
               <View style={styles.tabRow}>
                 <Pressable onPress={() => setTab('campaigns')} style={({ pressed }) => [styles.tab, tab === 'campaigns' && styles.tabActive, pressed && { opacity: 0.7 }]}>
                   <Text style={[styles.tabText, tab === 'campaigns' && styles.tabTextActive]}>Campaigns</Text>
@@ -184,6 +277,9 @@ const styles = StyleSheet.create({
   metricCard: { flex: 1, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md },
   metricLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '600' },
   metricValue: { color: '#fff', fontSize: 16, fontWeight: '700', marginTop: 6 },
+
+  chartCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg },
+  chartTitle: { color: '#fff', fontSize: 14, fontWeight: '600', marginBottom: spacing.sm },
 
   tabRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   tab: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },

@@ -1,12 +1,18 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, RefreshControl, TextInput, ScrollView } from 'react-native'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { colors, radius, spacing } from '@/src/theme'
 import { TrialGuard } from '../../../../components/TrialGuard'
 import apiService, { handleApiError } from '@shared/services/api'
+
+const SAVED_CREATORS_KEY = '@getcollab:brand:saved_creators'
+// The saved shortlist is backed by a brand-owned creator circle so it follows the
+// brand across devices instead of living only in this install's storage.
+const SAVED_CIRCLE_NAME = 'Saved Creators'
 
 interface Creator { id: string; name: string; avatar?: string; image?: string; bio?: string; location?: string; categories?: string[]; audienceSize?: number; engagementRate?: number; verified?: boolean; instagramHandle?: string; instagramMetrics?: { followers?: number }; matchScore?: number }
 interface Props { navigation?: any }
@@ -20,6 +26,87 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [shortlisted, setShortlisted] = useState<Record<string, boolean>>({})
+  const savedCircleId = useRef<string | null>(null)
+
+  const mirrorLocally = (next: Record<string, boolean>) => {
+    AsyncStorage.setItem(SAVED_CREATORS_KEY, JSON.stringify(next)).catch(() => undefined)
+  }
+
+  // Resolve the brand's saved-creator circle, creating it on first save so brands
+  // that never bookmark anything are not left with an empty list.
+  const resolveSavedCircle = useCallback(async (create: boolean): Promise<string | null> => {
+    if (savedCircleId.current) return savedCircleId.current
+    const res = await apiService.listCreatorCircles()
+    const circles = res?.circles || res?.data || (Array.isArray(res) ? res : [])
+    const existing = (Array.isArray(circles) ? circles : []).find((c: any) => c?.name === SAVED_CIRCLE_NAME)
+    if (existing?.id) {
+      savedCircleId.current = existing.id
+      return existing.id
+    }
+    if (!create) return null
+    const created = await apiService.createCreatorCircle({
+      name: SAVED_CIRCLE_NAME,
+      description: 'Creators saved from Browse Creators',
+    })
+    const id = created?.id || created?.circle?.id || created?.data?.id
+    if (id) savedCircleId.current = id
+    return id ?? null
+  }, [])
+
+  // Paint from the local mirror immediately (works offline), then reconcile with
+  // the server so a second device sees the same shortlist.
+  useEffect(() => {
+    let cancelled = false
+    AsyncStorage.getItem(SAVED_CREATORS_KEY)
+      .then((raw) => {
+        if (cancelled || !raw) return
+        try {
+          const parsed = JSON.parse(raw)
+          if (parsed && typeof parsed === 'object') setShortlisted(parsed)
+        } catch { /* ignore corrupt storage */ }
+      })
+      .catch(() => undefined)
+      .then(async () => {
+        if (cancelled) return
+        try {
+          const circleId = await resolveSavedCircle(false)
+          if (cancelled || !circleId) return
+          const res = await apiService.getCreatorCircleMembers(circleId)
+          const members = res?.members || res?.data || (Array.isArray(res) ? res : [])
+          const next: Record<string, boolean> = {}
+          for (const m of Array.isArray(members) ? members : []) {
+            const id = m?.influencer_id || m?.influencerId || m?.id
+            if (id) next[id] = true
+          }
+          if (cancelled) return
+          setShortlisted(next)
+          mirrorLocally(next)
+        } catch {
+          // Offline, or the brand has no org yet — the local mirror already stands.
+        }
+      })
+    return () => { cancelled = true }
+  }, [resolveSavedCircle])
+
+  const toggleSaved = async (creatorId: string) => {
+    const wasSaved = !!shortlisted[creatorId]
+    const next = { ...shortlisted }
+    if (wasSaved) delete next[creatorId]
+    else next[creatorId] = true
+    setShortlisted(next)
+    mirrorLocally(next)
+    try {
+      const circleId = await resolveSavedCircle(!wasSaved)
+      if (!circleId) return
+      if (wasSaved) await apiService.removeCreatorCircleMember(circleId, creatorId)
+      else await apiService.addCreatorCircleMembers(circleId, [creatorId])
+    } catch (err) {
+      // Roll back rather than show a bookmark the server never stored.
+      setShortlisted(shortlisted)
+      mirrorLocally(shortlisted)
+      handleApiError(err, 'Failed to update saved creators')
+    }
+  }
 
   const loadCreators = useCallback(async () => {
     try {
@@ -115,7 +202,9 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
               <Text style={styles.viewBtnText}>Message</Text>
             </Pressable>
             <Pressable
-              onPress={() => setShortlisted((s) => ({ ...s, [item.id]: !s[item.id] }))}
+              onPress={() => toggleSaved(item.id)}
+              accessibilityRole="button"
+              accessibilityLabel={shortlisted[item.id] ? `Remove ${item.name} from saved` : `Save ${item.name}`}
               style={({ pressed }) => [styles.shortlistBtn, shortlisted[item.id] && styles.shortlistBtnActive, pressed && { opacity: 0.75 }]}
             >
               <Ionicons name={shortlisted[item.id] ? 'bookmark' : 'bookmark-outline'} size={16} color={shortlisted[item.id] ? '#000' : '#fff'} />

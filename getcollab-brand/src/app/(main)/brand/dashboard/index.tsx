@@ -77,6 +77,39 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
   const totalBidsCount = myCampaigns.reduce((sum, c) => sum + (c.bidCount || 0), 0)
   const { greeting, subtitle } = getGreeting(user?.name || user?.companyName)
 
+  const onboardingComplete = !!(user?.onboardingComplete || user?.companyName)
+  const hasCampaigns = myCampaigns.length > 0
+  const hasPaymentMethod = false // TODO: wire when backend exposes payment method flag
+
+  const checklist = [
+    {
+      id: 'profile',
+      title: 'Complete brand profile',
+      sub: 'Add logo, bio, and website',
+      done: onboardingComplete,
+      action: 'Edit profile',
+      route: 'Profile',
+    },
+    {
+      id: 'payment',
+      title: 'Add a way to pay creators',
+      sub: 'UPI or bank account — nothing charged today',
+      done: hasPaymentMethod,
+      action: 'Add payment',
+      route: 'Billing',
+    },
+    {
+      id: 'campaign',
+      title: 'Write your first brief',
+      sub: 'Tell creators the product, budget and deadline',
+      done: hasCampaigns,
+      action: hasCampaigns ? 'View briefs' : 'Create brief',
+      route: hasCampaigns ? 'Campaigns' : 'CreateCampaign',
+    },
+  ]
+  const doneCount = checklist.filter((t) => t.done).length
+  const nextTask = checklist.find((t) => !t.done)
+
   const kpiCards = [
     {
       id: 'active', label: 'Active Campaigns', value: activeCampaignsCount,
@@ -179,6 +212,47 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
             </Animated.View>
           </View>
 
+          {/* Next Actions Checklist */}
+          {doneCount < checklist.length && (
+            <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.lg }}>
+              <Animated.View entering={FadeInDown.duration(400)} style={styles.checklistCard}>
+                <View style={styles.checklistHeader}>
+                  <Text style={styles.checklistTitle}>Setup progress</Text>
+                  <Text style={styles.checklistMeta}>{doneCount} of {checklist.length} complete</Text>
+                </View>
+                <View style={styles.checklistBarBg}>
+                  <View style={[styles.checklistBarFill, { width: `${(doneCount / checklist.length) * 100}%` }]} />
+                </View>
+                {nextTask && (
+                  <Pressable
+                    style={({ pressed }) => [styles.checklistNext, pressed && { opacity: 0.85 }]}
+                    onPress={() => navigation?.navigate(nextTask.route)}
+                  >
+                    <View style={styles.checklistCircle}>
+                      <Text style={styles.checklistNum}>{checklist.findIndex((t) => t.id === nextTask.id) + 1}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.checklistNextTitle}>{nextTask.title}</Text>
+                      <Text style={styles.checklistNextSub}>{nextTask.sub}</Text>
+                    </View>
+                    <Text style={styles.checklistAction}>{nextTask.action}</Text>
+                    <Ionicons name="chevron-forward" size={16} color={colors.blue} />
+                  </Pressable>
+                )}
+                <View style={styles.checklistList}>
+                  {checklist.map((task) => (
+                    <View key={task.id} style={styles.checklistRow}>
+                      <View style={[styles.checklistDot, task.done && styles.checklistDotDone]}>
+                        {task.done && <Ionicons name="checkmark" size={10} color="#000" />}
+                      </View>
+                      <Text style={[styles.checklistRowText, task.done && styles.checklistRowTextDone]}>{task.title}</Text>
+                    </View>
+                  ))}
+                </View>
+              </Animated.View>
+            </View>
+          )}
+
           {/* Recent Campaigns */}
           <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.xl }}>
             <View style={styles.sectionHeader}>
@@ -237,6 +311,8 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
               <ActionCard icon="wallet-outline" label="Wallet" onPress={() => navigation?.navigate('Wallet')} />
               <ActionCard icon="people-outline" label="Relationships" onPress={() => navigation?.navigate('Relationships')} />
               <ActionCard icon="stats-chart" label="Analytics" onPress={() => navigation?.navigate('Analytics')} />
+              <ActionCard icon="trending-up-outline" label="Growth" onPress={() => navigation?.navigate('Growth')} />
+              <ActionCard icon="receipt-outline" label="Invoices" onPress={() => navigation?.navigate('Invoices')} />
             </View>
           </View>
         </ScrollView>
@@ -317,4 +393,23 @@ const styles = StyleSheet.create({
   actionLabel: { color: '#fff', fontSize: 12, fontWeight: '600', lineHeight: 16 },
 
   emptyCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.xl, alignItems: 'center' },
+
+  checklistCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg },
+  checklistHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
+  checklistTitle: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  checklistMeta: { color: colors.textMuted, fontSize: 12 },
+  checklistBarBg: { height: 4, backgroundColor: colors.elevated, borderRadius: 2, marginBottom: spacing.md },
+  checklistBarFill: { height: 4, backgroundColor: colors.neon, borderRadius: 2 },
+  checklistNext: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.elevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md },
+  checklistCircle: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center' },
+  checklistNum: { color: '#000', fontSize: 12, fontWeight: '700' },
+  checklistNextTitle: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  checklistNextSub: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  checklistAction: { color: colors.blue, fontSize: 12, fontWeight: '600' },
+  checklistList: { gap: spacing.sm },
+  checklistRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  checklistDot: { width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  checklistDotDone: { backgroundColor: colors.neon, borderColor: colors.neon },
+  checklistRowText: { color: colors.textMuted, fontSize: 13 },
+  checklistRowTextDone: { textDecorationLine: 'line-through', opacity: 0.6 },
 })

@@ -15,6 +15,8 @@ const SETTINGS_ROWS = [
   { id: 'relationships', icon: 'people-outline', label: 'Relationships' },
   { id: 'invites', icon: 'mail-outline', label: 'Invites' },
   { id: 'affiliate', icon: 'link-outline', label: 'Affiliate' },
+  { id: 'invoices', icon: 'receipt-outline', label: 'Invoices' },
+  { id: 'growth', icon: 'trending-up-outline', label: 'Growth' },
   { id: 'notifications', icon: 'notifications-outline', label: 'Notifications' },
   { id: 'settings', icon: 'settings-outline', label: 'Settings' },
   { id: 'disputes', icon: 'shield-outline', label: 'Disputes' },

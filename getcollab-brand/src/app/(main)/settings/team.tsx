@@ -19,7 +19,7 @@ export default function TeamSettingsScreen() {
     try {
       const [membersRes, invitesRes] = await Promise.all([
         apiService.getTeamMembers().catch(() => null),
-        apiService.get('/orgs/invites').catch(() => null),
+        apiService.get<{ invites?: TeamInvite[]; data?: TeamInvite[] }>('/orgs/invites').catch(() => null),
       ])
       const m = membersRes?.members || membersRes?.data || []
       const i = (invitesRes as any)?.invites || (invitesRes as any)?.data || []

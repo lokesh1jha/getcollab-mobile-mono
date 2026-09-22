@@ -35,10 +35,14 @@ export default function RelationshipDetailScreen() {
       ])
       const rel = relRes?.relationship || relRes || null
       if (rel) {
-        rel.collaborations = collabRes?.collaborations || collabRes || []
-        rel.timeline = timelineRes?.timeline || timelineRes || []
+        setRelationship({
+          ...rel,
+          collaborations: collabRes?.collaborations || collabRes || [],
+          timeline: timelineRes?.timeline || timelineRes || [],
+        })
+      } else {
+        setRelationship(null)
       }
-      setRelationship(rel)
     } catch (err) {
       handleApiError(err, 'Failed to load relationship')
     } finally {

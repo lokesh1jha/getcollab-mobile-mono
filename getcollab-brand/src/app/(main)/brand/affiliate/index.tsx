@@ -80,31 +80,33 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
     const s = STATUS_COLORS[st] || STATUS_COLORS.draft
     const budget = item.budget
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
-        <View style={styles.cardTop}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-            <Text style={styles.meta}>{item.productName || 'Product'} · {item.currency}</Text>
+      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+        <Pressable style={({ pressed }) => [styles.card, pressed && { opacity: 0.9 }]} onPress={() => navigation?.navigate('AffiliateDetail', { id: item.id })}>
+          <View style={styles.cardTop}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+              <Text style={styles.meta}>{item.productName || 'Product'} · {item.currency}</Text>
+            </View>
+            <Pressable onPress={(e) => { e.stopPropagation(); handleToggleStatus(item) }} style={({ pressed }) => [styles.statusPill, { backgroundColor: s.bg }, pressed && { opacity: 0.7 }]}>
+              <Text style={[styles.statusText, { color: s.fg }]}>{st.charAt(0).toUpperCase() + st.slice(1)}</Text>
+            </Pressable>
           </View>
-          <Pressable onPress={() => handleToggleStatus(item)} style={({ pressed }) => [styles.statusPill, { backgroundColor: s.bg }, pressed && { opacity: 0.7 }]}>
-            <Text style={[styles.statusText, { color: s.fg }]}>{st.charAt(0).toUpperCase() + st.slice(1)}</Text>
-          </Pressable>
-        </View>
-        {budget && (
-          <View style={styles.budgetRow}>
-            <Text style={styles.budgetLabel}>Budget</Text>
-            <Text style={styles.budgetValue}>₹{(budget.totalMinor / 100).toLocaleString()}</Text>
-            <Text style={styles.budgetMeta}>Reserved: ₹{(budget.reservedMinor / 100).toLocaleString()}</Text>
+          {budget && (
+            <View style={styles.budgetRow}>
+              <Text style={styles.budgetLabel}>Budget</Text>
+              <Text style={styles.budgetValue}>₹{(budget.totalMinor / 100).toLocaleString()}</Text>
+              <Text style={styles.budgetMeta}>Reserved: ₹{(budget.reservedMinor / 100).toLocaleString()}</Text>
+            </View>
+          )}
+          <View style={styles.actionsRow}>
+            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={(e) => { e.stopPropagation(); navigation?.navigate('AffiliateLinks', { programId: item.id }) }}>
+              <Text style={styles.actionBtnText}>Links</Text>
+            </Pressable>
+            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={(e) => { e.stopPropagation(); navigation?.navigate('AffiliateCommissions', { programId: item.id }) }}>
+              <Text style={styles.actionBtnText}>Commissions</Text>
+            </Pressable>
           </View>
-        )}
-        <View style={styles.actionsRow}>
-          <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('AffiliateLinks', { programId: item.id })}>
-            <Text style={styles.actionBtnText}>Links</Text>
-          </Pressable>
-          <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('AffiliateCommissions', { programId: item.id })}>
-            <Text style={styles.actionBtnText}>Commissions</Text>
-          </Pressable>
-        </View>
+        </Pressable>
       </Animated.View>
     )
   }
