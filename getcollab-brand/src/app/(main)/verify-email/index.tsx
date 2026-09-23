@@ -5,6 +5,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { colors, spacing, radius } from '@/src/theme'
 import { useAuthStore } from '@shared/stores/auth-store'
 import apiService, { handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 interface Props {
   navigation?: any
@@ -89,7 +90,7 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
             />
           </View>
 
-          <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={handleVerify} disabled={submitting}>
+          <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleVerify() }} disabled={submitting}>
             {submitting ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.primaryBtnText}>Verify</Text>}
           </Pressable>
 

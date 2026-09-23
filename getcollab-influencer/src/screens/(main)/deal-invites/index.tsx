@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 interface Invite {
   id: string
@@ -71,7 +72,7 @@ export default function DealInvitesScreen({ navigation }: { navigation: Influenc
       </View>
       <FlatList
         data={items}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.neon} />}
         contentContainerStyle={styles.list}
         keyExtractor={(i) => String(i.id)}
         ListEmptyComponent={
@@ -142,11 +143,11 @@ export default function DealInvitesScreen({ navigation }: { navigation: Influenc
               style={styles.sheetInput}
             />
             <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
-              <Pressable onPress={() => { setDecliningId(null); setDeclineReason('') }} style={({ pressed }) => [styles.sheetBtnOutline, pressed && { opacity: 0.85 }]}>
+              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setDecliningId(null); setDeclineReason('') }} style={({ pressed }) => [styles.sheetBtnOutline, pressed && { opacity: 0.85 }]}>
                 <Text style={styles.sheetBtnOutlineText}>Cancel</Text>
               </Pressable>
               <Pressable
-                onPress={decline}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); decline() }}
                 disabled={!!busy}
                 style={({ pressed }) => [styles.sheetBtnDanger, pressed && { opacity: 0.85 }, !!busy && { opacity: 0.5 }]}
               >

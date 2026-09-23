@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, FlatList, Pressable } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, Modal, FlatList, Pressable } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -11,6 +11,7 @@ import { useReferenceDataStore, selectCategories, selectIndustries, selectCampai
 import apiService, { handleApiError } from '@shared/services/api'
 import { onboardingPathToStep } from '@shared/lib/onboarding-target'
 import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 interface Props {
   navigation?: any
@@ -291,13 +292,13 @@ export default function OnboardingScreen({ navigation, route }: Props) {
   ) => (
     <View style={styles.chipGrid}>
       {options.map((o) => (
-        <TouchableOpacity
+        <Pressable
           key={o}
-          style={[styles.chip, selected.includes(o) && styles.chipActive]}
-          onPress={() => onToggle(o)}
+          style={({ pressed }) => [styles.chip, selected.includes(o) && styles.chipActive, pressed && { opacity: 0.85 }]}
+          onPress={() => { Haptics.selectionAsync(); onToggle(o) }}
         >
           <Text style={[styles.chipText, selected.includes(o) && styles.chipTextActive]}>{o}</Text>
-        </TouchableOpacity>
+        </Pressable>
       ))}
     </View>
   )
@@ -367,12 +368,12 @@ export default function OnboardingScreen({ navigation, route }: Props) {
         <SectionLabel label="Campaign Frequency" />
         {renderChips(['Monthly', 'Quarterly', 'One-time', 'Ongoing'], [brandStep3.frequency], (v) => setBrandStep3({ ...brandStep3, frequency: brandStep3.frequency === v ? '' : v }))}
 
-        <TouchableOpacity style={styles.termsRow} onPress={() => setTermsAccepted((v) => !v)}>
+        <Pressable style={({ pressed }) => [styles.termsRow, pressed && { opacity: 0.85 }]} onPress={() => setTermsAccepted((v) => !v)}>
           <View style={[styles.termsBox, termsAccepted && styles.termsBoxActive]}>
             {termsAccepted ? <Text style={styles.termsCheck}>✓</Text> : null}
           </View>
           <Text style={styles.termsText}>I accept GetCollab Terms of Service and Privacy Policy</Text>
-        </TouchableOpacity>
+        </Pressable>
 
         <View style={styles.actionRow}>
           <Button title="Back" variant="outline" onPress={() => setStep(2)} style={{ flex: 1 }} />

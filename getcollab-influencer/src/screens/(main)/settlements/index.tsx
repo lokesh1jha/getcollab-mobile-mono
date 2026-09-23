@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 interface Settlement {
   id: string
@@ -74,7 +75,7 @@ export default function SettlementsScreen() {
       <FlatList automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
         style={styles.root}
         contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.neon} />}
         data={items}
         keyExtractor={(x) => String(x.id)}
         ListHeaderComponent={

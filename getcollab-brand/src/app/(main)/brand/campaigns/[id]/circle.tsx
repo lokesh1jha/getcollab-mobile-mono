@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
 import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ campaignCircle: { id: string; title?: string } }, 'campaignCircle'>
 
@@ -97,7 +98,7 @@ export default function CampaignCircleScreen() {
               <Text style={styles.emptySub}>Invite creators from the Discover tab.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadCircle() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadCircle() }} tintColor={colors.neon} />}
         />
       </SafeAreaView>
     </View>

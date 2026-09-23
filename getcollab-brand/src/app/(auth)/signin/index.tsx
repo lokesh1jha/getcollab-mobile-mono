@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors, radius, spacing } from '@/src/theme'
 import { showSignInError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import * as Haptics from 'expo-haptics'
 
 interface ScreenProps { navigation?: any }
 
@@ -105,7 +106,7 @@ export default function SignInScreen({ navigation }: ScreenProps) {
 
               <Pressable
                 testID="sign-in-submit-btn"
-                onPress={handleSignIn}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSignIn() }}
                 disabled={loading}
                 style={({ pressed }) => [styles.primaryBtn, pressed && !loading && { opacity: 0.85 }]}
               >

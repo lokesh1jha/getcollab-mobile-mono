@@ -9,6 +9,7 @@ import { Card } from '@shared/components/ui'
 import { PortfolioGallery } from '@shared/components/PortfolioGallery'
 import apiService from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import * as Haptics from 'expo-haptics'
 
 interface Props {
   navigation?: InfluencerNavigationProp
@@ -65,7 +66,7 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
-        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />} contentContainerStyle={styles.content}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />} contentContainerStyle={styles.content}>
           <View style={styles.previewBadge}>
             <Text style={styles.previewBadgeText}>👁  Preview as a brand sees you</Text>
           </View>

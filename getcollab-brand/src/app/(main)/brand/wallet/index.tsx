@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { WalletTransaction } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 const ENTRY_LABELS: Record<string, string> = {
   fund: 'Top-up / Fund',
@@ -190,7 +191,7 @@ export default function WalletScreen({ navigation }: Props) {
               </View>
 
               <View style={styles.actionsRow}>
-                <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={() => setTopUpOpen(true)}>
+                <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setTopUpOpen(true) }}>
                   <Ionicons name="add-circle-outline" size={16} color="#000" />
                   <Text style={styles.actionBtnText}>Top up</Text>
                 </Pressable>
@@ -239,7 +240,7 @@ export default function WalletScreen({ navigation }: Props) {
               </Pressable>
             ) : null
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleRefresh() }} tintColor={colors.neon} />}
         />
       </SafeAreaView>
 
@@ -265,7 +266,7 @@ export default function WalletScreen({ navigation }: Props) {
                 </Pressable>
                 <Pressable
                   style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]}
-                  onPress={handleTopUp}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleTopUp() }}
                   disabled={submitting}
                 >
                   <Text style={styles.primaryBtnText}>{submitting ? 'Processing…' : 'Top up'}</Text>
@@ -300,7 +301,7 @@ export default function WalletScreen({ navigation }: Props) {
                 </Pressable>
                 <Pressable
                   style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]}
-                  onPress={handleRefund}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleRefund() }}
                   disabled={submitting}
                 >
                   <Text style={styles.primaryBtnText}>{submitting ? 'Submitting…' : 'Submit'}</Text>

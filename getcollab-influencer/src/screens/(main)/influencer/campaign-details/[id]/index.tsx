@@ -173,7 +173,7 @@ export default function InfluencerCampaignDetailsScreen() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg }}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
           <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginTop: spacing.md }}>Campaign not found</Text>
-          <Pressable onPress={() => navigation.goBack()} style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}>
+          <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack() }} style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}>
             <Text style={styles.primaryBtnText}>Go Back</Text>
           </Pressable>
         </View>
@@ -200,7 +200,7 @@ export default function InfluencerCampaignDetailsScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: spacing.xxxl }}
         >
@@ -340,7 +340,7 @@ export default function InfluencerCampaignDetailsScreen() {
               </View>
 
               <Pressable
-                onPress={handleBid}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleBid() }}
                 disabled={bidding || !bidAmount.trim() || !bidPitch.trim()}
                 style={({ pressed }) => [
                   styles.primaryBtn,

@@ -4,6 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, radius, spacing } from '@/src/theme'
 import apiService, { handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 interface Props { navigation?: any }
 
@@ -41,7 +42,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                   If <Text style={styles.successEmail}>{email}</Text> matches an account, you'll receive a reset
                   link shortly. The link expires in 30 minutes.
                 </Text>
-                <Pressable style={({ pressed }) => [styles.blueBtn, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('SignIn')}>
+                <Pressable style={({ pressed }) => [styles.blueBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation?.navigate('SignIn') }}>
                   <Text style={styles.blueBtnText}>Back to Sign In</Text>
                 </Pressable>
                 <Pressable style={({ pressed }) => [styles.ghostBtn, pressed && { opacity: 0.7 }]} onPress={() => { setSent(false); handleSend() }}>
@@ -65,7 +66,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
 
                 <Pressable
                   style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
-                  onPress={handleSend}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSend() }}
                   disabled={sending}
                 >
                   <Text style={styles.primaryBtnText}>{sending ? 'Sending...' : 'Send Reset Link'}</Text>

@@ -8,6 +8,7 @@ import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 interface NotificationSettings {
   emailNotifications?: boolean
@@ -122,7 +123,7 @@ export default function SettingsScreen({ navigation }: { navigation: InfluencerN
         </View>
 
         <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
-          <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />} contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
+          <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />} contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
             {/* No two-factor toggle: the API has no 2FA to switch on, so it
                 saved nothing. */}
             {/* Notifications */}

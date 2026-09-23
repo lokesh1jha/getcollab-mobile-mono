@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { BrandInvite } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 
 interface Props {
@@ -122,7 +123,7 @@ export default function InvitesScreen({ navigation }: Props) {
               <Text style={styles.emptySub}>Invite creators to your campaigns from the Creators tab.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadInvites() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadInvites() }} tintColor={colors.neon} />}
         />
       </SafeAreaView>
     </View>

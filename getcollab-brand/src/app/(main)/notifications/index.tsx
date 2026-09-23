@@ -8,6 +8,7 @@ import { colors, spacing, radius } from '@/src/theme'
 import { useNotificationStore } from '@shared/stores/notification-store'
 import { navigateToNotification } from '@shared/services/notification-service'
 import type { Notification } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 interface NotificationItemProps {
   item: Notification
@@ -124,7 +125,7 @@ export default function NotificationsScreen() {
           )}
         </View>
 
-        <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+        <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
           data={notifications}
           renderItem={({ item, index }) => (
             <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>

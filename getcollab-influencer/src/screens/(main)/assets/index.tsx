@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError, uploadMediaBlob } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
 const ACCEPT_MIMES = [...IMAGE_MIMES, 'application/pdf', 'video/mp4', 'video/webm']
@@ -81,7 +82,7 @@ export default function AssetsScreen() {
         <FlatList
           style={styles.root}
           contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.neon} />}
           data={items}
           keyExtractor={(x) => String(x.id)}
           numColumns={2}

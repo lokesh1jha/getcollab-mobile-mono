@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, radius, spacing } from '@/src/theme'
 import { useAuthStore } from '@shared/stores/auth-store'
+import * as Haptics from 'expo-haptics'
 
 const { width } = Dimensions.get('window')
 
@@ -64,7 +65,7 @@ export default function LandingScreen({ navigation }: any) {
 
           <Pressable
             testID="landing-get-started-btn"
-            onPress={() => navigation.navigate('SignUp')}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('SignUp') }}
             style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
           >
             <View style={styles.primaryGradient}>

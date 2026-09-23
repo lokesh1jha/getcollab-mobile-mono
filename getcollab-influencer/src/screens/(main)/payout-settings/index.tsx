@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 export default function PayoutSettingsScreen() {
   const [form, setForm] = useState({ bankAccount: '', ifscCode: '', panNumber: '', gstNumber: '' })
@@ -38,7 +39,7 @@ export default function PayoutSettingsScreen() {
         <Field label="IFSC code" value={form.ifscCode} onChangeText={(v: string) => setForm({ ...form, ifscCode: v.toUpperCase() })} autoCapitalize="characters" />
         <Field label="PAN number" value={form.panNumber} onChangeText={(v: string) => setForm({ ...form, panNumber: v.toUpperCase() })} autoCapitalize="characters" />
         <Field label="GST number (optional)" value={form.gstNumber} onChangeText={(v: string) => setForm({ ...form, gstNumber: v.toUpperCase() })} autoCapitalize="characters" />
-        <Pressable onPress={save} disabled={saving} style={({ pressed }) => [styles.button, pressed && { opacity: .85 }, saving && { opacity: .5 }]}><Text style={styles.buttonText}>{saving ? 'Saving...' : 'Save Payout Details'}</Text></Pressable>
+        <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); save() }} disabled={saving} style={({ pressed }) => [styles.button, pressed && { opacity: .85 }, saving && { opacity: .5 }]}><Text style={styles.buttonText}>{saving ? 'Saving...' : 'Save Payout Details'}</Text></Pressable>
       </ScrollView>
     </Animated.View>
   </SafeAreaView></View>

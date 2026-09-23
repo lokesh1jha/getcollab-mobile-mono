@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing } from '@/src/theme'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 const { width } = Dimensions.get('window')
 
@@ -84,7 +85,7 @@ export default function LandingScreen({ navigation }: { navigation: InfluencerNa
 
           <Pressable
             testID="landing-creator-btn"
-            onPress={() => navigation.navigate('SignUp')}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('SignUp') }}
             style={({ pressed }) => [
               styles.primaryBtn,
               pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },

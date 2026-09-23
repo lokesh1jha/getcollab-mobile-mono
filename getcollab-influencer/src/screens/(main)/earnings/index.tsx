@@ -9,6 +9,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 interface Settlement {
   id: string
@@ -145,7 +146,7 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
           keyExtractor={s => s.id}
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
           ListHeaderComponent={
             <View>
               {/* Wallet stats */}
@@ -224,7 +225,7 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
                 <TextInput value={notes} onChangeText={setNotes} placeholder="Additional notes…" placeholderTextColor={colors.textSubtle} multiline style={[styles.sheetInputText, { textAlignVertical: 'top' }]} />
               </View>
 
-              <Pressable onPress={handleRequest} disabled={submitting || !amount.trim()} style={({ pressed }) => [styles.submitBtn, (!amount.trim() || submitting) && { opacity: 0.5 }, pressed && { opacity: 0.85 }]}>
+              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleRequest() }} disabled={submitting || !amount.trim()} style={({ pressed }) => [styles.submitBtn, (!amount.trim() || submitting) && { opacity: 0.5 }, pressed && { opacity: 0.85 }]}>
                 <Text style={styles.submitBtnText}>{submitting ? 'Requesting…' : 'Request Payout'}</Text>
               </Pressable>
             </View>

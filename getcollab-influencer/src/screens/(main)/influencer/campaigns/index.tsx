@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 const FILTERS = ['All', 'applied', 'accepted', 'completed', 'rejected']
 const SORTS = [
@@ -167,7 +168,7 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
           {FILTERS.map(f => {
             const active = f === filter
             return (
-              <Pressable key={f} onPress={() => setFilter(f)} style={({ pressed }) => [styles.filterChip, active && styles.filterChipActive, pressed && { opacity: 0.85 }]}>
+              <Pressable key={f} onPress={() => { Haptics.selectionAsync(); setFilter(f) }} style={({ pressed }) => [styles.filterChip, active && styles.filterChipActive, pressed && { opacity: 0.85 }]}>
                 <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{f.charAt(0).toUpperCase() + f.slice(1)}</Text>
               </Pressable>
             )
@@ -181,7 +182,7 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl }}
           ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
           ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="document-text-outline" size={26} color={colors.textMuted} /></View>
@@ -204,7 +205,7 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
               <View style={styles.sheetHandle} />
               <Text style={styles.sheetTitle}>Sort by</Text>
               {SORTS.map(s => (
-                <Pressable key={s.key} onPress={() => { setSortKey(s.key); setShowSort(false) }} style={({ pressed }) => [styles.sheetOption, sortKey === s.key && styles.sheetOptionActive, pressed && { opacity: 0.85 }]}>
+                <Pressable key={s.key} onPress={() => { Haptics.selectionAsync(); setSortKey(s.key); setShowSort(false) }} style={({ pressed }) => [styles.sheetOption, sortKey === s.key && styles.sheetOptionActive, pressed && { opacity: 0.85 }]}>
                   <Text style={[styles.sheetOptionText, sortKey === s.key && styles.sheetOptionTextActive]}>{s.label}</Text>
                   {sortKey === s.key && <Ionicons name="checkmark" size={16} color={colors.neon} />}
                 </Pressable>

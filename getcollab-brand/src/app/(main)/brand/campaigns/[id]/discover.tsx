@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
 import { colors, radius, spacing, matchScoreColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ campaignDiscover: { id: string; title?: string } }, 'campaignDiscover'>
 
@@ -112,7 +113,7 @@ export default function CampaignDiscoverScreen() {
               <Text style={styles.emptySub}>Try browsing all creators from the Creators tab.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadCreators() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadCreators() }} tintColor={colors.neon} />}
         />
       </SafeAreaView>
     </View>

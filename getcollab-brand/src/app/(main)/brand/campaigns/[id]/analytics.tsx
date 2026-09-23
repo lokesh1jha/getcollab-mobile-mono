@@ -7,6 +7,7 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { TrialGuard } from '../../../../../components/TrialGuard'
 import apiService, { handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 type RoutePropType = RouteProp<{ analytics: { id: string; title?: string } }, 'analytics'>
 const CHART_HEIGHT = 120
@@ -74,7 +75,7 @@ export default function CampaignAnalyticsScreen() {
   return (
     <TrialGuard feature="analytics:premium">
       <SafeAreaView style={styles.root}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}>
+        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}>
           <Animated.View entering={FadeInDown.duration(400)}>
             <View style={styles.header}>
               <Text style={styles.title}>{title || 'Campaign Analytics'}</Text>

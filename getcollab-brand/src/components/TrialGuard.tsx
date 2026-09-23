@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native'
 import { colors, spacing, radius } from '@/src/theme'
 import { useTrialGuard } from '../hooks/useTrialGuard'
+import * as Haptics from 'expo-haptics'
 
 interface TrialGuardProps {
   children: React.ReactNode
@@ -52,6 +53,7 @@ export function TrialGuard({ children, feature, loading: externalLoading, fallba
             <Pressable
               style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
               onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
                 setActionLoading(true)
                 try {
                   await openBillingPortal()
@@ -93,6 +95,7 @@ export function TrialGuard({ children, feature, loading: externalLoading, fallba
           <Pressable
             style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
             onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
               setActionLoading(true)
               try {
                 await startTrial()

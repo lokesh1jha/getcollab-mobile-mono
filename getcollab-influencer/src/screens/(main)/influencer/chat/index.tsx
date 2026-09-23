@@ -8,6 +8,7 @@ import { colors, radius, spacing } from '@/src/theme'
 import { useChatStore } from '@shared/stores/chat-store'
 import { useShallow } from 'zustand/react/shallow'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 function formatTime(value?: string): string {
   if (!value) return ''
@@ -99,7 +100,7 @@ export default function InfluencerChat({ navigation }: { navigation: InfluencerN
             <ActivityIndicator size="large" color={colors.neon} />
           </View>
         ) : (
-          <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+          <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
             data={filtered}
             renderItem={renderRoom}
             keyExtractor={r => r.id}

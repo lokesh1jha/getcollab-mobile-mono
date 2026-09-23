@@ -17,6 +17,7 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
 import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { AffiliateProgram } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ affiliateDetail: { id: string } }, 'affiliateDetail'>
 
@@ -165,7 +166,7 @@ export default function AffiliateDetailScreen() {
     <SafeAreaView style={styles.root}>
       <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadProgram() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadProgram() }} tintColor={colors.neon} />}
       >
         <Animated.View entering={FadeInDown.duration(400)}>
           <View style={styles.headerRow}>
@@ -213,7 +214,7 @@ export default function AffiliateDetailScreen() {
                 <Pressable style={({ pressed }) => [styles.secondaryBtn, pressed && { opacity: 0.75 }]} onPress={() => setEditing(false)}>
                   <Text style={styles.secondaryBtnText}>Cancel</Text>
                 </Pressable>
-                <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={handleSave} disabled={saving}>
+                <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSave() }} disabled={saving}>
                   <Text style={styles.primaryBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
                 </Pressable>
               </View>
@@ -249,11 +250,11 @@ export default function AffiliateDetailScreen() {
           )}
 
           <View style={styles.actionsRow}>
-            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={() => (navigation as any).navigate('AffiliateLinks', { programId: program.id })}>
+            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); (navigation as any).navigate('AffiliateLinks', { programId: program.id }) }}>
               <Ionicons name="link-outline" size={16} color="#fff" />
               <Text style={styles.actionBtnText}>Links</Text>
             </Pressable>
-            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={() => (navigation as any).navigate('AffiliateCommissions', { programId: program.id })}>
+            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); (navigation as any).navigate('AffiliateCommissions', { programId: program.id }) }}>
               <Ionicons name="cash-outline" size={16} color="#fff" />
               <Text style={styles.actionBtnText}>Commissions</Text>
             </Pressable>

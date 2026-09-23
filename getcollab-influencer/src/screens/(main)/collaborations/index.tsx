@@ -12,6 +12,7 @@ import { apiService, handleApiError } from '@shared/services/api'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
 import { DeliverablesPanel } from '@shared/components/deal/DeliverablesPanel'
 import { deliverableProgress } from '@shared/lib/deal-deliverables'
+import * as Haptics from 'expo-haptics'
 
 interface Deal {
   id: string
@@ -207,7 +208,7 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
       </View>
       <FlatList automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.neon} />}
         data={deals}
         keyExtractor={(x) => String(x.id)}
         ListEmptyComponent={

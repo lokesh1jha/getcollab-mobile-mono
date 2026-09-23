@@ -6,6 +6,7 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
 import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { Campaign } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ campaignEdit: { id: string } }, 'campaignEdit'>
 
@@ -113,7 +114,7 @@ export default function CampaignEditScreen() {
                 const active = form.status === st
                 const s = STATUS_COLORS[st] || STATUS_COLORS.draft
                 return (
-                  <Pressable key={st} onPress={() => setForm({ ...form, status: st })} style={({ pressed }) => [styles.statusChip, active && { backgroundColor: s.bg, borderColor: s.fg }, pressed && { opacity: 0.85 }]}>
+                  <Pressable key={st} onPress={() => { Haptics.selectionAsync(); setForm({ ...form, status: st }) }} style={({ pressed }) => [styles.statusChip, active && { backgroundColor: s.bg, borderColor: s.fg }, pressed && { opacity: 0.85 }]}>
                     <View style={[styles.statusDot, { backgroundColor: s.fg }]} />
                     <Text style={[styles.statusChipText, { color: active ? s.fg : colors.textMuted }]}>{st.charAt(0).toUpperCase() + st.slice(1)}</Text>
                   </Pressable>
@@ -122,7 +123,7 @@ export default function CampaignEditScreen() {
             </View>
           </View>
 
-          <Pressable style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }]} onPress={handleSave} disabled={saving}>
+          <Pressable style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSave() }} disabled={saving}>
             <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Changes'}</Text>
           </Pressable>
         </Animated.View>

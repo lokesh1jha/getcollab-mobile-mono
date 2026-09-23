@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 /**
  * Growth workspace shell: sub-navigation, the site gate, and the shared label
@@ -174,7 +175,7 @@ export function GrowthGate({
         <Pressable
           accessibilityRole="button"
           style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.85 }]}
-          onPress={reload}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); reload() }}
         >
           <Text style={styles.emptyCtaText}>Try again</Text>
         </Pressable>
@@ -209,7 +210,7 @@ export function GrowthEmpty({
         <Pressable
           accessibilityRole="button"
           style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.85 }]}
-          onPress={onCta}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onCta() }}
         >
           <Text style={styles.emptyCtaText}>{ctaLabel}</Text>
         </Pressable>
@@ -248,7 +249,7 @@ export function GrowthScreen({
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xxxl }}
           refreshControl={
             onRefresh ? (
-              <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.neon} />
+              <RefreshControl refreshing={!!refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />
             ) : undefined
           }
         >
@@ -266,7 +267,7 @@ export function GrowthScreen({
                   key={item.route}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isActive }}
-                  onPress={() => navigation?.navigate(item.route)}
+                  onPress={() => { Haptics.selectionAsync(); navigation?.navigate(item.route) }}
                   style={({ pressed }) => [
                     styles.subnavChip,
                     isActive && styles.subnavChipActive,

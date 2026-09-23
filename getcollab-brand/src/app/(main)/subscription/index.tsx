@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing, radius } from '@/src/theme'
 import { useSubscriptionStore, getTrialDaysRemaining } from '../../../stores/subscription-store'
 import { SubscriptionExpiredModal } from '../../../components/SubscriptionExpiredModal'
+import * as Haptics from 'expo-haptics'
 
 export default function SubscriptionScreen() {
   const [refreshing, setRefreshing] = useState(false)
@@ -44,7 +45,7 @@ export default function SubscriptionScreen() {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />} contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />} contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
           <Animated.View entering={FadeInDown.duration(400)}>
             <View style={styles.header}>
               <Text style={styles.title}>Workspace</Text>
@@ -87,7 +88,7 @@ export default function SubscriptionScreen() {
               <Text style={[styles.statusLabel, { color: colors.error }]}>Payment issue</Text>
               <Text style={styles.statusValue}>Update billing to continue access</Text>
               <Text style={styles.statusDetail}>Your subscription is paused due to a failed payment.</Text>
-              <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={openBillingPortal}>
+              <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openBillingPortal() }}>
                 <Text style={styles.primaryBtnText}>Open Billing Portal</Text>
               </Pressable>
             </Animated.View>
@@ -97,7 +98,7 @@ export default function SubscriptionScreen() {
             <Animated.View entering={FadeInDown.delay(80).duration(400)} style={[styles.statusCard, { borderColor: colors.warning }]}>
               <Text style={styles.statusValue}>Continue Access</Text>
               <Text style={styles.statusDetail}>Your workspace access has ended. Manage your subscription on the web to continue collaborating with creators.</Text>
-              <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={() => setShowExpiredModal(true)}>
+              <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowExpiredModal(true) }}>
                 <Text style={styles.primaryBtnText}>Open Billing Portal</Text>
               </Pressable>
               <Pressable style={({ pressed }) => [styles.ghostBtn, pressed && { opacity: 0.75 }]} onPress={fetchStatus}>
@@ -112,7 +113,7 @@ export default function SubscriptionScreen() {
               <Text style={styles.statusDetail}>No card required. Get full access to launch campaigns and connect with creators.</Text>
               <Pressable
                 style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
-                onPress={() => useSubscriptionStore.getState().startTrial()}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); useSubscriptionStore.getState().startTrial() }}
                 disabled={loading}
               >
                 <Text style={styles.primaryBtnText}>{loading ? 'Starting…' : 'Start Free Trial'}</Text>

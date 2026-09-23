@@ -85,7 +85,7 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
                     {FILTERS.map((f) => {
                       const active = f === filter
                       return (
-                        <Pressable key={f} onPress={() => setFilter(f)} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.85 }]}>
+                        <Pressable key={f} onPress={() => { Haptics.selectionAsync(); setFilter(f) }} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.85 }]}>
                           <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.charAt(0).toUpperCase() + f.slice(1)}</Text>
                         </Pressable>
                       )
@@ -133,7 +133,7 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
 
                   {item.status === 'pending' && (
                     <View style={styles.actionsRow}>
-                      <Pressable style={({ pressed }) => [styles.acceptBtn, pressed && { opacity: 0.85 }]} disabled={isActing} onPress={() => setConfirmModal({ bid: item, action: 'accept' })}>
+                      <Pressable style={({ pressed }) => [styles.acceptBtn, pressed && { opacity: 0.85 }]} disabled={isActing} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setConfirmModal({ bid: item, action: 'accept' }) }}>
                         <Text style={styles.acceptBtnText}>{isActing ? '...' : 'Accept'}</Text>
                       </Pressable>
                       <Pressable style={({ pressed }) => [styles.rejectBtn, pressed && { opacity: 0.8 }]} disabled={isActing} onPress={() => setConfirmModal({ bid: item, action: 'reject' })}>
@@ -150,7 +150,7 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
                 </Animated.View>
               )
             }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
           />
 
           <Modal visible={!!confirmModal} transparent animationType="fade" onRequestClose={() => setConfirmModal(null)}>
@@ -162,7 +162,7 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
                   <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setConfirmModal(null)}>
                     <Text style={styles.outlinedBtnText}>Cancel</Text>
                   </Pressable>
-                  <Pressable style={({ pressed }) => [confirmModal?.action === 'accept' ? styles.acceptBtn : styles.rejectBtn, { flex: 1 }, pressed && { opacity: 0.85 }]} onPress={() => confirmModal && performBidAction(confirmModal.bid, confirmModal.action)}>
+                  <Pressable style={({ pressed }) => [confirmModal?.action === 'accept' ? styles.acceptBtn : styles.rejectBtn, { flex: 1 }, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); confirmModal && performBidAction(confirmModal.bid, confirmModal.action) }}>
                     <Text style={confirmModal?.action === 'accept' ? styles.acceptBtnText : styles.rejectBtnText}>{confirmModal?.action === 'accept' ? 'Accept' : 'Reject'}</Text>
                   </Pressable>
                 </View>

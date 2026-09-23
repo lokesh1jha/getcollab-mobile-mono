@@ -7,6 +7,7 @@ import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { DeliverablesPanel } from '@shared/components/deal/DeliverablesPanel'
 import { allDeliverablesApproved, deliverableProgress } from '@shared/lib/deal-deliverables'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ DealReview: { id: string; title?: string } }, 'DealReview'>
 
@@ -80,7 +81,7 @@ export default function DealReviewScreen() {
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.neon} />}
         >
           <Animated.View entering={FadeInDown.duration(320)} style={{ gap: spacing.xs }}>
             <Text style={styles.title}>{title || 'Collaboration'}</Text>

@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { Relationship } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 
 interface Props {
@@ -184,14 +185,14 @@ export default function RelationshipsScreen({ navigation }: Props) {
               {!search.trim() && (
                 <Pressable
                   style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.85 }]}
-                  onPress={() => setDialogOpen(true)}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setDialogOpen(true) }}
                 >
                   <Text style={styles.emptyCtaText}>Add relationship</Text>
                 </Pressable>
               )}
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadRelationships() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadRelationships() }} tintColor={colors.neon} />}
         />
       </SafeAreaView>
 
@@ -215,7 +216,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
               </Pressable>
               <Pressable
                 style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]}
-                onPress={handleAddRelationship}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleAddRelationship() }}
                 disabled={adding}
               >
                 <Text style={styles.primaryBtnText}>{adding ? 'Adding…' : 'Add'}</Text>

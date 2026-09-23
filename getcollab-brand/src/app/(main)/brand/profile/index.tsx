@@ -11,6 +11,7 @@ import { useCampaignStore } from '@shared/stores/campaign-store'
 import { useSubscriptionStore } from '../../../../stores/subscription-store'
 import apiService, { handleApiError } from '@shared/services/api'
 import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 const SETTINGS_ROWS = [
   { id: 'wallet', icon: 'wallet-outline', label: 'Wallet' },
@@ -103,7 +104,7 @@ export default function BrandProfileScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />} contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />} contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <Text style={styles.title}>Profile</Text>
             <Pressable accessibilityRole="button" accessibilityLabel={isEditing ? 'Cancel editing' : 'Edit profile'} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]} onPress={() => setIsEditing(!isEditing)}>
@@ -151,7 +152,7 @@ export default function BrandProfileScreen({ navigation }: Props) {
 
             {isEditing && (
               <View style={{ width: '100%', gap: spacing.sm, marginTop: spacing.md }}>
-                <Pressable style={({ pressed }) => [styles.blueBtn, pressed && { opacity: 0.85 }]} onPress={handleSave} disabled={saving}>
+                <Pressable style={({ pressed }) => [styles.blueBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSave() }} disabled={saving}>
                   <Text style={styles.blueBtnText}>{saving ? 'Saving...' : 'Save Changes'}</Text>
                 </Pressable>
                 <Pressable style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.7 }]} onPress={() => setIsEditing(false)}>

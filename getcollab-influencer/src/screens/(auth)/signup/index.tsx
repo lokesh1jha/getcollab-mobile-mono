@@ -8,6 +8,7 @@ import { colors, spacing } from '@/src/theme'
 import { handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 interface Props { navigation?: InfluencerNavigationProp; route?: any }
 
@@ -82,7 +83,7 @@ export default function SignUpScreen({ navigation, route }: Props) {
               </View>
 
               <Pressable
-                onPress={handleSignUp}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSignUp() }}
                 disabled={loading}
                 style={({ pressed }) => [styles.primaryBtn, pressed && !loading && { opacity: 0.92, transform: [{ scale: 0.98 }] }]}
               >

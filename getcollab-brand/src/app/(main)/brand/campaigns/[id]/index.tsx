@@ -9,6 +9,7 @@ import { useCampaignStore } from '@shared/stores/campaign-store'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { Campaign } from '@shared/types'
 import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ campaignDetails: { id: string; campaign?: Campaign } }, 'campaignDetails'>
 
@@ -77,7 +78,7 @@ export default function BrandCampaignDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />} contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />} contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
         <Animated.View entering={FadeInDown.duration(400)}>
           <View style={styles.headerRow}>
             <Text style={styles.title}>{campaign.title}</Text>

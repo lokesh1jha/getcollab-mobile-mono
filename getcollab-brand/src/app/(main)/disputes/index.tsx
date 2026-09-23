@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, ActivityIndicator, TextInput, Alert, RefreshControl, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, TextInput, Alert, RefreshControl, ScrollView } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
@@ -7,6 +7,7 @@ import { colors, spacing, radius } from '@/src/theme'
 import { Card, Button } from '@shared/components/ui'
 import apiService, { handleApiError } from '@shared/services/api'
 import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 interface Dispute {
   id: string
@@ -195,15 +196,15 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
   
               <View style={styles.filterContainer}>
                 {['all', 'open', 'resolved', 'dismissed'].map((filter) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={filter}
-                    style={[styles.filterButton, statusFilter === filter && styles.filterButtonActive]}
-                    onPress={() => setStatusFilter(filter)}
+                    style={({ pressed }) => [styles.filterButton, statusFilter === filter && styles.filterButtonActive, pressed && { opacity: 0.85 }]}
+                    onPress={() => { Haptics.selectionAsync(); setStatusFilter(filter) }}
                   >
                     <Text style={[styles.filterText, statusFilter === filter && styles.filterTextActive]}>
                       {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
   
@@ -284,7 +285,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
             </View>
           }
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.neon} />
+            <RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleRefresh() }} tintColor={colors.neon} />
           }
           showsVerticalScrollIndicator={false}
           initialNumToRender={10}

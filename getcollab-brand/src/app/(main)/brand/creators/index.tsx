@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { colors, radius, spacing, matchScoreColor } from '@/src/theme'
 import { TrialGuard } from '../../../../components/TrialGuard'
 import apiService, { handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 const SAVED_CREATORS_KEY = '@getcollab:brand:saved_creators'
 // The saved shortlist is backed by a brand-owned creator circle so it follows the
@@ -260,7 +261,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
                     {CATEGORIES.map((cat) => {
                       const active = (!selectedCategory && cat === 'All') || cat === selectedCategory
                       return (
-                        <Pressable key={cat} onPress={() => setSelectedCategory(cat === 'All' ? null : cat)} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.85 }]}>
+                        <Pressable key={cat} onPress={() => { Haptics.selectionAsync(); setSelectedCategory(cat === 'All' ? null : cat) }} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.85 }]}>
                           <Text style={[styles.chipText, active && styles.chipTextActive]}>{cat}</Text>
                         </Pressable>
                       )
@@ -294,7 +295,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
                 </Text>
               </View>
             }
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
           />
         </SafeAreaView>
       </View>

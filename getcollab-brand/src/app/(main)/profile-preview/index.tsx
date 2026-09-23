@@ -8,6 +8,7 @@ import { colors, radius, spacing } from '@/src/theme'
 import apiService from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 interface Props { navigation?: any }
 
@@ -44,7 +45,7 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
-        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />} contentContainerStyle={{ padding: spacing.lg }}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />} contentContainerStyle={{ padding: spacing.lg }}>
           <Animated.View entering={FadeInDown.duration(400)}>
             <View style={styles.previewBadge}>
               <Ionicons name="eye" size={14} color={colors.blue} />

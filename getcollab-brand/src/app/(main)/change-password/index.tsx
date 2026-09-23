@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { colors, spacing, radius } from '@/src/theme'
 import apiService, { handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 interface Props {
   navigation?: any
@@ -91,7 +92,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
             ))}
           </View>
 
-          <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={handleSubmit} disabled={submitting}>
+          <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSubmit() }} disabled={submitting}>
             {submitting ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.primaryBtnText}>Update Password</Text>}
           </Pressable>
         </ScrollView>

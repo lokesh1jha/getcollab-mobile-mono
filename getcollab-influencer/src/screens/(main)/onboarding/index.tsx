@@ -13,6 +13,7 @@ import { useReferenceDataStore, selectCategories, selectLanguages, selectCampaig
 import type { RefItem } from '@shared/stores/reference-data-store'
 import apiService, { handleApiError } from '@shared/services/api'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 // Web pins these first in the language picker (creator flow suggestions).
 const SUGGESTED_LANGUAGES = ['English', 'Hindi']
@@ -319,7 +320,7 @@ export default function OnboardingScreen({ navigation }: Props) {
         <Pressable
           key={o}
           style={({ pressed }) => [styles.chip, selected.includes(o) && styles.chipActive, pressed && styles.pressed]}
-          onPress={() => onToggle(o)}
+          onPress={() => { Haptics.selectionAsync(); onToggle(o) }}
         >
           <Text style={[styles.chipText, selected.includes(o) && styles.chipTextActive]}>{o}</Text>
         </Pressable>

@@ -7,6 +7,7 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import apiService, { handleApiError } from '@shared/services/api'
 import { extractCampaigns } from '@shared/lib/campaign-utils'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ inviteCreator: { creatorId: string; creator?: any } }, 'inviteCreator'>
 interface Campaign { id: string; title: string; status: string; budget?: number }
@@ -62,7 +63,7 @@ export default function InviteCreatorScreen() {
               <View style={styles.emptyCard}>
                 <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: spacing.xs, textAlign: 'center' }}>No campaigns yet</Text>
                 <Text style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center', marginBottom: spacing.lg }}>Create a campaign first, then invite creators.</Text>
-                <Pressable style={({ pressed }) => [styles.blueBtn, pressed && { opacity: 0.85 }]} onPress={() => navigation.navigate('CreateCampaign')}>
+                <Pressable style={({ pressed }) => [styles.blueBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('CreateCampaign') }}>
                   <Text style={styles.blueBtnText}>Create Campaign</Text>
                 </Pressable>
               </View>
@@ -89,7 +90,7 @@ export default function InviteCreatorScreen() {
                   <TextInput value={message} onChangeText={setMessage} placeholder="Personalize your invite..." placeholderTextColor={colors.textSubtle} multiline numberOfLines={5} style={styles.textArea} />
                 </View>
 
-                <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={handleSendInvite} disabled={submitting || !selectedCampaignId}>
+                <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSendInvite() }} disabled={submitting || !selectedCampaignId}>
                   <Text style={styles.primaryBtnText}>{submitting ? 'Sending...' : 'Send Invite'}</Text>
                   <Ionicons name="arrow-forward" size={18} color="#000" />
                 </Pressable>

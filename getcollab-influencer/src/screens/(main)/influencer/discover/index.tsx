@@ -175,7 +175,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
                 </View>
               )}
               <Pressable
-                onPress={() => { setBidTarget(item); setBidAmount(String(item.budget || '')); setBidPitch('') }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setBidTarget(item); setBidAmount(String(item.budget || '')); setBidPitch('') }}
                 style={({ pressed }) => [styles.applyBtn, pressed && { opacity: 0.85 }]}
               >
                 <Ionicons name="flash" size={14} color="#000" />
@@ -222,7 +222,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
             {CATEGORIES.map(cat => {
               const active = cat === category
               return (
-                <Pressable key={cat} onPress={() => setCategory(cat)} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.85 }]}>
+                <Pressable key={cat} onPress={() => { Haptics.selectionAsync(); setCategory(cat) }} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.85 }]}>
                   <Text style={[styles.chipText, active && styles.chipTextActive]}>{cat}</Text>
                 </Pressable>
               )
@@ -242,7 +242,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
             contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xxl }}
             ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
             showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
             ListHeaderComponent={
               filtered.length > 0 ? (
                 <Animated.View entering={FadeIn.duration(360)} style={styles.aiBanner}>
@@ -281,7 +281,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
               <Text style={styles.sheetLabel}>Sort by</Text>
               <View style={styles.sheetOptions}>
                 {SORTS.map(s => (
-                  <Pressable key={s.key} onPress={() => setSortKey(s.key)} style={({ pressed }) => [styles.sheetOption, sortKey === s.key && styles.sheetOptionActive, pressed && { opacity: 0.85 }]}>
+                  <Pressable key={s.key} onPress={() => { Haptics.selectionAsync(); setSortKey(s.key) }} style={({ pressed }) => [styles.sheetOption, sortKey === s.key && styles.sheetOptionActive, pressed && { opacity: 0.85 }]}>
                     <Text style={[styles.sheetOptionText, sortKey === s.key && styles.sheetOptionTextActive]}>{s.label}</Text>
                     {sortKey === s.key && <Ionicons name="checkmark" size={16} color={colors.neon} />}
                   </Pressable>
@@ -291,14 +291,14 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
               <Text style={styles.sheetLabel}>Budget range</Text>
               <View style={styles.sheetOptions}>
                 {BUDGET_RANGES.map(b => (
-                  <Pressable key={b.key} onPress={() => setBudgetRange(b.key)} style={({ pressed }) => [styles.sheetOption, budgetRange === b.key && styles.sheetOptionActive, pressed && { opacity: 0.85 }]}>
+                  <Pressable key={b.key} onPress={() => { Haptics.selectionAsync(); setBudgetRange(b.key) }} style={({ pressed }) => [styles.sheetOption, budgetRange === b.key && styles.sheetOptionActive, pressed && { opacity: 0.85 }]}>
                     <Text style={[styles.sheetOptionText, budgetRange === b.key && styles.sheetOptionTextActive]}>{b.label}</Text>
                     {budgetRange === b.key && <Ionicons name="checkmark" size={16} color={colors.neon} />}
                   </Pressable>
                 ))}
               </View>
 
-              <Pressable onPress={() => setShowFilters(false)} style={({ pressed }) => [styles.submitBtn, pressed && { opacity: 0.85 }]}>
+              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowFilters(false) }} style={({ pressed }) => [styles.submitBtn, pressed && { opacity: 0.85 }]}>
                 <Text style={styles.submitBtnText}>Show results</Text>
               </Pressable>
             </View>
@@ -340,7 +340,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
               </View>
 
               <Pressable
-                onPress={handleBid}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleBid() }}
                 disabled={bidding || !bidAmount.trim() || !bidPitch.trim()}
                 style={({ pressed }) => [styles.submitBtn, (bidding || !bidAmount.trim() || !bidPitch.trim()) && { opacity: 0.5 }, pressed && { opacity: 0.85 }]}
               >

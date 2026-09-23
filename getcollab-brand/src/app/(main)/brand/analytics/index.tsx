@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import * as Haptics from 'expo-haptics'
 
 interface CampaignMetric {
   id: string
@@ -235,10 +236,10 @@ export default function AnalyticsScreen({ navigation }: any) {
               )}
 
               <View style={styles.tabRow}>
-                <Pressable onPress={() => setTab('campaigns')} style={({ pressed }) => [styles.tab, tab === 'campaigns' && styles.tabActive, pressed && { opacity: 0.7 }]}>
+                <Pressable onPress={() => { Haptics.selectionAsync(); setTab('campaigns') }} style={({ pressed }) => [styles.tab, tab === 'campaigns' && styles.tabActive, pressed && { opacity: 0.7 }]}>
                   <Text style={[styles.tabText, tab === 'campaigns' && styles.tabTextActive]}>Campaigns</Text>
                 </Pressable>
-                <Pressable onPress={() => setTab('creators')} style={({ pressed }) => [styles.tab, tab === 'creators' && styles.tabActive, pressed && { opacity: 0.7 }]}>
+                <Pressable onPress={() => { Haptics.selectionAsync(); setTab('creators') }} style={({ pressed }) => [styles.tab, tab === 'creators' && styles.tabActive, pressed && { opacity: 0.7 }]}>
                   <Text style={[styles.tabText, tab === 'creators' && styles.tabTextActive]}>Creators</Text>
                 </Pressable>
               </View>
@@ -253,7 +254,7 @@ export default function AnalyticsScreen({ navigation }: any) {
               <Text style={styles.emptySub}>Analytics will appear once you have campaigns and relationships.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadAnalytics() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadAnalytics() }} tintColor={colors.neon} />}
         />
       </SafeAreaView>
     </View>

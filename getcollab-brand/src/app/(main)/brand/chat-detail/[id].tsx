@@ -144,7 +144,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
               <Pressable accessibilityRole="button" accessibilityLabel="Send message"
                 style={({ pressed }) => [styles.sendBtn, !input.trim() && { opacity: 0.4 }, pressed && { opacity: 0.85 }]}
                 disabled={!input.trim() || isSending}
-                onPress={handleSend}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSend() }}
               >
                 <Ionicons name="arrow-up" size={18} color="#000" />
               </Pressable>

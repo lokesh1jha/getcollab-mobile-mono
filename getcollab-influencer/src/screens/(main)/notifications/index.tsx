@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { useNotificationStore } from '@shared/stores/notification-store'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 function notifIcon(type: string): string {
   if (type?.includes('bid') || type?.includes('campaign')) return 'megaphone-outline'
@@ -88,7 +89,7 @@ export default function NotificationsScreen({ navigation }: { navigation: Influe
           )}
         </View>
 
-        <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+        <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
           data={notifications}
            renderItem={({ item, index }) => <NotifItem item={item} index={index} onRead={markAsRead} onOpen={openNotification} />}
           keyExtractor={n => String(n.id)}

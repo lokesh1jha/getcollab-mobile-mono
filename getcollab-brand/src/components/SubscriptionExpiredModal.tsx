@@ -2,6 +2,7 @@ import React from 'react'
 import { View, Text, StyleSheet, Modal as RNModal, Pressable } from 'react-native'
 import { colors, spacing, radius } from '@/src/theme'
 import { useSubscriptionStore } from '../stores/subscription-store'
+import * as Haptics from 'expo-haptics'
 
 interface SubscriptionExpiredModalProps {
   visible: boolean
@@ -34,7 +35,7 @@ export function SubscriptionExpiredModal({ visible, onClose }: SubscriptionExpir
 
           <Pressable
             style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
-            onPress={() => {
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); 
               onClose()
               openBillingPortal()
             }}

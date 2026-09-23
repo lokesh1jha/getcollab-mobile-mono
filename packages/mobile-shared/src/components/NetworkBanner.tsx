@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native'
+import { View, Text, StyleSheet, Animated, Pressable } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing } from '@/src/theme'
@@ -72,24 +72,24 @@ export function NetworkBanner() {
     >
       <Text style={styles.text} numberOfLines={2}>{state.message}</Text>
       {state.onRetry && (
-        <TouchableOpacity
+        <Pressable
           onPress={() => { state.onRetry?.(); networkBanner.hide() }}
-          style={styles.retryBtn}
+          style={({ pressed }) => [styles.retryBtn, pressed && { opacity: 0.85 }]}
           accessibilityRole="button"
           accessibilityLabel="Retry"
         >
           <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
+        </Pressable>
       )}
-      <TouchableOpacity
+      <Pressable
         onPress={() => networkBanner.hide()}
-        style={styles.closeBtn}
+        style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.85 }]}
         accessibilityRole="button"
         accessibilityLabel="Dismiss"
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         <Ionicons name="close" size={18} color={colors.text} />
-      </TouchableOpacity>
+      </Pressable>
     </Animated.View>
   )
 }

@@ -8,6 +8,7 @@ import { colors, spacing } from '@/src/theme'
 import { showSignInError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 interface Props { navigation?: InfluencerNavigationProp }
 
@@ -77,7 +78,7 @@ export default function SignInScreen({ navigation }: Props) {
               </Pressable>
 
               <Pressable
-                onPress={handleSignIn}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSignIn() }}
                 disabled={loading}
                 style={({ pressed }) => [styles.primaryBtn, pressed && !loading && { opacity: 0.92, transform: [{ scale: 0.98 }] }]}
               >

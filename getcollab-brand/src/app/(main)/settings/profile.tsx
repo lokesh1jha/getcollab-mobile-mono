@@ -7,6 +7,7 @@ import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 export default function ProfileSettingsScreen() {
   const { user, updateProfile } = useAuthStore()
@@ -91,7 +92,7 @@ export default function ProfileSettingsScreen() {
             <TextInput style={styles.input} value={form.location} onChangeText={(v) => setForm({ ...form, location: v })} placeholderTextColor={colors.textSubtle} />
           </View>
 
-          <Pressable style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }]} onPress={handleSave} disabled={saving}>
+          <Pressable style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSave() }} disabled={saving}>
             <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Changes'}</Text>
           </Pressable>
         </Animated.View>

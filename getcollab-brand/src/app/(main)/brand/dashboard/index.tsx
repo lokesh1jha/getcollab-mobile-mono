@@ -15,6 +15,7 @@ import { SubscriptionBanner } from '../../../../components/SubscriptionBanner'
 import { SubscriptionExpiredModal } from '../../../../components/SubscriptionExpiredModal'
 import { EmailVerificationBanner } from '@shared/components/EmailVerificationBanner'
 import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 const { width } = Dimensions.get('window')
 const CARD_W = width * 0.42
@@ -144,7 +145,7 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center', padding: spacing.lg }]}>
         <View style={[styles.kpiCard, { width: '100%', maxWidth: 400, alignItems: 'center', padding: spacing.xl }]}>
           <Text style={{ color: colors.error, fontSize: 16, textAlign: 'center', lineHeight: 22 }}>{loadError}</Text>
-          <Pressable style={({ pressed }) => [styles.blueBtn, { marginTop: spacing.lg }, pressed && { opacity: 0.85 }]} onPress={loadDashboardData}>
+          <Pressable style={({ pressed }) => [styles.blueBtn, { marginTop: spacing.lg }, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); loadDashboardData() }}>
             <Text style={styles.blueBtnText}>Retry</Text>
           </Pressable>
         </View>
@@ -158,7 +159,7 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
         <ScrollView
           contentContainerStyle={{ paddingBottom: spacing.xxxl }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleRefresh() }} tintColor={colors.neon} />}
         >
           <EmailVerificationBanner />
           <SubscriptionBanner />

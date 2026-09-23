@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 export default function SecuritySettingsScreen() {
   const [currentPassword, setCurrentPassword] = useState('')
@@ -47,7 +48,7 @@ export default function SecuritySettingsScreen() {
             <TextInput style={styles.input} secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} placeholderTextColor={colors.textSubtle} />
           </View>
 
-          <Pressable style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }]} onPress={handleChangePassword} disabled={saving}>
+          <Pressable style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleChangePassword() }} disabled={saving}>
             <Text style={styles.saveBtnText}>{saving ? 'Updating…' : 'Update Password'}</Text>
           </Pressable>
         </Animated.View>

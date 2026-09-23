@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, RouteProp } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import apiService, { handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ resetPassword: { token?: string } }, 'resetPassword'>
 interface Props { navigation?: any }
@@ -76,7 +77,7 @@ export default function ResetPasswordScreen({ navigation }: Props) {
 
             <Pressable
               style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
-              onPress={handleSubmit}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSubmit() }}
               disabled={submitting}
             >
               <Text style={styles.primaryBtnText}>{submitting ? 'Resetting...' : 'Reset Password'}</Text>

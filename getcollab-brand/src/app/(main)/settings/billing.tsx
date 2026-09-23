@@ -8,6 +8,7 @@ import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useSubscriptionStore } from '../../../stores/subscription-store'
 import type { Invoice } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 export default function BillingSettingsScreen() {
   const subscription = useSubscriptionStore((s) => s.subscription)
@@ -105,7 +106,7 @@ export default function BillingSettingsScreen() {
               <Text style={styles.emptySub}>Invoices appear after your first payment.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadBilling() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadBilling() }} tintColor={colors.neon} />}
         />
       </SafeAreaView>
     </View>

@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { AffiliateProgram } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 
 export default function AffiliateProgramsScreen({ navigation }: any) {
@@ -93,10 +94,10 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
             </View>
           )}
           <View style={styles.actionsRow}>
-            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={(e) => { e.stopPropagation(); navigation?.navigate('AffiliateLinks', { programId: item.id }) }}>
+            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={(e) => { e.stopPropagation(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation?.navigate('AffiliateLinks', { programId: item.id }) }}>
               <Text style={styles.actionBtnText}>Links</Text>
             </Pressable>
-            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={(e) => { e.stopPropagation(); navigation?.navigate('AffiliateCommissions', { programId: item.id }) }}>
+            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={(e) => { e.stopPropagation(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation?.navigate('AffiliateCommissions', { programId: item.id }) }}>
               <Text style={styles.actionBtnText}>Commissions</Text>
             </Pressable>
           </View>
@@ -143,7 +144,7 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
               <Text style={styles.emptySub}>Create your first affiliate program to start tracking referrals.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadPrograms() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadPrograms() }} tintColor={colors.neon} />}
         />
       </SafeAreaView>
 
@@ -158,7 +159,7 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
               <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setDialogOpen(false)}>
                 <Text style={styles.outlinedBtnText}>Cancel</Text>
               </Pressable>
-              <Pressable style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]} onPress={handleCreate} disabled={creating}>
+              <Pressable style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleCreate() }} disabled={creating}>
                 <Text style={styles.primaryBtnText}>{creating ? 'Creating…' : 'Create'}</Text>
               </Pressable>
             </View>

@@ -14,6 +14,7 @@ import { useAuthStore } from '@shared/stores/auth-store'
 import { useChatStore } from '@shared/stores/chat-store'
 import { EmailVerificationBanner } from '@shared/components/EmailVerificationBanner'
 import { InfluencerNavigationProp, InfluencerStackParamList } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 const { width } = Dimensions.get('window')
 
@@ -274,7 +275,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
         <ScrollView
           contentContainerStyle={{ paddingBottom: 48, paddingHorizontal: spacing.lg }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
         >
           <EmailVerificationBanner />
 

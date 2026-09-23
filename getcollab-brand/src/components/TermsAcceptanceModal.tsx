@@ -3,6 +3,7 @@ import { Modal, View, Text, StyleSheet, Pressable, ActivityIndicator } from 'rea
 import { useAuthStore } from '@shared/stores/auth-store'
 import apiService, { handleApiError } from '@shared/services/api'
 import { colors, radius, spacing } from '@/src/theme'
+import * as Haptics from 'expo-haptics'
 
 export function TermsAcceptanceModal() {
   const { user, fetchCurrentUser } = useAuthStore()
@@ -36,7 +37,7 @@ export function TermsAcceptanceModal() {
           </Text>
           <Pressable
             style={({ pressed }) => [styles.button, pressed && !submitting && { opacity: 0.85 }]}
-            onPress={acceptTerms}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); acceptTerms() }}
             disabled={submitting}
           >
             {submitting ? (

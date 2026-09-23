@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useRoute, RouteProp } from '@react-navigation/native'
 import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ campaignEscrow: { id: string; title?: string } }, 'campaignEscrow'>
 
@@ -75,7 +76,7 @@ export default function CampaignEscrowScreen() {
     <SafeAreaView style={styles.root}>
       <ScrollView
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadEscrow() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadEscrow() }} tintColor={colors.neon} />}
       >
         <Animated.View entering={FadeInDown.duration(400)}>
           <Text style={styles.title}>Escrow</Text>

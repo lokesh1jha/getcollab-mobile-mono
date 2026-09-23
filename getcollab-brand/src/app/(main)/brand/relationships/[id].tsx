@@ -7,6 +7,7 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
 import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { RelationshipDetail } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ relationshipDetail: { id: string } }, 'relationshipDetail'>
 
@@ -92,7 +93,7 @@ export default function RelationshipDetailScreen() {
     <SafeAreaView style={styles.root}>
       <ScrollView
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadDetail() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadDetail() }} tintColor={colors.neon} />}
       >
         <Animated.View entering={FadeInDown.duration(400)}>
           {/* Header Card */}

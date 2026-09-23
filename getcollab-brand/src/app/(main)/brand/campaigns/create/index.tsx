@@ -327,7 +327,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
                         formData.region === region && styles.chipActive,
                         pressed && { opacity: 0.85 },
                       ]}
-                      onPress={() => handleInputChange('region', region)}
+                      onPress={() => { Haptics.selectionAsync(); handleInputChange('region', region) }}
                     >
                       <Text style={[styles.chipText, formData.region === region && styles.chipTextActive]}>
                         {region}
@@ -349,7 +349,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
                         formData.categories.includes(category) && styles.chipActive,
                         pressed && { opacity: 0.85 },
                       ]}
-                      onPress={() => toggleSelection('categories', category)}
+                      onPress={() => { Haptics.selectionAsync(); toggleSelection('categories', category) }}
                     >
                       <Text style={[styles.chipText, formData.categories.includes(category) && styles.chipTextActive]}>
                         {category}
@@ -372,7 +372,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
                         formData.deliverables.includes(deliverable) && styles.chipActive,
                         pressed && { opacity: 0.85 },
                       ]}
-                      onPress={() => toggleSelection('deliverables', deliverable)}
+                      onPress={() => { Haptics.selectionAsync(); toggleSelection('deliverables', deliverable) }}
                     >
                       <Text style={[styles.chipText, formData.deliverables.includes(deliverable) && styles.chipTextActive]}>
                         {deliverable}
@@ -387,7 +387,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
               <View style={styles.actions}>
                 <Pressable
                   style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
-                  onPress={handleCreateCampaign}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleCreateCampaign() }}
                   disabled={loading}
                 >
                   {loading ? (

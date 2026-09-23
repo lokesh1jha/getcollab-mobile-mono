@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ImageSourcePropType } from 'react-native'
+import { View, Text, StyleSheet, ImageSourcePropType, Pressable } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, spacing } from '@/src/theme'
@@ -32,13 +32,12 @@ export default function MaintenanceScreen({ onRetry, logo }: MaintenanceScreenPr
           We're currently performing maintenance to improve your experience. Please try again in a few moments.
         </Text>
 
-        <TouchableOpacity
-          style={styles.button}
+        <Pressable
+          style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
           onPress={onRetry}
-          activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>Try Again</Text>
-        </TouchableOpacity>
+        </Pressable>
 
         <Text style={styles.footer}>
           Need help? Contact us at support@getcollab.com

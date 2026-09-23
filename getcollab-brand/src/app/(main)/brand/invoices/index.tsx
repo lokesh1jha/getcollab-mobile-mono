@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { Invoice } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 export default function InvoicesScreen({ navigation }: any) {
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -99,7 +100,7 @@ export default function InvoicesScreen({ navigation }: any) {
               <Text style={styles.emptySub}>Invoices appear after your first payment.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadInvoices() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadInvoices() }} tintColor={colors.neon} />}
         />
       </SafeAreaView>
     </View>

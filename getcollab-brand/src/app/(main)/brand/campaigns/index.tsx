@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 const FILTERS = ['All', 'active', 'draft', 'completed', 'paused'] as const
 
@@ -135,7 +136,7 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
                   <Text style={styles.title}>Campaigns</Text>
                   <Text style={styles.subtitle}>{campaigns.length} total</Text>
                 </View>
-                <Pressable testID="campaigns-create-btn" style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('CreateCampaign')}>
+                <Pressable testID="campaigns-create-btn" style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation?.navigate('CreateCampaign') }}>
                   <Ionicons name="add" size={16} color="#000" />
                   <Text style={styles.createBtnText}>Create</Text>
                 </Pressable>
@@ -146,7 +147,7 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
                   {FILTERS.map((f) => {
                     const active = f === filter
                     return (
-                      <Pressable key={f} onPress={() => setFilter(f)} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.85 }]}>
+                      <Pressable key={f} onPress={() => { Haptics.selectionAsync(); setFilter(f) }} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.85 }]}>
                         <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.charAt(0).toUpperCase() + f.slice(1)}</Text>
                       </Pressable>
                     )
@@ -160,12 +161,12 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
               <View style={styles.emptyIcon}><Ionicons name="rocket-outline" size={26} color={colors.textMuted} /></View>
               <Text style={styles.emptyTitle}>No campaigns yet</Text>
               <Text style={styles.emptySub}>Create your first campaign to start discovering creators.</Text>
-              <Pressable style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('CreateCampaign')}>
+              <Pressable style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation?.navigate('CreateCampaign') }}>
                 <Text style={styles.emptyCtaText}>Create Campaign</Text>
               </Pressable>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
         />
 
         <Modal visible={!!deleteTarget} transparent animationType="fade" onRequestClose={() => setDeleteTarget(null)}>

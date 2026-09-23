@@ -8,6 +8,7 @@ import { colors, radius, spacing } from '@/src/theme'
 import { apiService } from '@shared/services/api'
 import { useChatStore } from '@shared/stores/chat-store'
 import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 interface Chat { id: string; influencerName: string; influencerHandle: string; lastMessage: string; timestamp: string; unread: number; campaignTitle: string }
 interface Props { navigation?: any }
@@ -87,7 +88,7 @@ export default function BrandChatScreen({ navigation }: Props) {
           <TextInput value={searchQuery} onChangeText={setSearchQuery} placeholder="Search conversations" placeholderTextColor={colors.textSubtle} style={styles.searchInput} />
         </View>
 
-        <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+        <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
           data={filtered}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: spacing.xxl }}

@@ -9,6 +9,7 @@ import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError, uploadMediaBlob } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 const { width } = Dimensions.get('window')
 const GRID_GAP = 2
@@ -167,7 +168,7 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
           {/* Cover image */}
           <Pressable onPress={editing ? () => pickImage('coverImage') : undefined} style={({ pressed }) => [styles.coverWrap, editing && pressed && { opacity: 0.85 }]}>
             {form.coverImage ? (
@@ -271,10 +272,10 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
                   {['English', 'Hindi', 'Spanish', 'French', 'German', 'Arabic', 'Portuguese', 'Russian', 'Japanese', 'Korean', 'Chinese'].map(lang => {
                     const active = (form.languages || []).includes(lang)
                     return (
-                      <Pressable key={lang} onPress={() => setForm(prev => {
+                      <Pressable key={lang} onPress={() => { Haptics.selectionAsync(); setForm(prev => {
                         const langs = prev.languages || []
                         return { ...prev, languages: langs.includes(lang) ? langs.filter(l => l !== lang) : [...langs, lang] }
-                      })} style={({ pressed }) => [styles.categoryChip, active && styles.categoryChipActive, pressed && { opacity: 0.85 }]}>
+                      }) }} style={({ pressed }) => [styles.categoryChip, active && styles.categoryChipActive, pressed && { opacity: 0.85 }]}>
                         <Text style={[styles.categoryText, active && styles.categoryTextActive]}>{lang}</Text>
                       </Pressable>
                     )
@@ -328,7 +329,7 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
                   const active = (editing ? form : profile).categories?.includes(cat)
                   if (!editing && !active) return null
                   return (
-                    <Pressable key={cat} onPress={editing ? () => toggleCategory(cat) : undefined} style={({ pressed }) => [styles.categoryChip, active && styles.categoryChipActive, pressed && { opacity: 0.85 }]}>
+                    <Pressable key={cat} onPress={editing ? () => { Haptics.selectionAsync(); toggleCategory(cat) } : undefined} style={({ pressed }) => [styles.categoryChip, active && styles.categoryChipActive, pressed && { opacity: 0.85 }]}>
                       <Text style={[styles.categoryText, active && styles.categoryTextActive]}>{cat}</Text>
                     </Pressable>
                   )
