@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import { logger } from '@shared/services/logger'
 
 export default function ProfileSettingsScreen() {
   const { user, updateProfile } = useAuthStore()
@@ -25,7 +26,7 @@ export default function ProfileSettingsScreen() {
         location: p.location || '',
       })
     } catch (err) {
-      console.warn('Failed to load profile settings:', err)
+      logger.warn('Failed to load profile settings', { error: err })
     } finally {
       setLoading(false)
     }

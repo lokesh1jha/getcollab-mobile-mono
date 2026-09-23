@@ -110,7 +110,7 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
           <Pressable style={({ pressed }) => [styles.blueBtnSmall, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('CampaignAnalytics', { id: item.id, title: item.title })}>
             <Text style={styles.blueBtnSmallText}>Analytics</Text>
           </Pressable>
-          <Pressable style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.75 }]} onPress={() => setDeleteTarget(item)} hitSlop={10}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Delete campaign" style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.75 }]} onPress={() => setDeleteTarget(item)} hitSlop={10}>
             <Ionicons name="trash-outline" size={16} color={colors.error} />
           </Pressable>
         </View>

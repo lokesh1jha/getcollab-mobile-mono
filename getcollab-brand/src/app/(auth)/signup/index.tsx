@@ -46,7 +46,7 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <View style={styles.header}>
-            <Pressable testID="sign-up-back-btn" hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Go back" testID="sign-up-back-btn" hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
             <View style={styles.brandRow}>

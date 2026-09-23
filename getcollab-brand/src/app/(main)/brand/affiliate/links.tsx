@@ -48,7 +48,7 @@ export default function AffiliateLinksScreen() {
         <Text style={styles.url} numberOfLines={1}>{item.url}</Text>
         <Text style={styles.meta}>Status: {item.status}</Text>
       </View>
-      <Pressable style={({ pressed }) => [styles.copyBtn, pressed && { opacity: 0.85 }]} onPress={() => copyToClipboard(item.url)}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Copy link" style={({ pressed }) => [styles.copyBtn, pressed && { opacity: 0.85 }]} onPress={() => copyToClipboard(item.url)}>
         <Ionicons name="copy-outline" size={18} color={colors.textMuted} />
       </Pressable>
     </Animated.View>

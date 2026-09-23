@@ -190,7 +190,7 @@ export default function InfluencerCampaignDetailsScreen() {
       <SafeAreaView style={styles.root} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.iconBtn}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => navigation.goBack()} style={styles.iconBtn}>
             <Ionicons name="chevron-back" size={22} color={colors.text} />
           </Pressable>
           <Text style={styles.headerTitle} numberOfLines={1}>Campaign</Text>

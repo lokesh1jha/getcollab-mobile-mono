@@ -83,7 +83,7 @@ export default function InfluencerChat({ navigation }: { navigation: InfluencerN
         <View style={styles.searchWrap}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput value={query} onChangeText={setQuery} placeholder="Search conversations…" placeholderTextColor={colors.textSubtle} style={styles.searchInput} />
-          {query.length > 0 && <Pressable onPress={() => setQuery('')} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.textMuted} /></Pressable>}
+          {query.length > 0 && <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.textMuted} /></Pressable>}
         </View>
 
         {isLoading && rooms.length === 0 ? (

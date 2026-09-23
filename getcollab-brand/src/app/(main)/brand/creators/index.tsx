@@ -237,9 +237,6 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
               <View>
                 <View style={styles.header}>
                   <Text style={styles.title}>Creators</Text>
-                  <Pressable style={styles.iconBtn}>
-                    <Ionicons name="options-outline" size={20} color="#fff" />
-                  </Pressable>
                 </View>
 
                 <View style={styles.searchWrap}>
@@ -252,7 +249,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
                     style={styles.searchInput}
                   />
                   {searchQuery.length > 0 && (
-                    <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setSearchQuery('')} hitSlop={8}>
                       <Ionicons name="close-circle" size={18} color={colors.textMuted} />
                     </Pressable>
                   )}
@@ -312,7 +309,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: spacing.md, paddingBottom: spacing.sm },
   title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
 
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: spacing.lg, paddingVertical: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
   searchInput: { flex: 1, color: '#fff', fontSize: 14, padding: 0 },

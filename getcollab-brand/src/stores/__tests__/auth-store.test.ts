@@ -5,6 +5,7 @@ jest.mock('@shared/services/notification-service', () => ({
   notificationService: {
     unregisterPushToken: jest.fn(() => Promise.resolve()),
     cleanup: jest.fn(),
+    initialize: jest.fn(() => Promise.resolve()),
   },
 }))
 
@@ -25,7 +26,10 @@ jest.mock('@shared/services/api', () => ({
   },
 }))
 
+import { notificationService } from '@shared/services/notification-service'
+
 const mockApi = apiService as jest.Mocked<typeof apiService>
+const mockNotif = notificationService as jest.Mocked<typeof notificationService>
 
 describe('auth-store', () => {
   beforeEach(() => {
@@ -65,5 +69,24 @@ describe('auth-store', () => {
     expect(state.user).toBeNull()
     expect(state.isAuthenticated).toBe(false)
     expect(state.error).toBeNull()
+  })
+
+  // signOut is the api client's onUnauthorized handler; a 401 on its own
+  // push-token DELETE re-enters it. The second entry must be a no-op.
+  it('signOut ignores re-entry while a sign-out is in flight', async () => {
+    let reentered: Promise<void> | undefined
+    mockNotif.unregisterPushToken.mockImplementationOnce(async () => {
+      reentered = useAuthStore.getState().signOut()
+    })
+    await useAuthStore.getState().signOut()
+    await reentered
+    expect(mockNotif.unregisterPushToken).toHaveBeenCalledTimes(1)
+    expect(mockApi.clearTokens).toHaveBeenCalledTimes(1)
+  })
+
+  it('registers push after a session is loaded', async () => {
+    mockApi.getCurrentUser.mockResolvedValueOnce({ data: { id: 'u1', role: 'brand' } } as any)
+    await useAuthStore.getState().fetchCurrentUser()
+    expect(mockNotif.initialize).toHaveBeenCalledTimes(1)
   })
 })

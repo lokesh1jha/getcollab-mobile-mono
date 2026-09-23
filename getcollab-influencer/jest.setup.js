@@ -23,12 +23,3 @@ jest.mock('expo-notifications', () => ({
   scheduleNotificationAsync: jest.fn(() => Promise.resolve()),
 }))
 
-jest.mock('socket.io-client', () => ({
-  io: jest.fn(() => ({
-    on: jest.fn(),
-    off: jest.fn(),
-    emit: jest.fn(),
-    disconnect: jest.fn(),
-    connected: false,
-  })),
-}))

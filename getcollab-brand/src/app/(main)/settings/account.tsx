@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import { logger } from '@shared/services/logger'
 
 export default function AccountSettingsScreen() {
   const { user, updateProfile } = useAuthStore()
@@ -23,7 +24,7 @@ export default function AccountSettingsScreen() {
         phone: s.phoneNumbers?.[0] || s.phone || '',
       })
     } catch (err) {
-      console.warn('Failed to load account settings:', err)
+      logger.warn('Failed to load account settings', { error: err })
     } finally {
       setLoading(false)
     }

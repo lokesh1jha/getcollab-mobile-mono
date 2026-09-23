@@ -1,10 +1,21 @@
 import { rowsForToggle, toggleStates, type PrefRow } from '../lib/notification-prefs'
 import { Alert } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
-import { resolveApiBaseUrl } from '../utils/api-url'
+import { apiBaseUrlFromEnv } from '../utils/api-url'
 import { logger } from './logger'
 
-const API_BASE_URL = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api/v1')
+const API_BASE_URL = apiBaseUrlFromEnv(process.env.EXPO_PUBLIC_API_URL)
+const REQUEST_TIMEOUT_MS = 10000
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
 const TOKEN_KEY = 'getcollab_auth_token'
 const REFRESH_TOKEN_KEY = 'getcollab_refresh_token'
 const DEVICE_ID_KEY = 'getcollab_device_id'
@@ -264,7 +275,7 @@ class ApiService {
 
     let response: Response
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000)
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
     try {
       response = await fetch(url, { ...config, signal: controller.signal })
       try {
@@ -288,7 +299,7 @@ class ApiService {
           const newToken = await this.refreshAccessToken()
           if (newToken) {
             headers['Authorization'] = `Bearer ${newToken}`
-            const retryResponse = await fetch(url, { ...config, headers })
+            const retryResponse = await fetchWithTimeout(url, { ...config, headers })
             // Intercept retry 401 here — prevents handleResponse from clearing tokens
             // while other concurrent retries are still in-flight with the new token.
             if (retryResponse.status === 401) {
@@ -312,7 +323,7 @@ class ApiService {
       return await this.handleResponse<T>(response)
     } catch (error) {
       if (error instanceof Error && !isUnauthorizedError(error.message)) {
-        logger.error(`API ${options.method || 'GET'} ${endpoint}`, error, { url })
+        logger.error(`API ${options.method || 'GET'} ${endpoint.split('?')[0]}`, error)
       }
       throw error
     }
@@ -1319,7 +1330,7 @@ class ApiService {
       if (!refreshToken) return null
 
       const deviceId = await getOrCreateDeviceId()
-      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+      const response = await fetchWithTimeout(`${this.baseUrl}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

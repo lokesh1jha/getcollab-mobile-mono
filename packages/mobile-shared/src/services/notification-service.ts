@@ -10,9 +10,27 @@ export const navigationRef = createNavigationContainerRef<any>()
 
 const isExpoGo = Constants.appOwnership === 'expo'
 
-/** Navigate into the authenticated stack, if it is mounted. */
+/** Every route name registered in the mounted navigator tree. */
+export function collectRouteNames(state: any, out = new Set<string>()): Set<string> {
+  if (!state) return out
+  for (const name of state.routeNames ?? []) out.add(name)
+  for (const route of state.routes ?? []) collectRouteNames(route.state, out)
+  return out
+}
+
+/**
+ * Navigate into the authenticated stack, if it is mounted. The route table is
+ * shared by both apps, so a screen only one app registers falls back to the
+ * notifications list instead of a silent no-op.
+ */
 function navigateNested(screen: string, params?: Record<string, unknown>): boolean {
   if (!navigationRef.isReady()) return false
+  const known = collectRouteNames(navigationRef.getRootState())
+  if (!known.has(screen)) {
+    if (!known.has('Notifications')) return false
+    navigationRef.navigate('Main', { screen: 'Notifications' })
+    return true
+  }
   navigationRef.navigate('Main', { screen, params })
   return true
 }
@@ -74,9 +92,20 @@ class NotificationService {
         await this.registerPushToken(token)
       }
 
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'Default',
+          importance: Notifications.AndroidImportance.HIGH,
+        })
+      }
+
       // Set up notification listeners
       this.setupListeners()
       this.initialized = true
+
+      // A tap that cold-started the app fired before the listener existed.
+      const last = await Notifications.getLastNotificationResponseAsync()
+      if (last) this.handleNotificationTap(last.notification)
     } catch (error) {
       logger.error('Failed to initialize notifications', error)
     }
@@ -149,14 +178,15 @@ class NotificationService {
    * Unregister push token and clean up listeners
    */
   async unregisterPushToken(): Promise<void> {
+    const token = this.pushToken
+    // Clear first: a failed DELETE must not be retried on every later sign-out.
+    this.pushToken = null
+    if (!token || !(await apiService.getToken())) return
     try {
-      if (this.pushToken) {
-        await apiService.delete(`/notifications/push-subscription?token=${encodeURIComponent(this.pushToken)}`)
-        this.pushToken = null
-        logger.debug('Push token unregistered')
-      }
+      await apiService.delete(`/notifications/device-tokens?token=${encodeURIComponent(token)}`)
+      logger.debug('Push token unregistered')
     } catch (error) {
-      logger.error('Failed to unregister push token', error)
+      logger.warn('Failed to unregister push token', { error })
     }
   }
 

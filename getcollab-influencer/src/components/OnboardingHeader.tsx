@@ -38,7 +38,7 @@ const OnboardingHeader = ({
       {/* Top Navigation */}
       <View style={styles.container}>
         {showBack ? (
-          <TouchableOpacity onPress={onBack} style={styles.side}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} style={styles.side}>
             <Ionicons name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
         ) : (

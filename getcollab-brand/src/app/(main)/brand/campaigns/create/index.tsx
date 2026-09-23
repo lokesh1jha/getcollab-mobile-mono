@@ -21,6 +21,7 @@ import { colors, spacing, radius } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useReferenceDataStore, selectCategories, selectRegions, selectDeliverables } from '@shared/stores/reference-data-store'
 import { TrialGuard } from '../../../../../components/TrialGuard'
+import { logger } from '@shared/services/logger'
 
 interface CreateCampaignScreenProps {
   navigation?: any
@@ -175,7 +176,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
           const dataUri = coverBase64.startsWith('data:') ? coverBase64 : `data:image/jpeg;base64,${coverBase64}`
           coverImageUrl = await apiService.uploadCampaignCover(dataUri)
         } catch (err) {
-          console.warn('Cover upload failed, continuing without image:', err)
+          logger.warn('Cover upload failed, continuing without image', { error: err })
         }
       }
 

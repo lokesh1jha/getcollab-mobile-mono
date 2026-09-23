@@ -10,7 +10,12 @@ jest.mock('@react-navigation/native', () => {
   return {
     __esModule: true,
     __navigate: navigate,
-    createNavigationContainerRef: () => ({ isReady: () => true, navigate }),
+    createNavigationContainerRef: () => ({
+      isReady: () => true,
+      navigate,
+      // Screens the brand app registers; navigation is guarded by this list.
+      getRootState: () => ({ routeNames: ['Main', 'Wallet', 'RelationshipDetail', 'Invites', 'Notifications'], routes: [] }),
+    }),
     useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]),
   }
 })

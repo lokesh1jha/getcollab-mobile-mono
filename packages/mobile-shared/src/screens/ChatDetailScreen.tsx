@@ -250,7 +250,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.headerBar}>
-        <TouchableOpacity onPress={() => navigation?.goBack()} style={styles.headerBack}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" onPress={() => navigation?.goBack()} style={styles.headerBack}>
           <Ionicons name="chevron-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
@@ -261,7 +261,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
             {isOtherTyping ? 'typing…' : otherPresence?.online ? '● Online' : otherPresence?.lastSeen ? `Last seen ${new Date(otherPresence.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
           </Text>
         </View>
-        <TouchableOpacity onPress={() => setSearchMode((s) => !s)} style={styles.headerAction}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={searchMode ? 'Close search' : 'Search messages'} onPress={() => setSearchMode((s) => !s)} style={styles.headerAction}>
           <Ionicons name={searchMode ? 'close' : 'search'} size={20} color={colors.text} />
         </TouchableOpacity>
       </View>
@@ -322,10 +322,10 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
         )}
 
         <View style={styles.inputBar}>
-          <TouchableOpacity style={styles.attachBtn} onPress={handleAttach}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Attach image" style={styles.attachBtn} onPress={handleAttach}>
             <Ionicons name="image-outline" size={22} color={colors.textMuted} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.attachBtn} onPress={handleAttachDocument}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Attach file" style={styles.attachBtn} onPress={handleAttachDocument}>
             <Ionicons name="document-attach-outline" size={22} color={colors.textMuted} />
           </TouchableOpacity>
           <TextInput
@@ -336,7 +336,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
             onChangeText={handleInputChange}
             multiline
           />
-          <TouchableOpacity
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Send message"
             style={[styles.sendBtn, !input.trim() && styles.sendBtnDisabled]}
             disabled={!input.trim() || isSending}
             onPress={handleSend}
@@ -353,7 +353,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
               {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
             </View>
-            <Pressable onPress={() => setPreviewUri(null)} style={({ pressed }) => [styles.previewClose, pressed && { opacity: 0.7 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close preview" onPress={() => setPreviewUri(null)} style={({ pressed }) => [styles.previewClose, pressed && { opacity: 0.7 }]}>
               <Ionicons name="close" size={28} color={colors.white} />
             </Pressable>
           </SafeAreaView>

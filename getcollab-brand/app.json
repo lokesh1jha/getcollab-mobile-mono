@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "getcollab",
+    "scheme": "getcollab-brand",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -17,12 +17,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "in.getcollab.brand",
       "buildNumber": "1",
-      "infoPlist": {
-        "NSCameraUsageDescription": "GetCollab needs camera access so you can capture profile photos and campaign content.",
-        "NSPhotoLibraryUsageDescription": "GetCollab needs photo library access so you can upload images for your profile and campaigns.",
-        "NSPhotoLibraryAddUsageDescription": "GetCollab needs permission to save photos to your library.",
-        "NSMicrophoneUsageDescription": "GetCollab needs microphone access for video content creation.",
-        "NSLocationWhenInUseUsageDescription": "GetCollab uses your location to surface relevant campaigns in your area."
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
@@ -33,13 +29,14 @@
         "backgroundColor": "#0F172A"
       },
       "permissions": [
+        "android.permission.POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
         "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ]
     },
     "web": {
@@ -49,8 +46,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "GetCollab needs access to your photos to upload images.",
-          "cameraPermission": "GetCollab needs access to your camera to take photos."
+          "photosPermission": "GetCollab uses your photo library so you can upload images to your profile, campaigns and chats.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       [
@@ -60,7 +58,9 @@
           "color": "#8B5CF6"
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-font",
+      "@sentry/react-native"
     ]
   }
 }

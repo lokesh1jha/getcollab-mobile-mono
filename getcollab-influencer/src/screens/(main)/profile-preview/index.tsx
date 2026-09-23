@@ -89,7 +89,7 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
         {portfolio.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Portfolio</Text>
-            <PortfolioGallery items={portfolio} onChange={() => {}} editable={false} />
+            <PortfolioGallery items={portfolio} />
           </View>
         )}
 

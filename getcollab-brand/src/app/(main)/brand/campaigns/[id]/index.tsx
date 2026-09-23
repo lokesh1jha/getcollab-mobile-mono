@@ -8,6 +8,7 @@ import { colors, radius, spacing } from '@/src/theme'
 import { useCampaignStore } from '@shared/stores/campaign-store'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { Campaign } from '@shared/types'
+import { logger } from '@shared/services/logger'
 
 type RouteParams = RouteProp<{ campaignDetails: { id: string; campaign?: Campaign } }, 'campaignDetails'>
 
@@ -33,7 +34,7 @@ export default function BrandCampaignDetailsScreen() {
 
   const loadCampaign = async () => {
     try { await fetchCampaign(id); setCampaign(useCampaignStore.getState().currentCampaign) }
-    catch (error) { console.error('Failed to load campaign:', error) }
+    catch (error) { logger.error('Failed to load campaign', error) }
   }
 
   const handlePublish = async () => {

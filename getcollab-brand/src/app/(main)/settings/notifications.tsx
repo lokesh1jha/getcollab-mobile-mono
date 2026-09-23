@@ -5,6 +5,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import { logger } from '@shared/services/logger'
 
 interface NotificationPrefs {
   emailCampaignUpdates: boolean
@@ -46,7 +47,7 @@ export default function NotificationsSettingsScreen() {
         pushMessageAlerts: notifications.pushMessageAlerts ?? DEFAULT_PREFS.pushMessageAlerts,
       })
     } catch (err) {
-      console.warn('Failed to load notification settings:', err)
+      logger.warn('Failed to load notification settings', { error: err })
     } finally {
       setLoading(false)
     }

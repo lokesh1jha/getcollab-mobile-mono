@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService } from '@shared/services/api'
 import { useChatStore } from '@shared/stores/chat-store'
+import { logger } from '@shared/services/logger'
 
 interface Chat { id: string; influencerName: string; influencerHandle: string; lastMessage: string; timestamp: string; unread: number; campaignTitle: string }
 interface Props { navigation?: any }
@@ -49,7 +50,7 @@ export default function BrandChatScreen({ navigation }: Props) {
         campaignTitle: room.campaign?.title || room.campaignTitle || 'Direct Message',
       }))
       setChats(mapped)
-    } catch (error) { console.error('Failed to load chats:', error) }
+    } catch (error) { logger.error('Failed to load chats', error) }
     finally { setLoading(false) }
   }, [])
 
@@ -75,9 +76,6 @@ export default function BrandChatScreen({ navigation }: Props) {
             <Text style={styles.title}>Inbox</Text>
             <Text style={styles.subtitle}>{totalUnread} unread · {chats.length} conversations</Text>
           </View>
-          <Pressable style={styles.iconBtn}>
-            <Ionicons name="create-outline" size={20} color="#fff" />
-          </Pressable>
         </View>
 
         <View style={styles.searchWrap}>
@@ -136,7 +134,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
   title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
 
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: spacing.lg, marginTop: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
   searchInput: { flex: 1, color: '#fff', fontSize: 14, padding: 0 },

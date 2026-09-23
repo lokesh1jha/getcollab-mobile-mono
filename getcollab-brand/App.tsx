@@ -51,7 +51,17 @@ function SplashScreen() {
   )
 }
 
+// The boundary sits outside the splash/maintenance screens so a render error
+// in any of them is reported instead of white-screening.
 export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  )
+}
+
+function AppContent() {
   const { appReady, apiError, initializeApp } = useAppInit({ splashDelayMs: 2000 })
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
@@ -73,7 +83,6 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ErrorBoundary>
           <NavigationContainer ref={navigationRef} theme={navigationTheme}>
             <Stack.Navigator
               screenOptions={{
@@ -98,7 +107,6 @@ export default function App() {
             </Stack.Navigator>
           </NavigationContainer>
           <NetworkBanner />
-        </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )

@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, TextInput, Alert, RefreshControl, Image, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, ActivityIndicator, TextInput, Alert, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
-import * as ImagePickerLib from 'expo-image-picker'
 import { colors, spacing } from '@/src/theme'
 import { Card, Button } from '@shared/components/ui'
 import apiService, { handleApiError } from '@shared/services/api'
@@ -25,26 +24,24 @@ interface DisputesScreenProps {
   navigation?: InfluencerNavigationProp
 }
 
-interface AttachmentDraft {
-  uri: string
-  base64: string
-  uploading: boolean
-  url?: string
-}
-
 export default function DisputesScreen({ navigation }: DisputesScreenProps) {
   const [refreshing, setRefreshing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [disputes, setDisputes] = useState<Dispute[]>([])
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ reason: '', description: '', campaignId: '' })
-  const [attachments, setAttachments] = useState<AttachmentDraft[]>([])
+  const [formData, setFormData] = useState({ reason: '', description: '', dealId: '' })
+  // Disputes are filed against a collaboration (deal); the API requires dealId.
+  const [deals, setDeals] = useState<any[]>([])
   const [submitting, setSubmitting] = useState(false)
 
   const fetchDisputes = useCallback(async () => {
     try {
-      const response = await apiService.getDisputes()
+      const [response, dealsRes] = await Promise.all([
+        apiService.getDisputes(),
+        apiService.getDeals({ limit: '100' }).catch(() => null),
+      ])
+      setDeals(dealsRes?.deals || dealsRes?.data || [])
       const list = response?.data || response?.disputes || (Array.isArray(response) ? response : [])
       setDisputes(Array.isArray(list) ? list : [])
     } catch (err) {
@@ -66,82 +63,23 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
     setRefreshing(false)
   }
 
-  const pickAttachment = async () => {
-    if (attachments.length >= 5) {
-      Alert.alert('Limit reached', 'You can attach up to 5 images per dispute.')
-      return
-    }
-    const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Please enable photo library access in settings.')
-      return
-    }
-    try {
-      const result = await ImagePickerLib.launchImageLibraryAsync({
-        mediaTypes: ImagePickerLib.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 0.7,
-        base64: true,
-      })
-      if (result.canceled || !result.assets[0]) return
-      const asset = result.assets[0]
-      if (!asset.base64) {
-        Alert.alert('Error', 'Failed to read image data')
-        return
-      }
-      const draft: AttachmentDraft = {
-        uri: asset.uri,
-        base64: `data:image/jpeg;base64,${asset.base64}`,
-        uploading: true,
-      }
-      setAttachments((prev) => [...prev, draft])
-
-      try {
-        const response = await apiService.uploadImage(draft.base64)
-        const url = response?.url || response?.imageUrl || response?.data?.url
-        setAttachments((prev) =>
-          prev.map((a) => (a.uri === draft.uri ? { ...a, uploading: false, url } : a))
-        )
-      } catch (err) {
-        setAttachments((prev) => prev.filter((a) => a.uri !== draft.uri))
-        handleApiError(err, 'Upload failed')
-      }
-    } catch (err) {
-      Alert.alert('Error', 'Failed to pick image')
-    }
-  }
-
-  const removeAttachment = (uri: string) => {
-    setAttachments((prev) => prev.filter((a) => a.uri !== uri))
-  }
-
   const resetForm = () => {
-    setFormData({ reason: '', description: '', campaignId: '' })
-    setAttachments([])
+    setFormData({ reason: '', description: '', dealId: '' })
     setShowForm(false)
   }
 
   const handleSubmitDispute = async () => {
-    if (!formData.reason.trim() || !formData.description.trim()) {
-      Alert.alert('Error', 'Please fill in reason and description.')
+    if (!formData.dealId || !formData.reason.trim() || !formData.description.trim()) {
+      Alert.alert('Error', 'Choose the collaboration and fill in reason and description.')
       return
     }
-    if (attachments.some((a) => a.uploading)) {
-      Alert.alert('Hold on', 'Wait for attachments to finish uploading.')
-      return
-    }
-
-    const uploadedUrls = attachments.filter((a) => a.url).map((a) => a.url!)
-    const descriptionWithEvidence = uploadedUrls.length
-      ? `${formData.description.trim()}\n\nEvidence:\n${uploadedUrls.map((u, i) => `${i + 1}. ${u}`).join('\n')}`
-      : formData.description.trim()
 
     setSubmitting(true)
     try {
+      // The API keeps one text field; the short reason leads it.
       await apiService.createDispute({
-        reason: formData.reason.trim(),
-        description: descriptionWithEvidence,
-        campaignId: formData.campaignId.trim() || undefined,
+        dealId: formData.dealId,
+        reason: `${formData.reason.trim()}: ${formData.description.trim()}`,
       })
       Alert.alert('Success', 'Dispute filed successfully. Our team will review it.')
       resetForm()
@@ -282,14 +220,26 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
                   onChangeText={(text) => setFormData({ ...formData, reason: text })}
                 />
 
-                <Text style={styles.fieldLabel}>Campaign ID (optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Related campaign ID"
-                  placeholderTextColor={colors.textMuted}
-                  value={formData.campaignId}
-                  onChangeText={(text) => setFormData({ ...formData, campaignId: text })}
-                />
+                <Text style={styles.fieldLabel}>Collaboration *</Text>
+                <View style={styles.dealRow}>
+                  {deals.length === 0 && <Text style={styles.fieldHint}>No collaborations to dispute.</Text>}
+                  {deals.map((d: any) => {
+                    const on = formData.dealId === d.id
+                    return (
+                      <Pressable
+                        key={d.id}
+                        onPress={() => setFormData({ ...formData, dealId: d.id })}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: on }}
+                        style={({ pressed }) => [styles.dealChip, on && styles.dealChipOn, pressed && { opacity: 0.85 }]}
+                      >
+                        <Text style={[styles.dealChipText, on && styles.dealChipTextOn]}>
+                          {new Date(d.created_at).toLocaleDateString()} · {d.status}
+                        </Text>
+                      </Pressable>
+                    )
+                  })}
+                </View>
 
                 <Text style={styles.fieldLabel}>Description *</Text>
                 <TextInput
@@ -301,41 +251,6 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
                   multiline
                   numberOfLines={4}
                 />
-
-                <Text style={styles.fieldLabel}>Evidence (optional)</Text>
-                <Text style={styles.fieldHint}>
-                  Attach screenshots or photos. URLs will be added to your dispute description.
-                </Text>
-
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.attachmentRow}
-                  contentContainerStyle={styles.attachmentRowContent}
-                >
-                  {attachments.map((att) => (
-                    <View key={att.uri} style={styles.attachmentItem}>
-                      <Image source={{ uri: att.uri }} style={styles.attachmentImage} />
-                      {att.uploading && (
-                        <View style={styles.attachmentOverlay}>
-                          <ActivityIndicator color={colors.white} />
-                        </View>
-                      )}
-                      {!att.uploading && (
-                        <TouchableOpacity style={styles.attachmentRemove} onPress={() => removeAttachment(att.uri)}>
-                          <Text style={styles.attachmentRemoveText}>×</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  ))}
-
-                  {attachments.length < 5 && (
-                    <TouchableOpacity style={styles.attachmentAdd} onPress={pickAttachment}>
-                      <Text style={styles.attachmentAddIcon}>＋</Text>
-                      <Text style={styles.attachmentAddText}>Add Image</Text>
-                    </TouchableOpacity>
-                  )}
-                </ScrollView>
 
                 <View style={styles.formButtons}>
                   <Button
@@ -371,6 +286,11 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
 }
 
 const styles = StyleSheet.create({
+  dealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
+  dealChip: { borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: spacing.md, paddingVertical: 6 },
+  dealChipOn: { borderColor: colors.neon },
+  dealChipText: { color: colors.text, fontSize: 12, fontWeight: '600' },
+  dealChipTextOn: { color: colors.neon },
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -459,69 +379,6 @@ const styles = StyleSheet.create({
   textArea: {
     height: 100,
     textAlignVertical: 'top',
-  },
-  attachmentRow: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  attachmentRowContent: {
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  attachmentItem: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: colors.surfaceLight,
-    marginRight: spacing.sm,
-  },
-  attachmentImage: {
-    width: '100%',
-    height: '100%',
-  },
-  attachmentOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  attachmentRemove: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: colors.error,
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  attachmentRemoveText: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: 'bold',
-    lineHeight: 16,
-  },
-  attachmentAdd: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-  },
-  attachmentAddIcon: {
-    fontSize: 24,
-    color: colors.primary,
-  },
-  attachmentAddText: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
   },
   formButtons: {
     flexDirection: 'row',

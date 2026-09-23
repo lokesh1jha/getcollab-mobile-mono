@@ -152,7 +152,7 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.title}>My Bids</Text>
-          <Pressable onPress={() => setShowSort(true)} style={styles.iconBtn}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Filters" onPress={() => setShowSort(true)} style={styles.iconBtn}>
             <Ionicons name="funnel-outline" size={18} color={colors.text} />
           </Pressable>
         </View>
@@ -160,7 +160,7 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
         <View style={styles.searchWrap}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput value={query} onChangeText={setQuery} placeholder="Search campaigns…" placeholderTextColor={colors.textSubtle} style={styles.searchInput} />
-          {query.length > 0 && <Pressable onPress={() => setQuery('')} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.textMuted} /></Pressable>}
+          {query.length > 0 && <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.textMuted} /></Pressable>}
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>

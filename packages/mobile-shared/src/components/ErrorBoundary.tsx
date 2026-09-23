@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, Pressable } from 'react-native'
 import { colors, spacing } from '../constants'
 import { logger } from '../services/logger'
 
@@ -32,10 +32,16 @@ export class ErrorBoundary extends React.Component<Props, State> {
       return (
         <View style={styles.container}>
           <Text style={styles.title}>Something went wrong</Text>
-          <Text style={styles.message}>{this.state.error?.message || 'Unexpected error'}</Text>
-          <TouchableOpacity style={styles.btn} onPress={this.reset}>
+          <Text style={styles.message}>
+            {__DEV__ ? this.state.error?.message : 'The error has been reported. Please try again.'}
+          </Text>
+          <Pressable
+            style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
+            onPress={this.reset}
+            accessibilityRole="button"
+          >
             <Text style={styles.btnText}>Try again</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       )
     }

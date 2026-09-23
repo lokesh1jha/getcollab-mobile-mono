@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useAuthStore } from '../stores/auth-store'
 import { useReferenceDataStore } from '../stores/reference-data-store'
 import { initObservability } from '../services/observability'
-import { notificationService } from '../services/notification-service'
 import { logger } from '../services/logger'
 import { isMaintenanceError } from '../utils/unwrap-api'
 
@@ -30,11 +29,6 @@ export function useAppInit({ splashDelayMs = 1500 }: UseAppInitOptions = {}) {
 
     try {
       await fetchCurrentUser()
-      const currentUser = useAuthStore.getState().user
-      if (currentUser?.id) {
-        logger.identify(currentUser.id, { role: currentUser.role, email: currentUser.email })
-        await notificationService.initialize()
-      }
     } catch (error: any) {
       if (isMaintenanceError(error?.message)) {
         logger.error('API maintenance during initialization', error)

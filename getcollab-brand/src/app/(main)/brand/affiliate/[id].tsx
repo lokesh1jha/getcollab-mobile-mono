@@ -228,7 +228,7 @@ export default function AffiliateDetailScreen() {
             <View style={styles.card}>
               <View style={styles.cardHeader}>
                 <Text style={styles.sectionTitle}>Details</Text>
-                <Pressable onPress={() => setEditing(true)}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Edit" onPress={() => setEditing(true)}>
                   <Ionicons name="create-outline" size={18} color={colors.textMuted} />
                 </Pressable>
               </View>

@@ -49,7 +49,11 @@ interface Deliverable {
   days?: number
 }
 
-type ScreenName = keyof InfluencerStackParamList & string
+// Checklist rows navigate without params, so only param-less screens qualify
+// (TS cannot spread a union of names into navigate()'s tuple overloads, hence the cast below).
+type ScreenName = {
+  [K in keyof InfluencerStackParamList]: undefined extends InfluencerStackParamList[K] ? K : never
+}[keyof InfluencerStackParamList] & string
 
 interface ChecklistItem {
   title: string
@@ -283,7 +287,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
               <Text style={styles.subtitle}>Here's your overview</Text>
             </View>
             <View style={styles.headerRight}>
-              <Pressable
+              <Pressable accessibilityRole="button" accessibilityLabel="Change photo"
                 onPress={() => navigation?.navigate('Profile')}
                 style={({ pressed }) => [styles.avatarWrap, pressed && { opacity: 0.8 }]}
               >
@@ -338,7 +342,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
             </View>
             <View style={{ gap: 2 }}>
               {checklist.map((task, i) => (
-                <Pressable key={task.title} onPress={() => navigation?.navigate(task.screen)} style={styles.checkRow}>
+                <Pressable key={task.title} onPress={() => navigation?.navigate(task.screen as never)} style={styles.checkRow}>
                   <View style={[styles.checkCircle, task.done && styles.checkCircleDone]}>
                     {task.done ? (
                       <Ionicons name="checkmark" size={14} color={colors.success} />

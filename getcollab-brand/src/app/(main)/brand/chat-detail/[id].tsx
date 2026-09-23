@@ -95,7 +95,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
       <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
         <Animated.View entering={FadeIn.duration(400)} style={{ flex: 1 }}>
           <View style={styles.header}>
-            <Pressable hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Go back" hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
             <View style={styles.peerWrap}>
@@ -108,7 +108,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
                 <Text style={styles.peerStatus}>{isOtherTyping ? 'typing…' : otherPresence?.online ? 'Online' : ''}</Text>
               </View>
             </View>
-            <Pressable hitSlop={12} onPress={() => setSearchMode((s) => !s)} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel={searchMode ? 'Close search' : 'Search messages'} hitSlop={12} onPress={() => setSearchMode((s) => !s)} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
               <Ionicons name={searchMode ? 'close' : 'search'} size={20} color="#fff" />
             </Pressable>
           </View>
@@ -132,11 +132,11 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
             {isOtherTyping && <View style={styles.typingHint}><Text style={styles.typingHintText}>typing…</Text></View>}
 
             <View style={styles.composer}>
-              <Pressable hitSlop={8} style={({ pressed }) => [styles.attachBtn, pressed && { opacity: 0.75 }]} onPress={handleAttach}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Attach image" hitSlop={8} style={({ pressed }) => [styles.attachBtn, pressed && { opacity: 0.75 }]} onPress={handleAttach}>
                 <Ionicons name="add" size={20} color="#fff" />
               </Pressable>
               <TextInput style={styles.composerInput} placeholder="Message…" placeholderTextColor={colors.textSubtle} value={input} onChangeText={handleInputChange} multiline />
-              <Pressable
+              <Pressable accessibilityRole="button" accessibilityLabel="Send message"
                 style={({ pressed }) => [styles.sendBtn, !input.trim() && { opacity: 0.4 }, pressed && { opacity: 0.85 }]}
                 disabled={!input.trim() || isSending}
                 onPress={handleSend}

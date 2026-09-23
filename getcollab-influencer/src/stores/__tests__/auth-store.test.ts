@@ -5,6 +5,7 @@ jest.mock('@shared/services/notification-service', () => ({
   notificationService: {
     unregisterPushToken: jest.fn(() => Promise.resolve()),
     cleanup: jest.fn(),
+    initialize: jest.fn(() => Promise.resolve()),
   },
 }))
 

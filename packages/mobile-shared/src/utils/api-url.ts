@@ -51,3 +51,13 @@ export function resolveApiBaseUrl(url: string): string {
 
   return url
 }
+
+/**
+ * The API base URL from EXPO_PUBLIC_API_URL. Dev falls back to the local API;
+ * a release build without it would silently talk to localhost, so it throws.
+ */
+export function apiBaseUrlFromEnv(raw: string | undefined): string {
+  if (raw) return resolveApiBaseUrl(raw)
+  if (__DEV__) return resolveApiBaseUrl('http://localhost:4000/api/v1')
+  throw new Error('EXPO_PUBLIC_API_URL is not set for this release build')
+}

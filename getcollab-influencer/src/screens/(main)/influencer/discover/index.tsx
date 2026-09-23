@@ -192,7 +192,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Discover</Text>
-          <Pressable onPress={() => setShowFilters(true)} style={styles.iconBtn}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Filters" onPress={() => setShowFilters(true)} style={styles.iconBtn}>
             <Ionicons name="options-outline" size={20} color={colors.text} />
           </Pressable>
         </View>
@@ -208,7 +208,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
             style={styles.searchInput}
           />
           {query.length > 0 && (
-            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={8}>
               <Ionicons name="close-circle" size={18} color={colors.textMuted} />
             </Pressable>
           )}

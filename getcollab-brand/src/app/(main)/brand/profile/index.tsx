@@ -9,6 +9,7 @@ import { useAuthStore } from '@shared/stores/auth-store'
 import { useCampaignStore } from '@shared/stores/campaign-store'
 import { useSubscriptionStore } from '../../../../stores/subscription-store'
 import apiService, { handleApiError } from '@shared/services/api'
+import { logger } from '@shared/services/logger'
 
 const SETTINGS_ROWS = [
   { id: 'wallet', icon: 'wallet-outline', label: 'Wallet' },
@@ -45,7 +46,7 @@ export default function BrandProfileScreen({ navigation }: Props) {
       const profile = response?.data || response?.settings || response || {}
       setForm({ name: user?.name || profile.name || '', bio: profile.bio || '', location: profile.location || '', portfolioUrl: profile.websiteUrl || profile.portfolioUrl || '' })
       if (profile.image || profile.avatar || user?.image) setAvatar(profile.image || profile.avatar || user?.image || null)
-    } catch (err) { console.error('Failed to load brand profile:', err) }
+    } catch (err) { logger.error('Failed to load brand profile', err) }
   }
 
   const activeCampaigns = myCampaigns.filter((c) => c.status === 'active').length
@@ -69,7 +70,7 @@ export default function BrandProfileScreen({ navigation }: Props) {
         if (url) { setAvatar(url); await updateProfile({ image: url } as any) }
       } catch (err) { handleApiError(err, 'Failed to upload logo') }
       finally { setUploadingAvatar(false) }
-    } catch (err) { console.error('Avatar pick failed:', err) }
+    } catch (err) { logger.error('Avatar pick failed', err) }
   }
 
   const handleSave = async () => {
@@ -79,7 +80,7 @@ export default function BrandProfileScreen({ navigation }: Props) {
       await updateProfile({ name: form.name })
       const payload: any = { bio: form.bio, location: form.location, portfolioUrl: form.portfolioUrl }
       Object.keys(payload).forEach((k) => { if (!payload[k]) delete payload[k] })
-      if (Object.keys(payload).length > 0) await apiService.updateProfile(payload).catch((err) => console.warn('Profile update failed:', err))
+      if (Object.keys(payload).length > 0) await apiService.updateProfile(payload).catch((err) => logger.warn('Profile update failed', { error: err }))
       Alert.alert('Success', 'Profile updated successfully!')
       setIsEditing(false)
     } catch (error) { handleApiError(error, 'Failed to update profile') }
@@ -99,13 +100,13 @@ export default function BrandProfileScreen({ navigation }: Props) {
         <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <Text style={styles.title}>Profile</Text>
-            <Pressable style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]} onPress={() => setIsEditing(!isEditing)}>
+            <Pressable accessibilityRole="button" accessibilityLabel={isEditing ? 'Cancel editing' : 'Edit profile'} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]} onPress={() => setIsEditing(!isEditing)}>
               <Ionicons name={isEditing ? 'close' : 'create-outline'} size={18} color="#fff" />
             </Pressable>
           </View>
 
           <Animated.View entering={FadeInDown.duration(400)} style={styles.brandCard}>
-            <Pressable onPress={isEditing ? pickAvatar : undefined} style={styles.logoWrap}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Change photo" onPress={isEditing ? pickAvatar : undefined} style={styles.logoWrap}>
               {avatar ? (
                 <Image source={{ uri: avatar }} style={styles.avatarImg} />
               ) : (

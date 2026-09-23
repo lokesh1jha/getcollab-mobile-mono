@@ -278,7 +278,7 @@ export default function OnboardingScreen({ navigation }: Props) {
 
   const renderAvatarPicker = () => (
     <View style={styles.avatarWrap}>
-      <Pressable style={({ pressed }) => [styles.avatar, pressed && styles.pressed]} onPress={pickAvatar} disabled={uploadingAvatar}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Change photo" style={({ pressed }) => [styles.avatar, pressed && styles.pressed]} onPress={pickAvatar} disabled={uploadingAvatar}>
         {avatarUrl ? (
           <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
         ) : (

@@ -416,7 +416,7 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
                     <Pressable key={`${uri}-${i}`} onPress={() => setPreviewUri(uri)} style={styles.portfolioItemWrap}>
                       <Image source={{ uri }} style={styles.portfolioItem} />
                       {editing && (
-                        <Pressable onPress={() => removePortfolioImage(i)} style={styles.portfolioRemove} hitSlop={8}>
+                        <Pressable accessibilityRole="button" accessibilityLabel="Remove image" onPress={() => removePortfolioImage(i)} style={styles.portfolioRemove} hitSlop={8}>
                           <Ionicons name="close-circle" size={20} color={colors.error} />
                         </Pressable>
                       )}
@@ -460,7 +460,7 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
               {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
             </View>
-            <Pressable onPress={() => setPreviewUri(null)} style={styles.previewClose}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close preview" onPress={() => setPreviewUri(null)} style={styles.previewClose}>
               <Ionicons name="close" size={28} color={colors.text} />
             </Pressable>
           </SafeAreaView>

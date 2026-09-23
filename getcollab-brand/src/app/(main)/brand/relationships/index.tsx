@@ -177,7 +177,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
                   style={styles.searchInput}
                 />
                 {search.length > 0 && (
-                  <Pressable onPress={() => { setSearch(''); loadRelationships() }} hitSlop={8}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => { setSearch(''); loadRelationships() }} hitSlop={8}>
                     <Ionicons name="close-circle" size={18} color={colors.textMuted} />
                   </Pressable>
                 )}

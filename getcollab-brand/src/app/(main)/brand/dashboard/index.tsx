@@ -176,7 +176,7 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
               <Text style={styles.greeting}>{greeting}</Text>
               <Text style={styles.subtitle}>{subtitle}</Text>
             </View>
-            <Pressable testID="dashboard-notif-btn" style={styles.bellBtn} hitSlop={10} onPress={() => navigation?.navigate('Notifications')}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Notifications" testID="dashboard-notif-btn" style={styles.bellBtn} hitSlop={10} onPress={() => navigation?.navigate('Notifications')}>
               <Ionicons name="notifications-outline" size={20} color="#fff" />
               <View style={styles.bellDot} />
             </Pressable>

@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, spacing, radius } from '@/src/theme'
 import { Card, Button } from '@shared/components/ui'
 import apiService, { handleApiError } from '@shared/services/api'
+import { logger } from '@shared/services/logger'
 
 interface Dispute {
   id: string
@@ -44,7 +45,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
       const list = response?.data || response?.disputes || (Array.isArray(response) ? response : [])
       setDisputes(Array.isArray(list) ? list : [])
     } catch (err) {
-      console.error('Error fetching disputes:', err)
+      logger.error('Error fetching disputes', err)
     } finally {
       setLoading(false)
     }

@@ -9,6 +9,7 @@ import { useAuthStore } from '@shared/stores/auth-store'
 import { useReferenceDataStore, selectCategories, selectIndustries, selectCampaignTypes, selectObjectives, selectRegions } from '@shared/stores/reference-data-store'
 import apiService, { handleApiError } from '@shared/services/api'
 import { onboardingPathToStep } from '@shared/lib/onboarding-target'
+import { logger } from '@shared/services/logger'
 
 interface Props {
   navigation?: any
@@ -92,7 +93,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
         }
       } catch (error: any) {
         if (error?.message !== 'UNAUTHORIZED') {
-          console.warn('Failed to load onboarding state:', error)
+          logger.warn('Failed to load onboarding state', { error: error })
         }
         // UNAUTHORIZED: API service already signed out, app will redirect automatically
       } finally {
@@ -449,7 +450,7 @@ function IndustryPicker({ value, onChange }: { value: string[]; onChange: (v: st
           {value.map((item) => (
             <View key={item} style={styles.pill}>
               <Text style={styles.pillText}>{item}</Text>
-              <Pressable onPress={() => remove(item)} hitSlop={6}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Remove" onPress={() => remove(item)} hitSlop={6}>
                 <Ionicons name="close" size={14} color={colors.neon} />
               </Pressable>
             </View>

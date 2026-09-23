@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors, radius, spacing } from '@/src/theme'
 import apiService from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import { logger } from '@shared/services/logger'
 
 interface Props { navigation?: any }
 
@@ -20,7 +21,7 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
     try {
       const response = await apiService.getProfileWithMetrics().catch(() => apiService.getProfile())
       setProfile(response?.data || response?.profile || response || {})
-    } catch (e) { console.error('Failed to load profile preview:', e) }
+    } catch (e) { logger.error('Failed to load profile preview', e) }
     finally { setLoading(false) }
   }
 
