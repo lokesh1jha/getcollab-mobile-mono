@@ -29,7 +29,7 @@ export default function AffiliateScreen() {
     finally { setLoading(false); setRefreshing(false) }
   }, [])
 
-  useFocusEffect(useCallback(() => { setLoading(true); load() }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
   const apply = async (id: string) => {
     setBusy(id)
@@ -87,7 +87,7 @@ export default function AffiliateScreen() {
           </View>
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(index * 40).duration(300)}>
+          <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
             <View style={styles.card}>
               <Text style={styles.title}>{item.name || item.title || 'Affiliate program'}</Text>
               <Text style={styles.meta}>{item.description || item.rewardRule || 'Earn commissions by sharing your creator link.'}</Text>

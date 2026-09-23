@@ -10,6 +10,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 const CATEGORIES = ['All', 'Fashion', 'Beauty', 'Fitness', 'Tech', 'Travel', 'Food', 'Lifestyle', 'Gaming']
 const SORTS = [
@@ -88,7 +89,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
     }
   }, [category, sortKey, budgetRange])
 
-  useFocusEffect(useCallback(() => { load(true) }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
   const onRefresh = () => { setRefreshing(true); load(false) }
 
   const filtered = useMemo(() => {
@@ -112,6 +113,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
         amount: Number(bidAmount),
         message: bidPitch,
       })
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       setBidTarget(null)
       setBidAmount('')
       setBidPitch('')
@@ -128,10 +130,10 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
     const tl = timeLeft(item.applicationDeadline || item.endDate)
     const brand = item.brandName || item.brand?.name || 'Brand'
     return (
-      <Animated.View entering={FadeInDown.delay(index * 50).duration(320)} style={styles.campaignCard}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.campaignCard}>
         <Pressable
           onPress={() => navigation?.navigate('CampaignDetails', { id: item.id })}
-          style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
         >
           <View style={styles.cardTop}>
             <View style={styles.brandAvatarWrap}>
@@ -192,7 +194,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Discover</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Filters" onPress={() => setShowFilters(true)} style={styles.iconBtn}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Filters" onPress={() => setShowFilters(true)} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.85 }]}>
             <Ionicons name="options-outline" size={20} color={colors.text} />
           </Pressable>
         </View>
@@ -208,7 +210,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
             style={styles.searchInput}
           />
           {query.length > 0 && (
-            <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={8}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={8} style={({ pressed }) => pressed && { opacity: 0.85 }}>
               <Ionicons name="close-circle" size={18} color={colors.textMuted} />
             </Pressable>
           )}
@@ -220,7 +222,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
             {CATEGORIES.map(cat => {
               const active = cat === category
               return (
-                <Pressable key={cat} onPress={() => setCategory(cat)} style={[styles.chip, active && styles.chipActive]}>
+                <Pressable key={cat} onPress={() => setCategory(cat)} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.85 }]}>
                   <Text style={[styles.chipText, active && styles.chipTextActive]}>{cat}</Text>
                 </Pressable>
               )
@@ -279,7 +281,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
               <Text style={styles.sheetLabel}>Sort by</Text>
               <View style={styles.sheetOptions}>
                 {SORTS.map(s => (
-                  <Pressable key={s.key} onPress={() => setSortKey(s.key)} style={[styles.sheetOption, sortKey === s.key && styles.sheetOptionActive]}>
+                  <Pressable key={s.key} onPress={() => setSortKey(s.key)} style={({ pressed }) => [styles.sheetOption, sortKey === s.key && styles.sheetOptionActive, pressed && { opacity: 0.85 }]}>
                     <Text style={[styles.sheetOptionText, sortKey === s.key && styles.sheetOptionTextActive]}>{s.label}</Text>
                     {sortKey === s.key && <Ionicons name="checkmark" size={16} color={colors.neon} />}
                   </Pressable>
@@ -289,14 +291,14 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
               <Text style={styles.sheetLabel}>Budget range</Text>
               <View style={styles.sheetOptions}>
                 {BUDGET_RANGES.map(b => (
-                  <Pressable key={b.key} onPress={() => setBudgetRange(b.key)} style={[styles.sheetOption, budgetRange === b.key && styles.sheetOptionActive]}>
+                  <Pressable key={b.key} onPress={() => setBudgetRange(b.key)} style={({ pressed }) => [styles.sheetOption, budgetRange === b.key && styles.sheetOptionActive, pressed && { opacity: 0.85 }]}>
                     <Text style={[styles.sheetOptionText, budgetRange === b.key && styles.sheetOptionTextActive]}>{b.label}</Text>
                     {budgetRange === b.key && <Ionicons name="checkmark" size={16} color={colors.neon} />}
                   </Pressable>
                 ))}
               </View>
 
-              <Pressable onPress={() => setShowFilters(false)} style={styles.submitBtn}>
+              <Pressable onPress={() => setShowFilters(false)} style={({ pressed }) => [styles.submitBtn, pressed && { opacity: 0.85 }]}>
                 <Text style={styles.submitBtnText}>Show results</Text>
               </Pressable>
             </View>

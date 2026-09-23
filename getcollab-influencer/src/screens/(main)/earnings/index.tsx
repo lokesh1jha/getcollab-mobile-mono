@@ -78,7 +78,7 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
     } finally { setLoading(false); setRefreshing(false) }
   }, [])
 
-  useFocusEffect(useCallback(() => { load(true) }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
   const onRefresh = () => { setRefreshing(true); load(false) }
 
   const handleRequest = async () => {
@@ -102,7 +102,7 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
   const renderSettlement = ({ item, index }: { item: Settlement; index: number }) => {
     const s = statusColor(item.status)
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
         <View style={styles.cardLeft}>
           <View style={styles.cardIcon}>
             <Ionicons name={item.status === 'paid' || item.status === 'completed' ? 'checkmark-circle' : 'time-outline'} size={18} color={item.status === 'paid' || item.status === 'completed' ? colors.success : colors.warning} />

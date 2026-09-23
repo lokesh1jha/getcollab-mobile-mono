@@ -52,7 +52,7 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepLinkId])
 
-  useFocusEffect(useCallback(() => { setLoading(true); load() }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
   const run = async (key: string, fn: () => Promise<void>) => {
     setBusy(key)
@@ -118,8 +118,8 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
   if (selected) {
     return (
       <SafeAreaView style={styles.root} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => setSelected(null)} style={styles.backRow}>
+        <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          <Pressable onPress={() => setSelected(null)} style={({ pressed }) => [styles.backRow, pressed && { opacity: 0.85 }]}>
             <Ionicons name="chevron-back" size={20} color={colors.blue} />
             <Text style={styles.back}>Back to collaborations</Text>
           </Pressable>
@@ -205,7 +205,7 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
         <Text style={styles.listTitle}>Collaborations</Text>
         <Text style={styles.listSub}>Track all active and completed collaborations</Text>
       </View>
-      <FlatList
+      <FlatList automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}
         data={deals}
@@ -218,8 +218,8 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
           </View>
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(index * 40).duration(300)}>
-            <Pressable onPress={() => open(item)} style={styles.dealCard}>
+          <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
+            <Pressable onPress={() => open(item)} style={({ pressed }) => [styles.dealCard, pressed && { opacity: 0.85 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
                 <View style={styles.dealAvatar}>
                   <Text style={styles.dealAvatarText}>{(item.campaignTitle || item.campaign?.title || 'C').charAt(0).toUpperCase()}</Text>

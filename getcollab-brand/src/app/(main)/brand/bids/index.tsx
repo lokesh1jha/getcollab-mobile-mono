@@ -4,16 +4,16 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { TrialGuard } from '../../../../components/TrialGuard'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 interface Bid { id: string; pitch?: string; message?: string; proposedAmount?: number; amount?: number; status: 'pending' | 'accepted' | 'rejected'; createdAt: string; campaign?: { id: string; title: string }; campaignTitle?: string; campaignId?: string; influencer?: { id: string; name: string; email?: string; image?: string; instagramHandle?: string }; influencerName?: string; influencerHandle?: string }
 interface Props { navigation?: any; route?: any }
 type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected'
 
 const FILTERS: StatusFilter[] = ['all', 'pending', 'accepted', 'rejected']
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = { pending: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' }, accepted: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' }, rejected: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' } }
 
 export default function BrandBidsScreen({ navigation, route }: Props) {
   const initialCampaignId = route?.params?.campaignId
@@ -42,6 +42,7 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
     try {
       await apiService.updateBidStatus(bid.id, newStatus)
       setBids((prev) => prev.map((b) => (b.id === bid.id ? { ...b, status: newStatus } : b)))
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       Alert.alert('Success', `Bid ${newStatus} successfully.`)
     } catch (error) { handleApiError(error, `Failed to ${action} bid`) }
     finally { setActioningId(null); setConfirmModal(null) }
@@ -84,7 +85,7 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
                     {FILTERS.map((f) => {
                       const active = f === filter
                       return (
-                        <Pressable key={f} onPress={() => setFilter(f)} style={[styles.chip, active && styles.chipActive]}>
+                        <Pressable key={f} onPress={() => setFilter(f)} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.85 }]}>
                           <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.charAt(0).toUpperCase() + f.slice(1)}</Text>
                         </Pressable>
                       )
@@ -109,7 +110,7 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
               const isActing = actioningId === item.id
 
               return (
-                <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
+                <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
                   <View style={styles.cardTop}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.influencerName}>{influencerName}</Text>

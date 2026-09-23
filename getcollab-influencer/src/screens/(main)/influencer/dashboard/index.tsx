@@ -1,8 +1,6 @@
 import React, { useState, useCallback } from 'react'
-import {
-  Dimensions, Pressable, RefreshControl, ScrollView,
-  StyleSheet, Text, View, ActivityIndicator, Image,
-} from 'react-native'
+import { Dimensions, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, ActivityIndicator } from 'react-native'
+import { Image } from 'expo-image'
 import Animated, {
   FadeIn, FadeInDown,
   useSharedValue, useAnimatedStyle, withSpring,
@@ -101,7 +99,7 @@ function ActionCard({ item, index, navigation }: { item: typeof QUICK_ACTIONS[0]
   }))
   return (
     <Animated.View
-      entering={FadeInDown.delay(200 + index * 50).duration(400).springify().damping(14)}
+      entering={FadeInDown.delay(200 + Math.min(index, 5) * 80).duration(400)}
       style={[{ width: (width - spacing.lg * 2 - 12 * 2) / 3 }, animStyle]}
     >
       <Pressable
@@ -255,7 +253,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
     }
   }, [user?.onboardingCompleted])
 
-  useFocusEffect(useCallback(() => { load(true) }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
   const onRefresh = () => { setRefreshing(true); load(false) }
 
   const avatarUrl = user?.profilePicture || user?.avatar || (user as any)?.profile?.avatar
@@ -292,7 +290,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
                 style={({ pressed }) => [styles.avatarWrap, pressed && { opacity: 0.8 }]}
               >
                 {avatarUrl ? (
-                  <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
+                  <Image transition={200} source={{ uri: avatarUrl }} style={styles.avatarImg} />
                 ) : (
                   <View style={styles.avatarFallback}>
                     <Ionicons name="person" size={20} color={colors.textMuted} />
@@ -342,7 +340,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
             </View>
             <View style={{ gap: 2 }}>
               {checklist.map((task, i) => (
-                <Pressable key={task.title} onPress={() => navigation?.navigate(task.screen as never)} style={styles.checkRow}>
+                <Pressable key={task.title} onPress={() => navigation?.navigate(task.screen as never)} style={({ pressed }) => [styles.checkRow, pressed && { opacity: 0.85 }]}>
                   <View style={[styles.checkCircle, task.done && styles.checkCircleDone]}>
                     {task.done ? (
                       <Ionicons name="checkmark" size={14} color={colors.success} />
@@ -365,7 +363,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>{deliverables.length > 0 ? 'Upcoming deliverables' : 'Recent Activity'}</Text>
               {activities.length > 0 && (
-                <Pressable onPress={() => navigation?.navigate('Notifications')}>
+                <Pressable onPress={() => navigation?.navigate('Notifications')} style={({ pressed }) => pressed && { opacity: 0.85 }}>
                   <Text style={styles.sectionLink}>View all</Text>
                 </Pressable>
               )}
@@ -374,7 +372,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
             {deliverables.length > 0 ? (
               <View style={{ gap: 10 }}>
                 {deliverables.map((d, idx) => (
-                  <Animated.View key={d.campaignId || idx} entering={FadeInDown.delay(320 + idx * 50).duration(380)} style={styles.activityCard}>
+                  <Animated.View key={d.campaignId || idx} entering={FadeInDown.delay(320 + Math.min(idx, 5) * 80).duration(380)} style={styles.activityCard}>
                     <View style={styles.activityIcon}>
                       <Text style={{ color: colors.neon, fontSize: 14, fontWeight: '800' }}>{(d.title || d.campaign || 'D').charAt(0).toUpperCase()}</Text>
                     </View>
@@ -406,7 +404,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
                   const badgeBg = isGreen ? colors.successSoft : isOrange ? colors.warningSoft : colors.blueSoft
                   const badgeText = isGreen ? colors.success : isOrange ? colors.warning : colors.blue
                   return (
-                    <Animated.View key={a.id} entering={FadeInDown.delay(320 + idx * 50).duration(380)} style={styles.activityCard}>
+                    <Animated.View key={a.id} entering={FadeInDown.delay(320 + Math.min(idx, 5) * 80).duration(380)} style={styles.activityCard}>
                       <View style={{ flex: 1, paddingRight: 10 }}>
                         <Text style={styles.activityTitle} numberOfLines={1}>{a.title}</Text>
                         <Text style={styles.activitySubtitle} numberOfLines={1}>{a.subtitle}</Text>
@@ -431,7 +429,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
                 <Text style={styles.escrowAmount}>₹{stats.pendingEarnings.toLocaleString()}</Text>
                 <Text style={styles.escrowSub}>Pending in escrow until posts go live</Text>
               </View>
-              <Pressable onPress={() => navigation?.navigate('Earnings')} style={styles.escrowLink}>
+              <Pressable onPress={() => navigation?.navigate('Earnings')} style={({ pressed }) => [styles.escrowLink, pressed && { opacity: 0.85 }]}>
                 <Text style={styles.escrowLinkText}>Earnings →</Text>
               </Pressable>
             </Animated.View>

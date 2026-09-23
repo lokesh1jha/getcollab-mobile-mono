@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, Pressable } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, RefreshControl } from 'react-native'
+import { Image } from 'expo-image'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -11,6 +12,11 @@ import { logger } from '@shared/services/logger'
 interface Props { navigation?: any }
 
 export default function ProfilePreviewScreen({ navigation }: Props) {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await load() } finally { setRefreshing(false) }
+  }
   const { user } = useAuthStore()
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -38,18 +44,18 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />} contentContainerStyle={{ padding: spacing.lg }}>
           <Animated.View entering={FadeInDown.duration(400)}>
             <View style={styles.previewBadge}>
               <Ionicons name="eye" size={14} color={colors.blue} />
               <Text style={styles.previewBadgeText}>Preview as a brand sees you</Text>
             </View>
 
-            {profile?.coverImage ? <Image source={{ uri: profile.coverImage }} style={styles.cover} /> : null}
+            {profile?.coverImage ? <Image transition={200} source={{ uri: profile.coverImage }} style={styles.cover} /> : null}
 
             <View style={styles.profileHeader}>
               {profile?.image || user?.image ? (
-                <Image source={{ uri: profile?.image || user?.image }} style={styles.avatar} />
+                <Image transition={200} source={{ uri: profile?.image || user?.image }} style={styles.avatar} />
               ) : (
                 <View style={[styles.avatar, styles.avatarFallback]}>
                   <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>

@@ -50,7 +50,7 @@ const ProfileImagePicker = ({ onImageSelected }: Props) => {
 
   return (
     <View style={styles.container}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Change photo" style={styles.imageContainer} onPress={handlePickImage}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Change photo" style={({ pressed }) => [styles.imageContainer, pressed && { opacity: 0.85 }]} onPress={handlePickImage}>
         {imageUri ? (
           <Image source={{ uri: imageUri }} style={styles.image} />
         ) : (

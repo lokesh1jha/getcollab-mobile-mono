@@ -47,7 +47,7 @@ export default function InvoicesScreen({ navigation }: any) {
   }
 
   const renderInvoice = ({ item, index }: { item: Invoice; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
       <Pressable style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]} onPress={() => handleDownload(item.id)}>
         <View style={styles.rowIcon}>
           <Ionicons name="document-text-outline" size={18} color={colors.textMuted} />

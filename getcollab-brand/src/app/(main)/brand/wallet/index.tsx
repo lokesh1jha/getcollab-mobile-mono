@@ -1,17 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  ActivityIndicator,
-  Modal,
-  TextInput,
-  Alert,
-  ScrollView,
-} from 'react-native'
+import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl, ActivityIndicator, Modal, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -161,7 +149,7 @@ export default function WalletScreen({ navigation }: Props) {
   const renderTransaction = ({ item, index }: { item: WalletTransaction; index: number }) => {
     const isPositive = item.amount_minor >= 0
     return (
-      <Animated.View entering={FadeInDown.delay(index * 30).duration(320)} style={styles.txRow}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.txRow}>
         <View style={styles.txLeft}>
           <Text style={styles.txType}>{ENTRY_LABELS[item.entry_type] || item.entry_type}</Text>
           <Text style={styles.txMemo} numberOfLines={1}>
@@ -214,7 +202,7 @@ export default function WalletScreen({ navigation }: Props) {
 
               <View style={styles.metricsGrid}>
                 {metrics.map((m, i) => (
-                  <Animated.View entering={FadeInDown.delay(80 * i).duration(320)} key={m.label} style={styles.metricCard}>
+                  <Animated.View entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)} key={m.label} style={styles.metricCard}>
                     <View style={styles.metricTop}>
                       <Ionicons name={m.icon} size={16} color={colors.textMuted} />
                       <Text style={styles.metricLabel}>{m.label}</Text>
@@ -257,66 +245,70 @@ export default function WalletScreen({ navigation }: Props) {
 
       {/* Top-up Modal */}
       <Modal visible={topUpOpen} transparent animationType="fade" onRequestClose={() => setTopUpOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Top up wallet</Text>
-            <Text style={styles.modalBody}>Add funds. Balance is credited after payment verification.</Text>
-            <Text style={styles.inputLabel}>Amount (₹)</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="number-pad"
-              value={amount}
-              onChangeText={setAmount}
-              placeholder="e.g. 10000"
-              placeholderTextColor={colors.textSubtle}
-            />
-            <View style={styles.modalActions}>
-              <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setTopUpOpen(false)}>
-                <Text style={styles.outlinedBtnText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]}
-                onPress={handleTopUp}
-                disabled={submitting}
-              >
-                <Text style={styles.primaryBtnText}>{submitting ? 'Processing…' : 'Top up'}</Text>
-              </Pressable>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Top up wallet</Text>
+              <Text style={styles.modalBody}>Add funds. Balance is credited after payment verification.</Text>
+              <Text style={styles.inputLabel}>Amount (₹)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="number-pad"
+                value={amount}
+                onChangeText={setAmount}
+                placeholder="e.g. 10000"
+                placeholderTextColor={colors.textSubtle}
+              />
+              <View style={styles.modalActions}>
+                <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setTopUpOpen(false)}>
+                  <Text style={styles.outlinedBtnText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]}
+                  onPress={handleTopUp}
+                  disabled={submitting}
+                >
+                  <Text style={styles.primaryBtnText}>{submitting ? 'Processing…' : 'Top up'}</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Refund Modal */}
       <Modal visible={refundOpen} transparent animationType="fade" onRequestClose={() => setRefundOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Request refund</Text>
-            <Text style={styles.modalBody}>Available balance only. Admin reviews before funds leave the wallet.</Text>
-            <Text style={styles.inputLabel}>Amount (₹)</Text>
-            <TextInput style={styles.input} keyboardType="number-pad" value={amount} onChangeText={setAmount} placeholderTextColor={colors.textSubtle} />
-            <Text style={styles.inputLabel}>Reason</Text>
-            <TextInput
-              style={[styles.input, { minHeight: 80 }]}
-              multiline
-              value={refundReason}
-              onChangeText={setRefundReason}
-              placeholder="Why refund?"
-              placeholderTextColor={colors.textSubtle}
-            />
-            <View style={styles.modalActions}>
-              <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setRefundOpen(false)}>
-                <Text style={styles.outlinedBtnText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]}
-                onPress={handleRefund}
-                disabled={submitting}
-              >
-                <Text style={styles.primaryBtnText}>{submitting ? 'Submitting…' : 'Submit'}</Text>
-              </Pressable>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Request refund</Text>
+              <Text style={styles.modalBody}>Available balance only. Admin reviews before funds leave the wallet.</Text>
+              <Text style={styles.inputLabel}>Amount (₹)</Text>
+              <TextInput style={styles.input} keyboardType="number-pad" value={amount} onChangeText={setAmount} placeholderTextColor={colors.textSubtle} />
+              <Text style={styles.inputLabel}>Reason</Text>
+              <TextInput
+                style={[styles.input, { minHeight: 80 }]}
+                multiline
+                value={refundReason}
+                onChangeText={setRefundReason}
+                placeholder="Why refund?"
+                placeholderTextColor={colors.textSubtle}
+              />
+              <View style={styles.modalActions}>
+                <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setRefundOpen(false)}>
+                  <Text style={styles.outlinedBtnText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]}
+                  onPress={handleRefund}
+                  disabled={submitting}
+                >
+                  <Text style={styles.primaryBtnText}>{submitting ? 'Submitting…' : 'Submit'}</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   )

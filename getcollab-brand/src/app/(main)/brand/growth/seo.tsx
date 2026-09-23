@@ -132,7 +132,7 @@ function SeoBody({ site, navigation, initialSeverity }: { site: GrowthSite; navi
         issues.map((issue: any, i: number) => {
           const tone = SEVERITY_TONES[issue.severity] ?? { fg: colors.textMuted, bg: 'rgba(161,161,170,0.12)' }
           return (
-            <Animated.View key={issue.id} entering={FadeInDown.delay(i * 40).duration(320)} style={growthStyles.card}>
+            <Animated.View key={issue.id} entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)} style={growthStyles.card}>
               <View style={growthStyles.pillRow}>
                 <View style={[growthStyles.pill, { backgroundColor: tone.bg }]}>
                   <Text style={[growthStyles.pillText, { color: tone.fg }]}>{severityLabel(issue.severity)}</Text>

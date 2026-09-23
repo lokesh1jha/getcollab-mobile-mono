@@ -3,6 +3,7 @@ import { Alert } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import { apiBaseUrlFromEnv } from '../utils/api-url'
 import { logger } from './logger'
+import * as Haptics from 'expo-haptics'
 
 const API_BASE_URL = apiBaseUrlFromEnv(process.env.EXPO_PUBLIC_API_URL)
 const REQUEST_TIMEOUT_MS = 10000
@@ -1374,6 +1375,7 @@ export const handleApiError = (error: any, defaultMessage: string = 'An error oc
     return 'UNAUTHORIZED'
   }
   const message = error?.message || defaultMessage
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
   Alert.alert('Error', message)
   return message
 }
@@ -1384,6 +1386,7 @@ export const showSignInError = (error: any, onSignUp: () => void) => {
     return
   }
 
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
   const message = error?.message || ''
   const isLockout = message.toLowerCase().includes('too many') || message.toLowerCase().includes('locked')
   if (isLockout) {

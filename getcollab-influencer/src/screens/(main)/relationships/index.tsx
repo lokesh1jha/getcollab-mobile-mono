@@ -28,7 +28,7 @@ export default function RelationshipsScreen() {
     finally { setLoading(false); setRefreshing(false) }
   }, [])
 
-  useFocusEffect(useCallback(() => { setLoading(true); load() }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
   if (loading) return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -58,7 +58,7 @@ export default function RelationshipsScreen() {
           </View>
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(index * 40).duration(300)}>
+          <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
             <View style={styles.card}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
                 <View style={styles.avatar}>

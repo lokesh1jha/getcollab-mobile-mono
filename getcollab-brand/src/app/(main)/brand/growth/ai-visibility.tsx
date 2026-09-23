@@ -135,7 +135,7 @@ function AiVisibilityBody({ site, navigation }: { site: GrowthSite; navigation?:
       ) : null}
 
       {providers.map((p: any, i: number) => (
-        <Animated.View key={p.name} entering={FadeInDown.delay(i * 40).duration(320)} style={growthStyles.card}>
+        <Animated.View key={p.name} entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)} style={growthStyles.card}>
           <Text style={growthStyles.cardTitle}>{String(p.name).replace(/^./, (c) => c.toUpperCase())}</Text>
           <Text style={growthStyles.rowBody}>
             {p.mentioned ? 'Mentioned' : 'Not mentioned'} · {p.results} tracked answers

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { View, TouchableOpacity, Text, StyleSheet, Alert, Image, ActivityIndicator } from 'react-native'
+import { View, TouchableOpacity, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native'
+import { Image } from 'expo-image'
 import * as ImagePickerLib from 'expo-image-picker'
 import { colors, spacing } from '../../constants'
 
@@ -121,7 +122,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
         {isLoading ? (
           <ActivityIndicator size="large" color={colors.primary} />
         ) : selectedImage ? (
-          <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+          <Image transition={200} source={{ uri: selectedImage }} style={styles.previewImage} />
         ) : (
           <View style={styles.placeholderContainer}>
             <Text style={styles.placeholderIcon}>📷</Text>

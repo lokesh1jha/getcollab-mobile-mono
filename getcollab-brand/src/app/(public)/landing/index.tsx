@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
-import { Dimensions, Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image } from 'expo-image'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -28,7 +29,7 @@ export default function LandingScreen({ navigation }: any) {
           </View>
 
           <Animated.View entering={FadeIn.duration(400)} style={styles.logoWrap}>
-            <Image source={require('../../../../assets/getcollab_only_logo.png')} style={styles.logoImg} resizeMode="contain" />
+            <Image source={require('../../../../assets/getcollab_only_logo.png')} style={styles.logoImg} contentFit="contain" />
             <Text style={styles.logoText}><Text style={styles.logoGet}>Get</Text><Text style={styles.logoCollab}>Collab</Text></Text>
           </Animated.View>
 
@@ -86,7 +87,7 @@ export default function LandingScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000000' },
+  root: { flex: 1, backgroundColor: colors.bg },
   safe: { flex: 1, justifyContent: 'space-between' },
   hero: { flex: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
   gridBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },

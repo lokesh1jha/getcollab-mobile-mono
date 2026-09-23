@@ -4,16 +4,10 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { AffiliateProgram } from '@shared/types'
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  paused: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  draft: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)' },
-  closed: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
-}
 
 export default function AffiliateProgramsScreen({ navigation }: any) {
   const [programs, setPrograms] = useState<AffiliateProgram[]>([])
@@ -80,8 +74,8 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
     const s = STATUS_COLORS[st] || STATUS_COLORS.draft
     const budget = item.budget
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
-        <Pressable style={({ pressed }) => [styles.card, pressed && { opacity: 0.9 }]} onPress={() => navigation?.navigate('AffiliateDetail', { id: item.id })}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
+        <Pressable style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('AffiliateDetail', { id: item.id })}>
           <View style={styles.cardTop}>
             <View style={{ flex: 1 }}>
               <Text style={styles.name} numberOfLines={1}>{item.name}</Text>

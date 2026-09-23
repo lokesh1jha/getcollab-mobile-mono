@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, ActivityIndicator, TextInput, Alert, RefreshControl, ScrollView } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { colors, spacing, radius } from '@/src/theme'
@@ -178,117 +179,119 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <FlatList
-        data={filteredDisputes}
-        renderItem={renderDisputeItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={filteredDisputes.length === 0 ? styles.emptyList : styles.listContainer}
-        ListEmptyComponent={renderEmptyState}
-        ListHeaderComponent={
-          <View>
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>Disputes</Text>
-              <Text style={styles.headerSubtitle}>Report and track issues</Text>
-            </View>
-
-            <View style={styles.filterContainer}>
-              {['all', 'open', 'resolved', 'dismissed'].map((filter) => (
-                <TouchableOpacity
-                  key={filter}
-                  style={[styles.filterButton, statusFilter === filter && styles.filterButtonActive]}
-                  onPress={() => setStatusFilter(filter)}
-                >
-                  <Text style={[styles.filterText, statusFilter === filter && styles.filterTextActive]}>
-                    {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Button
-              title={showForm ? 'Close Form' : 'Report an Issue'}
-              variant={showForm ? 'outline' : 'primary'}
-              onPress={() => setShowForm(!showForm)}
-              style={styles.reportButton}
-            />
-
-            {showForm && (
-              <Card style={styles.formCard}>
-                <Text style={styles.formTitle}>File a New Dispute</Text>
-
-                <Text style={styles.fieldLabel}>Reason *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. Payment not received"
-                  placeholderTextColor={colors.textMuted}
-                  value={formData.reason}
-                  onChangeText={(text) => setFormData({ ...formData, reason: text })}
-                />
-
-                <Text style={styles.fieldLabel}>Collaboration *</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-                  {deals.length === 0 && <Text style={{ color: colors.textMuted, fontSize: 13 }}>No collaborations to dispute.</Text>}
-                  {deals.map((d: any) => {
-                    const on = formData.dealId === d.id
-                    return (
-                      <Pressable
-                        key={d.id}
-                        onPress={() => setFormData({ ...formData, dealId: d.id })}
-                        accessibilityRole="radio"
-                        accessibilityState={{ selected: on }}
-                        style={({ pressed }) => [
-                          { borderWidth: 1, borderColor: on ? colors.neon : colors.border, borderRadius: 999, paddingHorizontal: spacing.md, paddingVertical: 6 },
-                          pressed && { opacity: 0.85 },
-                        ]}
-                      >
-                        <Text style={{ color: on ? colors.neon : colors.text, fontSize: 12, fontWeight: '600' }}>
-                          {new Date(d.created_at).toLocaleDateString()} · {d.status}
-                        </Text>
-                      </Pressable>
-                    )
-                  })}
-                </View>
-
-                <Text style={styles.fieldLabel}>Description *</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  placeholder="Describe the issue in detail (min 10 chars)..."
-                  placeholderTextColor={colors.textMuted}
-                  value={formData.description}
-                  onChangeText={(text) => setFormData({ ...formData, description: text })}
-                  multiline
-                  numberOfLines={4}
-                />
-
-                <View style={styles.formButtons}>
-                  <Button
-                    title="Cancel"
-                    variant="outline"
-                    onPress={resetForm}
-                    style={styles.cancelButton}
+      <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+        <FlatList automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
+          data={filteredDisputes}
+          renderItem={renderDisputeItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={filteredDisputes.length === 0 ? styles.emptyList : styles.listContainer}
+          ListEmptyComponent={renderEmptyState}
+          ListHeaderComponent={
+            <View>
+              <View style={styles.header}>
+                <Text style={styles.headerTitle}>Disputes</Text>
+                <Text style={styles.headerSubtitle}>Report and track issues</Text>
+              </View>
+  
+              <View style={styles.filterContainer}>
+                {['all', 'open', 'resolved', 'dismissed'].map((filter) => (
+                  <TouchableOpacity
+                    key={filter}
+                    style={[styles.filterButton, statusFilter === filter && styles.filterButtonActive]}
+                    onPress={() => setStatusFilter(filter)}
+                  >
+                    <Text style={[styles.filterText, statusFilter === filter && styles.filterTextActive]}>
+                      {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+  
+              <Button
+                title={showForm ? 'Close Form' : 'Report an Issue'}
+                variant={showForm ? 'outline' : 'primary'}
+                onPress={() => setShowForm(!showForm)}
+                style={styles.reportButton}
+              />
+  
+              {showForm && (
+                <Card style={styles.formCard}>
+                  <Text style={styles.formTitle}>File a New Dispute</Text>
+  
+                  <Text style={styles.fieldLabel}>Reason *</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. Payment not received"
+                    placeholderTextColor={colors.textMuted}
+                    value={formData.reason}
+                    onChangeText={(text) => setFormData({ ...formData, reason: text })}
                   />
-                  <Button
-                    title={submitting ? 'Submitting...' : 'Submit'}
-                    onPress={handleSubmitDispute}
-                    disabled={submitting}
-                    loading={submitting}
-                    style={styles.submitButton}
+  
+                  <Text style={styles.fieldLabel}>Collaboration *</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                    {deals.length === 0 && <Text style={{ color: colors.textMuted, fontSize: 13 }}>No collaborations to dispute.</Text>}
+                    {deals.map((d: any) => {
+                      const on = formData.dealId === d.id
+                      return (
+                        <Pressable
+                          key={d.id}
+                          onPress={() => setFormData({ ...formData, dealId: d.id })}
+                          accessibilityRole="radio"
+                          accessibilityState={{ selected: on }}
+                          style={({ pressed }) => [
+                            { borderWidth: 1, borderColor: on ? colors.neon : colors.border, borderRadius: 999, paddingHorizontal: spacing.md, paddingVertical: 6 },
+                            pressed && { opacity: 0.85 },
+                          ]}
+                        >
+                          <Text style={{ color: on ? colors.neon : colors.text, fontSize: 12, fontWeight: '600' }}>
+                            {new Date(d.created_at).toLocaleDateString()} · {d.status}
+                          </Text>
+                        </Pressable>
+                      )
+                    })}
+                  </View>
+  
+                  <Text style={styles.fieldLabel}>Description *</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    placeholder="Describe the issue in detail (min 10 chars)..."
+                    placeholderTextColor={colors.textMuted}
+                    value={formData.description}
+                    onChangeText={(text) => setFormData({ ...formData, description: text })}
+                    multiline
+                    numberOfLines={4}
                   />
-                </View>
-              </Card>
-            )}
-
-            {filteredDisputes.length > 0 && <Text style={styles.sectionTitle}>History</Text>}
-          </View>
-        }
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.neon} />
-        }
-        showsVerticalScrollIndicator={false}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-      />
+  
+                  <View style={styles.formButtons}>
+                    <Button
+                      title="Cancel"
+                      variant="outline"
+                      onPress={resetForm}
+                      style={styles.cancelButton}
+                    />
+                    <Button
+                      title={submitting ? 'Submitting...' : 'Submit'}
+                      onPress={handleSubmitDispute}
+                      disabled={submitting}
+                      loading={submitting}
+                      style={styles.submitButton}
+                    />
+                  </View>
+                </Card>
+              )}
+  
+              {filteredDisputes.length > 0 && <Text style={styles.sectionTitle}>History</Text>}
+            </View>
+          }
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.neon} />
+          }
+          showsVerticalScrollIndicator={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+        />
+      </Animated.View>
     </SafeAreaView>
   )
 }

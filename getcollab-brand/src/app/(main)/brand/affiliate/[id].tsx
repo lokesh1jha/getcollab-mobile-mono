@@ -14,18 +14,12 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { AffiliateProgram } from '@shared/types'
 
 type RouteParams = RouteProp<{ affiliateDetail: { id: string } }, 'affiliateDetail'>
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  paused: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  draft: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)' },
-  closed: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
-}
 
 export default function AffiliateDetailScreen() {
   const route = useRoute<RouteParams>()
@@ -169,7 +163,7 @@ export default function AffiliateDetailScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView
+      <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadProgram() }} tintColor={colors.neon} />}
       >
@@ -228,7 +222,7 @@ export default function AffiliateDetailScreen() {
             <View style={styles.card}>
               <View style={styles.cardHeader}>
                 <Text style={styles.sectionTitle}>Details</Text>
-                <Pressable accessibilityRole="button" accessibilityLabel="Edit" onPress={() => setEditing(true)}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Edit" onPress={() => setEditing(true)} style={({ pressed }) => pressed && { opacity: 0.85 }}>
                   <Ionicons name="create-outline" size={18} color={colors.textMuted} />
                 </Pressable>
               </View>

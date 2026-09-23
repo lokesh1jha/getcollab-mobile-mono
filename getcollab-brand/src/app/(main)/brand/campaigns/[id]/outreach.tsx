@@ -4,20 +4,13 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 
 type RouteParams = RouteProp<{ campaignOutreach: { id: string; title?: string } }, 'campaignOutreach'>
 
 interface OutreachItem { id: string; creatorName: string; channel: string; status: string; sentAt: string }
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  sent: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)' },
-  delivered: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  opened: { fg: '#8B5CF6', bg: 'rgba(139,92,246,0.14)' },
-  replied: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  failed: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
-}
 
 export default function CampaignOutreachScreen() {
   const route = useRoute<RouteParams>()
@@ -72,7 +65,7 @@ export default function CampaignOutreachScreen() {
     const st = item.status || 'sent'
     const s = STATUS_COLORS[st] || STATUS_COLORS.sent
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
         <View style={styles.cardTop}>
           <View style={{ flex: 1 }}>
             <Text style={styles.name}>{item.creatorName}</Text>

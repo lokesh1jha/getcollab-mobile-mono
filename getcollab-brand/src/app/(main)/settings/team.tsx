@@ -75,7 +75,7 @@ export default function TeamSettingsScreen() {
   const renderMember = ({ item, index }: { item: TeamMember; index: number }) => {
     const initial = item.name?.charAt(0).toUpperCase() || item.email?.charAt(0).toUpperCase() || '?'
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
         <View style={styles.row}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initial}</Text>
@@ -105,7 +105,7 @@ export default function TeamSettingsScreen() {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <FlatList
+        <FlatList automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
           data={members}
           renderItem={renderMember}
           keyExtractor={(item) => item.id}

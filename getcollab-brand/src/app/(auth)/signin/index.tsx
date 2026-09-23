@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View, ScrollView } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View, ScrollView } from 'react-native'
+import { Image } from 'expo-image'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -49,7 +50,7 @@ export default function SignInScreen({ navigation }: ScreenProps) {
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
             <View style={styles.brandRow}>
-              <Image source={require('../../../../assets/getcollab_only_logo.png')} style={styles.logoImg} resizeMode="contain" />
+              <Image source={require('../../../../assets/getcollab_only_logo.png')} style={styles.logoImg} contentFit="contain" />
               <Text style={styles.logoText}><Text style={styles.logoGet}>Get</Text><Text style={styles.logoCollab}>Collab</Text></Text>
             </View>
             <View style={{ width: 36 }} />
@@ -98,7 +99,7 @@ export default function SignInScreen({ navigation }: ScreenProps) {
                 </View>
               </View>
 
-              <Pressable testID="sign-in-forgot" style={styles.forgotRow} onPress={() => navigation?.navigate('ForgotPassword')}>
+              <Pressable testID="sign-in-forgot" style={({ pressed }) => [styles.forgotRow, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('ForgotPassword')}>
                 <Text style={styles.forgotText}>Forgot password?</Text>
               </Pressable>
 
@@ -127,7 +128,7 @@ export default function SignInScreen({ navigation }: ScreenProps) {
 
               <View style={styles.bottomRow}>
                 <Text style={styles.bottomText}>New to GetCollab? </Text>
-                <Pressable testID="sign-in-go-signup" onPress={() => navigation?.navigate('SignUp')}>
+                <Pressable testID="sign-in-go-signup" onPress={() => navigation?.navigate('SignUp')} style={({ pressed }) => pressed && { opacity: 0.85 }}>
                   <Text style={styles.bottomLink}>Create account</Text>
                 </Pressable>
               </View>
@@ -140,7 +141,7 @@ export default function SignInScreen({ navigation }: ScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
+  root: { flex: 1, backgroundColor: colors.bg },
   scrollContent: { flexGrow: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

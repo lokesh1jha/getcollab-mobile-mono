@@ -1,5 +1,6 @@
 import React from 'react'
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, radius, spacing } from '@/src/theme'
@@ -41,43 +42,45 @@ export default function SettingsShellScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
-          <Text style={styles.title}>Settings</Text>
-          <Text style={styles.subtitle}>Manage your workspace</Text>
-
-          <View style={styles.listCard}>
-            {SETTINGS_SECTIONS.map((section, idx) => (
-              <Pressable
-                key={section.id}
-                style={({ pressed }) => [styles.row, idx !== SETTINGS_SECTIONS.length - 1 && styles.rowDivider, pressed && { opacity: 0.6 }]}
-                onPress={() => {
-                  const routeName = section.id === 'notifications' ? 'NotificationSettings' : section.id.charAt(0).toUpperCase() + section.id.slice(1)
-                  navigation?.navigate(routeName)
-                }}
-              >
-                <View style={styles.rowIcon}>
-                  <Ionicons name={section.icon as any} size={18} color="#fff" />
+        <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+          <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+            <Text style={styles.title}>Settings</Text>
+            <Text style={styles.subtitle}>Manage your workspace</Text>
+  
+            <View style={styles.listCard}>
+              {SETTINGS_SECTIONS.map((section, idx) => (
+                <Pressable
+                  key={section.id}
+                  style={({ pressed }) => [styles.row, idx !== SETTINGS_SECTIONS.length - 1 && styles.rowDivider, pressed && { opacity: 0.6 }]}
+                  onPress={() => {
+                    const routeName = section.id === 'notifications' ? 'NotificationSettings' : section.id.charAt(0).toUpperCase() + section.id.slice(1)
+                    navigation?.navigate(routeName)
+                  }}
+                >
+                  <View style={styles.rowIcon}>
+                    <Ionicons name={section.icon as any} size={18} color="#fff" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowLabel}>{section.label}</Text>
+                    <Text style={styles.rowDescription}>{section.description}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textSubtle} />
+                </Pressable>
+              ))}
+            </View>
+  
+            {/* Danger Zone */}
+            <Text style={styles.dangerHeader}>Danger Zone</Text>
+            <View style={styles.listCard}>
+              <Pressable onPress={handleDeleteAccount} style={({ pressed }) => [styles.dangerRow, pressed && { opacity: 0.85 }]}>
+                <View style={[styles.rowIcon, { backgroundColor: colors.errorSoft }]}>
+                  <Ionicons name="trash-outline" size={18} color={colors.error} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rowLabel}>{section.label}</Text>
-                  <Text style={styles.rowDescription}>{section.description}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.textSubtle} />
+                <Text style={styles.dangerText}>Delete Account</Text>
               </Pressable>
-            ))}
-          </View>
-
-          {/* Danger Zone */}
-          <Text style={styles.dangerHeader}>Danger Zone</Text>
-          <View style={styles.listCard}>
-            <Pressable onPress={handleDeleteAccount} style={({ pressed }) => [styles.dangerRow, pressed && { opacity: 0.85 }]}>
-              <View style={[styles.rowIcon, { backgroundColor: colors.errorSoft }]}>
-                <Ionicons name="trash-outline" size={18} color={colors.error} />
-              </View>
-              <Text style={styles.dangerText}>Delete Account</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
+            </View>
+          </ScrollView>
+        </Animated.View>
       </SafeAreaView>
     </View>
   )

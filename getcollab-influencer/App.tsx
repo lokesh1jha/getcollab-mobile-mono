@@ -66,7 +66,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const { appReady, apiError, initializeApp } = useAppInit({ splashDelayMs: 1500 })
+  const { appReady, apiError, initializeApp } = useAppInit()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const onboardingCompleted = useAuthStore((s) => s.user?.onboardingCompleted === true)
 

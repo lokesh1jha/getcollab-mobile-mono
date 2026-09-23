@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
-import { View, Text, StyleSheet, Platform } from 'react-native'
+import { View, Text, StyleSheet } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
@@ -60,13 +61,16 @@ import OnboardingScreen from '../app/(main)/onboarding'
 import ProfilePreviewScreen from '../app/(main)/profile-preview'
 import { AuthGate } from './AuthGate'
 import { useSubscriptionBackgroundRefresh } from '../stores/subscription-store'
+import * as Haptics from 'expo-haptics'
 
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
 
-const TabBarHeight = Platform.OS === 'ios' ? 88 : 70
-
+// Screens draw their own large title, so the native bar carries only the back
+// button — one title per screen. Screens without an in-screen title override it.
 const stackHeaderOptions = {
+  headerTitle: '',
+  headerBackButtonDisplayMode: 'minimal' as const,
   headerStyle: { backgroundColor: colors.bg },
   headerTintColor: colors.text,
   headerTitleStyle: { fontSize: 15, fontWeight: '700' as const },
@@ -111,9 +115,12 @@ function ActiveTabIndicator() {
 function MainTabsNavigator() {
   const unreadByRoom = useChatStore((s) => s.unreadByRoom)
   const totalUnread = Object.values(unreadByRoom).reduce((sum, n) => sum + n, 0)
+  // Real home-indicator / gesture-bar inset instead of a per-OS guess.
+  const bottomInset = Math.max(useSafeAreaInsets().bottom, 8)
 
   return (
     <Tab.Navigator
+            screenListeners={{ tabPress: () => { Haptics.selectionAsync() } }}
             screenOptions={{
               tabBarActiveTintColor: colors.blue,
               tabBarInactiveTintColor: colors.textMuted,
@@ -121,8 +128,8 @@ function MainTabsNavigator() {
                 backgroundColor: colors.bg,
                 borderTopColor: colors.border,
                 borderTopWidth: 1,
-                height: TabBarHeight,
-                paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+                height: 60 + bottomInset,
+                paddingBottom: bottomInset,
                 paddingTop: 8,
               },
               tabBarLabelStyle: {
@@ -230,7 +237,7 @@ function BrandStackInner() {
       <Stack.Screen
         name="CampaignDetails"
         component={BrandCampaignDetails}
-        options={{ headerTitle: 'Campaign Details', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="ChatDetail"
@@ -240,129 +247,129 @@ function BrandStackInner() {
       <Stack.Screen
         name="Bids"
         component={BrandBids}
-        options={{ headerTitle: 'Bids', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="CampaignAnalytics"
         component={CampaignAnalytics}
-        options={{ headerTitle: 'Campaign Analytics', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="CampaignEdit"
         component={CampaignEdit}
-        options={{ headerTitle: 'Edit Campaign', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="CampaignDiscover"
         component={CampaignDiscover}
-        options={{ headerTitle: 'Discover Creators', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="CampaignResponses"
         component={CampaignResponses}
-        options={{ headerTitle: 'Responses', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="CampaignExecute"
         component={CampaignExecute}
-        options={{ headerTitle: 'Execute', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="DealReview"
         component={DealReview}
-        options={{ headerTitle: 'Collaboration', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       {/* Notification deep links (/dashboard/collaborations/{id}) resolve to
           "Collaborations"; on the brand app that is the deal review. */}
       <Stack.Screen
         name="Collaborations"
         component={DealReview}
-        options={{ headerTitle: 'Collaboration', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="CampaignOutreach"
         component={CampaignOutreach}
-        options={{ headerTitle: 'Outreach', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="CampaignEscrow"
         component={CampaignEscrow}
-        options={{ headerTitle: 'Escrow', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="CampaignCircle"
         component={CampaignCircle}
-        options={{ headerTitle: 'Creator Circle', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="CreateCampaign"
         component={CreateCampaign}
-        options={{ headerTitle: 'New Campaign', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="InviteCreator"
         component={InviteCreator}
-        options={{ headerTitle: 'Invite Creator', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Subscription"
         component={SubscriptionScreen}
-        options={{ headerTitle: 'Workspace', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Disputes"
         component={DisputesScreen}
-        options={{ headerTitle: 'Disputes', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{ headerTitle: 'Settings', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Profile"
         component={ProfileSettingsScreen}
-        options={{ headerTitle: 'Profile', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Account"
         component={AccountSettingsScreen}
-        options={{ headerTitle: 'Account', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Security"
         component={SecuritySettingsScreen}
-        options={{ headerTitle: 'Security', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Team"
         component={TeamSettingsScreen}
-        options={{ headerTitle: 'Team', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Billing"
         component={BillingSettingsScreen}
-        options={{ headerTitle: 'Billing', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="NotificationSettings"
         component={NotificationsSettingsScreen}
-        options={{ headerTitle: 'Notifications', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Notifications"
         component={NotificationsScreen}
-        options={{ headerTitle: 'Notifications', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="VerifyEmail"
         component={VerifyEmailScreen}
-        options={{ headerTitle: 'Verify Email', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="ChangePassword"
         component={ChangePasswordScreen}
-        options={{ headerTitle: 'Change Password', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Onboarding"
@@ -372,97 +379,97 @@ function BrandStackInner() {
       <Stack.Screen
         name="ProfilePreview"
         component={ProfilePreviewScreen}
-        options={{ headerTitle: 'Public Profile', ...stackHeaderOptions }}
+        options={{ ...stackHeaderOptions, headerTitle: 'Public Profile' }}
       />
       <Stack.Screen
         name="Wallet"
         component={WalletScreen}
-        options={{ headerTitle: 'Wallet', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Relationships"
         component={RelationshipsScreen}
-        options={{ headerTitle: 'Relationships', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="RelationshipDetail"
         component={RelationshipDetailScreen}
-        options={{ headerTitle: 'Relationship', ...stackHeaderOptions }}
+        options={{ ...stackHeaderOptions, headerTitle: 'Relationship' }}
       />
       <Stack.Screen
         name="Invites"
         component={InvitesScreen}
-        options={{ headerTitle: 'Invites', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Analytics"
         component={AnalyticsScreen}
-        options={{ headerTitle: 'Analytics', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Affiliate"
         component={AffiliateProgramsScreen}
-        options={{ headerTitle: 'Affiliate', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="AffiliateDetail"
         component={AffiliateDetailScreen}
-        options={{ headerTitle: 'Program', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="AffiliateLinks"
         component={AffiliateLinksScreen}
-        options={{ headerTitle: 'Links', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="AffiliateCommissions"
         component={AffiliateCommissionsScreen}
-        options={{ headerTitle: 'Commissions', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="CreatorReport"
         component={CreatorReport}
-        options={{ headerTitle: 'Creator Report', ...stackHeaderOptions }}
+        options={{ ...stackHeaderOptions, headerTitle: 'Creator Report' }}
       />
       <Stack.Screen
         name="Growth"
         component={GrowthScreen}
-        options={{ headerTitle: 'Growth', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="GrowthSetup"
         component={GrowthSetupScreen}
-        options={{ headerTitle: 'Set up Growth', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="GrowthSeo"
         component={GrowthSeoScreen}
-        options={{ headerTitle: 'SEO', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="GrowthSearchConsole"
         component={GrowthSearchConsoleScreen}
-        options={{ headerTitle: 'Search Console', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="GrowthAiVisibility"
         component={GrowthAiVisibilityScreen}
-        options={{ headerTitle: 'AI Visibility', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="GrowthOpportunities"
         component={GrowthOpportunitiesScreen}
-        options={{ headerTitle: 'Opportunities', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="GrowthRecommendations"
         component={GrowthRecommendationsScreen}
-        options={{ headerTitle: 'Recommendations', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
       <Stack.Screen
         name="Invoices"
         component={InvoicesScreen}
-        options={{ headerTitle: 'Invoices', ...stackHeaderOptions }}
+        options={stackHeaderOptions}
       />
     </Stack.Navigator>
   )

@@ -33,7 +33,7 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_COLORS: Record<string, { fg: string; bg: string; icon: string }> = {
   pending: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)', icon: 'time-outline' },
   in_progress: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)', icon: 'hammer-outline' },
-  submitted: { fg: '#8B5CF6', bg: 'rgba(139,92,246,0.14)', icon: 'cloud-upload-outline' },
+  submitted: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)', icon: 'cloud-upload-outline' },
   approved: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)', icon: 'checkmark-circle-outline' },
   rejected: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)', icon: 'close-circle-outline' },
 }
@@ -83,7 +83,7 @@ export default function CampaignExecuteScreen() {
     const st = item.status || 'pending'
     const s = STATUS_COLORS[st] || STATUS_COLORS.pending
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
        <Pressable
         onPress={() => navigation.navigate('DealReview', { id: item.id, title: `${title || 'Campaign'} · ${item.title}` })}
         style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}

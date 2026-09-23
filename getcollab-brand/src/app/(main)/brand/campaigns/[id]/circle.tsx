@@ -4,19 +4,13 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 
 type RouteParams = RouteProp<{ campaignCircle: { id: string; title?: string } }, 'campaignCircle'>
 
 interface Member { id: string; name: string; instagramHandle?: string; status: string; image?: string }
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  invited: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  accepted: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  active: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)' },
-  completed: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)' },
-}
 
 export default function CampaignCircleScreen() {
   const route = useRoute<RouteParams>()
@@ -56,7 +50,7 @@ export default function CampaignCircleScreen() {
     const s = STATUS_COLORS[st] || STATUS_COLORS.invited
     const initial = item.name?.charAt(0).toUpperCase() || '?'
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
         <Pressable style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initial}</Text>

@@ -34,7 +34,7 @@ export default function SettlementsScreen() {
     finally { setLoading(false); setRefreshing(false) }
   }, [])
 
-  useFocusEffect(useCallback(() => { setLoading(true); load() }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
   const submit = async () => {
     if (!campaignId.trim()) return Alert.alert('Campaign required', 'Enter the campaign ID for the completed deal.')
@@ -51,7 +51,7 @@ export default function SettlementsScreen() {
   const renderItem = ({ item, index }: { item: Settlement; index: number }) => {
     const s = statusColor(item.status)
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(300)} style={styles.card}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
           <View style={[styles.statusDot, { backgroundColor: s.dot }]} />
           <View style={{ flex: 1 }}>
@@ -71,7 +71,7 @@ export default function SettlementsScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <FlatList
+      <FlatList automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
         style={styles.root}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}

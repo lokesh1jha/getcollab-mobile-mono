@@ -78,7 +78,7 @@ export default function DealReviewScreen() {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView
+        <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}
         >

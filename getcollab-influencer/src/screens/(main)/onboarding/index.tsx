@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, Image, TextInput, Pressable, Linking } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TextInput, Pressable, Linking } from 'react-native'
+import { Image } from 'expo-image'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
@@ -280,7 +282,7 @@ export default function OnboardingScreen({ navigation }: Props) {
     <View style={styles.avatarWrap}>
       <Pressable accessibilityRole="button" accessibilityLabel="Change photo" style={({ pressed }) => [styles.avatar, pressed && styles.pressed]} onPress={pickAvatar} disabled={uploadingAvatar}>
         {avatarUrl ? (
-          <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
+          <Image transition={200} source={{ uri: avatarUrl }} style={styles.avatarImg} />
         ) : (
           <Ionicons name="person" size={40} color={colors.textSubtle} />
         )}
@@ -524,14 +526,16 @@ export default function OnboardingScreen({ navigation }: Props) {
 }
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
-  <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
-    <ScrollView
-      contentContainerStyle={styles.content}
-      bounces={false}
-      overScrollMode="never"
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-    >{children}</ScrollView>
+  <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+    <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+      <ScrollView automaticallyAdjustKeyboardInsets
+        contentContainerStyle={styles.content}
+        bounces={false}
+        overScrollMode="never"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >{children}</ScrollView>
+    </Animated.View>
   </SafeAreaView>
 )
 
@@ -608,7 +612,7 @@ function MultiSearchSelect({
               </View>
             </View>
           )}
-          <ScrollView style={ss.list} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+          <ScrollView automaticallyAdjustKeyboardInsets style={ss.list} nestedScrollEnabled keyboardShouldPersistTaps="handled">
             {filtered.length === 0 && <Text style={ss.empty}>No matches</Text>}
             {filtered.map((o) => {
               const isSel = selected.includes(o.value)
@@ -847,7 +851,7 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 13, color: colors.text },
-  chipTextActive: { color: colors.white },
+  chipTextActive: { color: colors.black },
   actionRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
   avatarWrap: { alignItems: 'center', marginBottom: spacing.md },
   avatar: {

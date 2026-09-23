@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, Image, Pressable, ScrollView, Modal } from 'react-native'
-import { colors, spacing } from '@shared/constants'
+import { View, Text, StyleSheet, Pressable, ScrollView, Modal } from 'react-native'
+import { Image } from 'expo-image'
+import { colors, spacing } from '@/src/theme'
 
 interface PortfolioItem {
   id: string
@@ -23,7 +24,7 @@ export function PortfolioGallery({ items }: { items: PortfolioItem[] }) {
             accessibilityRole="imagebutton"
             accessibilityLabel="View portfolio image"
           >
-            <Image source={{ uri: item.url }} style={styles.tileImage} />
+            <Image transition={200} source={{ uri: item.url }} style={styles.tileImage} />
           </Pressable>
         ))}
 
@@ -37,7 +38,7 @@ export function PortfolioGallery({ items }: { items: PortfolioItem[] }) {
           accessibilityRole="button"
           accessibilityLabel="Close preview"
         >
-          {preview && <Image source={{ uri: preview.url }} style={styles.previewImage} resizeMode="contain" />}
+          {preview && <Image transition={200} source={{ uri: preview.url }} style={styles.previewImage} contentFit="contain" />}
         </Pressable>
       </Modal>
     </View>
@@ -52,11 +53,11 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
     marginRight: spacing.sm,
   },
   tileImage: { width: '100%', height: '100%' },
-  emptyText: { color: colors.textMuted, fontSize: 14, padding: spacing.md },
+  emptyText: { color: colors.textMuted, fontSize: 14, padding: spacing.lg },
   previewOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.95)',

@@ -4,7 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, matchScoreColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 
 type RouteParams = RouteProp<{ campaignDiscover: { id: string; title?: string } }, 'campaignDiscover'>
@@ -52,9 +52,9 @@ export default function CampaignDiscoverScreen() {
 
   const renderItem = ({ item, index }: { item: Creator; index: number }) => {
     const score = item.matchScore
-    const scoreColor = score != null ? (score >= 90 ? colors.success : score >= 80 ? colors.blue : colors.warning) : colors.blue
+    const scoreColor = score != null ? matchScoreColor(score) : colors.blue
     return (
-      <Animated.View entering={FadeInDown.delay(index * 50).duration(320)} style={styles.card}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
         <View style={styles.cardTop}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{item.name?.charAt(0).toUpperCase() || '?'}</Text>

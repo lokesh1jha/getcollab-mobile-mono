@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, spacing } from '@/src/theme'
 import { Button } from '@shared/components/ui/Button'
@@ -69,39 +70,41 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Verify your email</Text>
-        <Text style={styles.subtitle}>
-          We sent a verification code to <Text style={styles.email}>{email}</Text>.
-          Please enter the code below.
-        </Text>
-
-        <Input
-          label="Verification Code"
-          value={token}
-          onChangeText={setToken}
-          placeholder="Enter 6-digit code"
-          style={styles.input}
-        />
-
-        <Button
-          title={submitting ? 'Verifying...' : 'Verify'}
-          onPress={handleVerify}
-          loading={submitting}
-          disabled={submitting}
-          fullWidth
-          style={styles.submitBtn}
-        />
-
-        <Button
-          title={resending ? 'Sending...' : 'Resend Email'}
-          variant="outline"
-          onPress={handleResend}
-          loading={resending}
-          disabled={resending}
-          fullWidth
-        />
-      </ScrollView>
+      <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+        <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+          <Text style={styles.title}>Verify your email</Text>
+          <Text style={styles.subtitle}>
+            We sent a verification code to <Text style={styles.email}>{email}</Text>.
+            Please enter the code below.
+          </Text>
+  
+          <Input
+            label="Verification Code"
+            value={token}
+            onChangeText={setToken}
+            placeholder="Enter 6-digit code"
+            style={styles.input}
+          />
+  
+          <Button
+            title={submitting ? 'Verifying...' : 'Verify'}
+            onPress={handleVerify}
+            loading={submitting}
+            disabled={submitting}
+            fullWidth
+            style={styles.submitBtn}
+          />
+  
+          <Button
+            title={resending ? 'Sending...' : 'Resend Email'}
+            variant="outline"
+            onPress={handleResend}
+            loading={resending}
+            disabled={resending}
+            fullWidth
+          />
+        </ScrollView>
+      </Animated.View>
     </SafeAreaView>
   )
 }

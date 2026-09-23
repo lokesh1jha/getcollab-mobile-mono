@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import {
-  View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, TextInput,
-  KeyboardAvoidingView, Platform, Alert, Dimensions,
-} from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, TextInput, KeyboardAvoidingView, Platform, Alert, Dimensions, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
@@ -10,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing, radius, statusColor } from '@/src/theme'
 import { useCampaignStore } from '@shared/stores/campaign-store'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 const { width } = Dimensions.get('window')
 
@@ -75,6 +73,11 @@ function formatDate(d?: string): string {
 }
 
 export default function InfluencerCampaignDetailsScreen() {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await load() } finally { setRefreshing(false) }
+  }
   const route = useRoute<CampaignDetailsRouteProp>()
   const navigation = useNavigation<any>()
   const { id } = route.params || {}
@@ -88,7 +91,6 @@ export default function InfluencerCampaignDetailsScreen() {
 
   const load = useCallback(async () => {
     if (!id) { setLoading(false); return }
-    setLoading(true)
     try {
       await fetchCampaign(id)
       const state = useCampaignStore.getState()
@@ -143,6 +145,7 @@ export default function InfluencerCampaignDetailsScreen() {
         amount: Number(bidAmount),
         message: bidPitch,
       })
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       Alert.alert('Applied!', 'Your application was submitted.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ])
@@ -170,7 +173,7 @@ export default function InfluencerCampaignDetailsScreen() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg }}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
           <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginTop: spacing.md }}>Campaign not found</Text>
-          <Pressable onPress={() => navigation.goBack()} style={styles.primaryBtn}>
+          <Pressable onPress={() => navigation.goBack()} style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}>
             <Text style={styles.primaryBtnText}>Go Back</Text>
           </Pressable>
         </View>
@@ -190,14 +193,14 @@ export default function InfluencerCampaignDetailsScreen() {
       <SafeAreaView style={styles.root} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => navigation.goBack()} style={styles.iconBtn}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => navigation.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.85 }]}>
             <Ionicons name="chevron-back" size={22} color={colors.text} />
           </Pressable>
           <Text style={styles.headerTitle} numberOfLines={1}>Campaign</Text>
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: spacing.xxxl }}
         >

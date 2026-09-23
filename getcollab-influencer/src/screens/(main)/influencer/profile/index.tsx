@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import {
-  ActivityIndicator, Alert, FlatList, Image, Modal, Pressable, ScrollView,
-  StyleSheet, Text, TextInput, View, Dimensions, Linking,
-} from 'react-native'
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Dimensions, Linking, RefreshControl } from 'react-native'
+import { Image } from 'expo-image'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -44,6 +42,11 @@ function formatFollowers(n?: number): string {
 }
 
 export default function InfluencerProfile({ navigation }: { navigation: InfluencerNavigationProp }) {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await load() } finally { setRefreshing(false) }
+  }
   const { user } = useAuthStore()
   const [profile, setProfile] = useState<ProfileData>({})
   const [loading, setLoading] = useState(true)
@@ -54,7 +57,6 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
   const [previewUri, setPreviewUri] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    setLoading(true)
     try {
       const res = await apiService.getProfileWithMetrics().catch(() => apiService.getProfile())
       const p = res?.data || res?.profile || res?.influencerProfile || res || {}
@@ -165,11 +167,11 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
           {/* Cover image */}
           <Pressable onPress={editing ? () => pickImage('coverImage') : undefined} style={({ pressed }) => [styles.coverWrap, editing && pressed && { opacity: 0.85 }]}>
             {form.coverImage ? (
-              <Image source={{ uri: form.coverImage }} style={styles.coverImg} />
+              <Image transition={200} source={{ uri: form.coverImage }} style={styles.coverImg} />
             ) : (
               <View style={styles.coverPlaceholder}>
                 {editing && <Ionicons name="camera-outline" size={24} color={colors.textMuted} />}
@@ -179,15 +181,15 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
               <View style={{ flex: 1 }} />
               {editing ? (
                 <View style={styles.coverBtns}>
-                  <Pressable onPress={() => { setEditing(false); setForm(profile) }} style={[styles.coverBtn, { borderColor: colors.border }]}>
+                  <Pressable onPress={() => { setEditing(false); setForm(profile) }} style={({ pressed }) => [styles.coverBtn, { borderColor: colors.border }, pressed && { opacity: 0.85 }]}>
                     <Text style={styles.coverBtnText}>Cancel</Text>
                   </Pressable>
-                  <Pressable onPress={save} disabled={saving} style={[styles.coverBtn, { backgroundColor: colors.neon, borderColor: colors.neon }]}>
+                  <Pressable onPress={save} disabled={saving} style={({ pressed }) => [styles.coverBtn, { backgroundColor: colors.neon, borderColor: colors.neon }, pressed && { opacity: 0.85 }]}>
                     {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={[styles.coverBtnText, { color: '#000' }]}>Save</Text>}
                   </Pressable>
                 </View>
               ) : (
-                <Pressable onPress={() => setEditing(true)} style={[styles.coverBtn, { backgroundColor: colors.card }]}>
+                <Pressable onPress={() => setEditing(true)} style={({ pressed }) => [styles.coverBtn, { backgroundColor: colors.card }, pressed && { opacity: 0.85 }]}>
                   <Ionicons name="pencil-outline" size={14} color={colors.text} />
                   <Text style={styles.coverBtnText}>Edit</Text>
                 </Pressable>
@@ -199,7 +201,7 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
           <View style={styles.profileInfo}>
             <Pressable onPress={editing ? () => pickImage('avatar') : undefined} style={({ pressed }) => [styles.avatarOuter, editing && pressed && { opacity: 0.85 }]}>
               {form.avatar ? (
-                <Image source={{ uri: form.avatar }} style={styles.avatar} />
+                <Image transition={200} source={{ uri: form.avatar }} style={styles.avatar} />
               ) : (
                 <View style={[styles.avatar, { backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center' }]}>
                   <Text style={{ color: colors.text, fontSize: 32, fontWeight: '700' }}>{displayName.charAt(0).toUpperCase()}</Text>
@@ -272,7 +274,7 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
                       <Pressable key={lang} onPress={() => setForm(prev => {
                         const langs = prev.languages || []
                         return { ...prev, languages: langs.includes(lang) ? langs.filter(l => l !== lang) : [...langs, lang] }
-                      })} style={[styles.categoryChip, active && styles.categoryChipActive]}>
+                      })} style={({ pressed }) => [styles.categoryChip, active && styles.categoryChipActive, pressed && { opacity: 0.85 }]}>
                         <Text style={[styles.categoryText, active && styles.categoryTextActive]}>{lang}</Text>
                       </Pressable>
                     )
@@ -326,7 +328,7 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
                   const active = (editing ? form : profile).categories?.includes(cat)
                   if (!editing && !active) return null
                   return (
-                    <Pressable key={cat} onPress={editing ? () => toggleCategory(cat) : undefined} style={[styles.categoryChip, active && styles.categoryChipActive]}>
+                    <Pressable key={cat} onPress={editing ? () => toggleCategory(cat) : undefined} style={({ pressed }) => [styles.categoryChip, active && styles.categoryChipActive, pressed && { opacity: 0.85 }]}>
                       <Text style={[styles.categoryText, active && styles.categoryTextActive]}>{cat}</Text>
                     </Pressable>
                   )
@@ -413,10 +415,10 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
               {(form.portfolio || []).length > 0 ? (
                 <View style={styles.portfolioGrid}>
                   {(form.portfolio || []).map((uri, i) => (
-                    <Pressable key={`${uri}-${i}`} onPress={() => setPreviewUri(uri)} style={styles.portfolioItemWrap}>
-                      <Image source={{ uri }} style={styles.portfolioItem} />
+                    <Pressable key={`${uri}-${i}`} onPress={() => setPreviewUri(uri)} style={({ pressed }) => [styles.portfolioItemWrap, pressed && { opacity: 0.85 }]}>
+                      <Image transition={200} source={{ uri }} style={styles.portfolioItem} />
                       {editing && (
-                        <Pressable accessibilityRole="button" accessibilityLabel="Remove image" onPress={() => removePortfolioImage(i)} style={styles.portfolioRemove} hitSlop={8}>
+                        <Pressable accessibilityRole="button" accessibilityLabel="Remove image" onPress={() => removePortfolioImage(i)} style={({ pressed }) => [styles.portfolioRemove, pressed && { opacity: 0.85 }]} hitSlop={8}>
                           <Ionicons name="close-circle" size={20} color={colors.error} />
                         </Pressable>
                       )}
@@ -458,9 +460,9 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
         <Pressable style={styles.previewOverlay} onPress={() => setPreviewUri(null)}>
           <SafeAreaView style={{ flex: 1 }}>
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
+              {previewUri && <Image transition={200} source={{ uri: previewUri }} style={styles.previewImage} contentFit="contain" />}
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close preview" onPress={() => setPreviewUri(null)} style={styles.previewClose}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close preview" onPress={() => setPreviewUri(null)} style={({ pressed }) => [styles.previewClose, pressed && { opacity: 0.85 }]}>
               <Ionicons name="close" size={28} color={colors.text} />
             </Pressable>
           </SafeAreaView>

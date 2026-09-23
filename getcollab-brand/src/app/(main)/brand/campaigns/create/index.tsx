@@ -1,17 +1,6 @@
 import React, { useState, useCallback } from 'react'
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  TextInput,
-  Pressable,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-} from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Alert, TextInput, Pressable, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native'
+import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'
@@ -22,6 +11,7 @@ import { apiService, handleApiError } from '@shared/services/api'
 import { useReferenceDataStore, selectCategories, selectRegions, selectDeliverables } from '@shared/stores/reference-data-store'
 import { TrialGuard } from '../../../../../components/TrialGuard'
 import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 interface CreateCampaignScreenProps {
   navigation?: any
@@ -195,6 +185,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
       if (coverImageUrl) payload.featuredImage = coverImageUrl
 
       await apiService.createCampaign(payload)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
 
       Alert.alert('Success', 'Campaign created successfully!', [
         { text: 'OK', onPress: () => navigation?.navigate('Campaigns') },
@@ -227,7 +218,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
 
               <Pressable style={({ pressed }) => [styles.coverPicker, pressed && { opacity: 0.85 }]} onPress={pickCoverImage}>
                 {coverImage ? (
-                  <Image source={{ uri: coverImage }} style={styles.coverImage} />
+                  <Image transition={200} source={{ uri: coverImage }} style={styles.coverImage} />
                 ) : (
                   <View style={styles.coverPlaceholder}>
                     <Ionicons name="camera-outline" size={32} color={colors.textMuted} />
@@ -286,7 +277,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
                 <View style={styles.dateField}>
                   <Text style={styles.label}>Start Date</Text>
                   <Pressable
-                    style={[styles.dateButton, errors.startDate && styles.inputError]}
+                    style={({ pressed }) => [styles.dateButton, errors.startDate && styles.inputError, pressed && { opacity: 0.85 }]}
                     onPress={() => setShowDatePicker('start')}
                   >
                     <Text style={[styles.dateButtonText, startDateObj && { color: colors.text }]}>
@@ -298,7 +289,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
                 <View style={styles.dateField}>
                   <Text style={styles.label}>End Date</Text>
                   <Pressable
-                    style={[styles.dateButton, errors.endDate && styles.inputError]}
+                    style={({ pressed }) => [styles.dateButton, errors.endDate && styles.inputError, pressed && { opacity: 0.85 }]}
                     onPress={() => setShowDatePicker('end')}
                   >
                     <Text style={[styles.dateButtonText, endDateObj && { color: colors.text }]}>
@@ -319,7 +310,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
                 />
               )}
               {Platform.OS === 'ios' && showDatePicker && (
-                <Pressable style={styles.dateDoneButton} onPress={() => setShowDatePicker(null)}>
+                <Pressable style={({ pressed }) => [styles.dateDoneButton, pressed && { opacity: 0.85 }]} onPress={() => setShowDatePicker(null)}>
                   <Text style={styles.dateDoneButtonText}>Done</Text>
                 </Pressable>
               )}

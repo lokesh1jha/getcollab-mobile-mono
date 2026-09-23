@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { View, Text, Pressable } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
-import { colors } from '@/src/theme'
+import { colors, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import {
   GrowthGate,
@@ -12,12 +12,6 @@ import {
   type GrowthSite,
 } from '../../../../components/growth/growth-shared'
 
-const STATUS_TONES: Record<string, { fg: string; bg: string }> = {
-  open: { fg: colors.warning, bg: colors.warningSoft },
-  approved: { fg: colors.blue, bg: colors.blueSoft },
-  done: { fg: colors.success, bg: colors.successSoft },
-  dismissed: { fg: colors.textMuted, bg: 'rgba(161,161,170,0.12)' },
-}
 
 function RecommendationsBody({ site, navigation }: { site: GrowthSite; navigation?: any }) {
   const [recommendations, setRecommendations] = useState<any[]>([])
@@ -90,10 +84,10 @@ function RecommendationsBody({ site, navigation }: { site: GrowthSite; navigatio
         />
       ) : (
         recommendations.map((rec: any, i: number) => {
-          const tone = STATUS_TONES[rec.status] ?? STATUS_TONES.dismissed
+          const tone = STATUS_COLORS[rec.status] ?? STATUS_COLORS.dismissed
           const busy = busyId === rec.id
           return (
-            <Animated.View key={rec.id} entering={FadeInDown.delay(i * 40).duration(320)} style={growthStyles.card}>
+            <Animated.View key={rec.id} entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)} style={growthStyles.card}>
               <View style={growthStyles.pillRow}>
                 <View style={[growthStyles.pill, { backgroundColor: colors.blueSoft }]}>
                   <Text style={[growthStyles.pillText, { color: colors.blue }]}>{dimensionLabel(rec.dimension)}</Text>

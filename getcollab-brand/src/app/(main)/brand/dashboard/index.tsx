@@ -6,7 +6,7 @@ import { apiService } from '@shared/services/api'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { useCampaignStore } from '@shared/stores/campaign-store'
 import { useInfluencerStore } from '@shared/stores/influencer-store'
 import { useAuthStore } from '@shared/stores/auth-store'
@@ -19,13 +19,6 @@ import { logger } from '@shared/services/logger'
 const { width } = Dimensions.get('window')
 const CARD_W = width * 0.42
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string; dot: string }> = {
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)', dot: '#22C55E' },
-  draft: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)', dot: '#A1A1AA' },
-  completed: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)', dot: '#3B82F6' },
-  paused: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)', dot: '#F59E0B' },
-  cancelled: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)', dot: '#EF4444' },
-}
 
 function getGreeting(name?: string): { greeting: string; subtitle: string } {
   const hour = new Date().getHours()
@@ -54,7 +47,6 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
   const loadDashboardData = useCallback(async () => {
     setLoadError(null)
     try {
-      setLoading(true)
       const [, , wallet] = await Promise.all([
         fetchMyCampaigns(),
         fetchInfluencers(),
@@ -176,7 +168,7 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
               <Text style={styles.greeting}>{greeting}</Text>
               <Text style={styles.subtitle}>{subtitle}</Text>
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Notifications" testID="dashboard-notif-btn" style={styles.bellBtn} hitSlop={10} onPress={() => navigation?.navigate('Notifications')}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Notifications" testID="dashboard-notif-btn" style={({ pressed }) => [styles.bellBtn, pressed && { opacity: 0.85 }]} hitSlop={10} onPress={() => navigation?.navigate('Notifications')}>
               <Ionicons name="notifications-outline" size={20} color="#fff" />
               <View style={styles.bellDot} />
             </Pressable>
@@ -185,7 +177,7 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
           {/* KPI Cards */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.md, paddingVertical: spacing.sm }} style={{ marginTop: spacing.sm }}>
             {kpiCards.map((k, i) => (
-              <Animated.View key={k.id} entering={FadeInDown.delay(80 * i).duration(320)} style={[styles.kpiCard, { width: CARD_W }]}>
+              <Animated.View key={k.id} entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)} style={[styles.kpiCard, { width: CARD_W }]}>
                 <Text style={styles.kpiLabel}>{k.label}</Text>
                 <Text style={styles.kpiValue}>{k.value}</Text>
                 {k.delta && (
@@ -268,7 +260,7 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Recent Campaigns</Text>
               {myCampaigns.length > 0 && (
-                <Pressable onPress={() => navigation?.navigate('Campaigns')}>
+                <Pressable onPress={() => navigation?.navigate('Campaigns')} style={({ pressed }) => pressed && { opacity: 0.85 }}>
                   <Text style={styles.sectionLink}>View all</Text>
                 </Pressable>
               )}

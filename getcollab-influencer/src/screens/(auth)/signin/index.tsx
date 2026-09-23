@@ -1,27 +1,16 @@
 import React, { useState } from 'react'
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Image } from 'expo-image'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { spacing } from '@/src/theme'
+import { colors, spacing } from '@/src/theme'
 import { showSignInError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 interface Props { navigation?: InfluencerNavigationProp }
 
-const palette = {
-  bg: '#09090B',
-  card: 'rgba(255,255,255,0.04)',
-  border: 'rgba(124,124,255,0.18)',
-  text: '#FFFFFF',
-  textSecondary: '#C7C7D4',
-  textMuted: '#8B8BA0',
-  textSubtle: 'rgba(255,255,255,0.28)',
-  accent: '#6D6AFD',
-  accentBright: '#8D8BFF',
-  error: '#FF6B6B',
-}
 
 export default function SignInScreen({ navigation }: Props) {
   const [email, setEmail] = useState('')
@@ -63,10 +52,10 @@ export default function SignInScreen({ navigation }: Props) {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <View style={styles.header}>
             <Pressable accessibilityRole="button" accessibilityLabel="Go back" hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
-              <Ionicons name="chevron-back" size={22} color={palette.text} />
+              <Ionicons name="chevron-back" size={22} color={colors.text} />
             </Pressable>
             <View style={styles.brandRow}>
-              <Image source={require('../../../../assets/icon.png')} style={styles.logoImg} resizeMode="contain" />
+              <Image source={require('../../../../assets/icon.png')} style={styles.logoImg} contentFit="contain" />
               <Text style={styles.logoText}><Text style={styles.logoGet}>Get</Text><Text style={styles.logoCollab}>Collab</Text></Text>
             </View>
             <View style={{ width: 36 }} />
@@ -83,7 +72,7 @@ export default function SignInScreen({ navigation }: Props) {
                 <FieldInput label="Password" icon="lock-closed-outline" value={password} onChange={setPassword} error={errors.password} clearError={() => setErrors({ ...errors, password: '' })} placeholder="Enter password" secure />
               </View>
 
-              <Pressable style={styles.forgotRow} onPress={() => navigation?.navigate('ForgotPassword')}>
+              <Pressable style={({ pressed }) => [styles.forgotRow, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('ForgotPassword')}>
                 <Text style={styles.forgotText}>Forgot password?</Text>
               </Pressable>
 
@@ -93,15 +82,15 @@ export default function SignInScreen({ navigation }: Props) {
                 style={({ pressed }) => [styles.primaryBtn, pressed && !loading && { opacity: 0.92, transform: [{ scale: 0.98 }] }]}
               >
                 <View style={styles.primaryInner}>
-                  <Ionicons name="flash" size={18} color="#FFFFFF" />
+                  <Ionicons name="flash" size={18} color={colors.black} />
                   <Text style={styles.primaryBtnText}>{loading ? 'Signing in…' : 'Sign In'}</Text>
-                  {!loading && <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />}
+                  {!loading && <Ionicons name="arrow-forward" size={18} color={colors.black} />}
                 </View>
               </Pressable>
 
               <View style={styles.bottomRow}>
                 <Text style={styles.bottomText}>New to GetCollab? </Text>
-                <Pressable onPress={() => navigation?.navigate('SignUp')}>
+                <Pressable onPress={() => navigation?.navigate('SignUp')} style={({ pressed }) => pressed && { opacity: 0.85 }}>
                   <Text style={styles.bottomLink}>Create account</Text>
                 </Pressable>
               </View>
@@ -121,12 +110,12 @@ function FieldInput({ label, icon, value, onChange, error, clearError, placehold
     <View>
       <Text style={styles.fieldLabel}>{label}</Text>
       <View style={[styles.fieldWrap, !!error && styles.fieldError]}>
-        <Ionicons name={icon} size={18} color={palette.textMuted} />
+        <Ionicons name={icon} size={18} color={colors.textMuted} />
         <TextInput
           value={value}
           onChangeText={(v) => { onChange(v); clearError?.() }}
           placeholder={placeholder}
-          placeholderTextColor={palette.textSubtle}
+          placeholderTextColor={colors.textSubtle}
           autoCapitalize="none"
           keyboardType={keyboard}
           secureTextEntry={secure}
@@ -139,7 +128,7 @@ function FieldInput({ label, icon, value, onChange, error, clearError, placehold
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: palette.bg },
+  root: { flex: 1, backgroundColor: colors.bg },
 
   glowTop: {
     position: 'absolute',
@@ -148,7 +137,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: 'rgba(109,106,253,0.14)',
+    backgroundColor: 'rgba(217,255,0,0.14)',
   },
   glowBottom: {
     position: 'absolute',
@@ -157,39 +146,37 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: 'rgba(124,124,255,0.10)',
+    backgroundColor: 'rgba(217,255,0,0.10)',
   },
 
   scrollContent: { flexGrow: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
-  iconBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: palette.border, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.03)' },
+  iconBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.03)' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logoImg: { width: 26, height: 26 },
   logoText: { fontSize: 17, fontWeight: '800', letterSpacing: -0.4 },
-  logoGet: { color: palette.text },
-  logoCollab: { color: palette.accentBright },
+  logoGet: { color: colors.text },
+  logoCollab: { color: colors.neon },
   body: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: spacing.xxl },
-  eyebrow: { color: palette.accentBright, fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
-  heading: { color: palette.text, fontSize: 30, fontWeight: '800', lineHeight: 36, letterSpacing: -1, marginTop: spacing.md },
-  sub: { color: palette.textSecondary, fontSize: 14, marginTop: spacing.sm },
-  fieldLabel: { color: palette.textMuted, fontSize: 12, fontWeight: '600', letterSpacing: 0.4, marginBottom: 8 },
+  eyebrow: { color: colors.neon, fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
+  heading: { color: colors.text, fontSize: 30, fontWeight: '800', lineHeight: 36, letterSpacing: -1, marginTop: spacing.md },
+  sub: { color: colors.textMuted, fontSize: 14, marginTop: spacing.sm },
+  fieldLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600', letterSpacing: 0.4, marginBottom: 8 },
   fieldWrap: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: palette.border,
-    borderRadius: 14, paddingHorizontal: spacing.lg, paddingVertical: 14, backgroundColor: palette.card,
+    flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: colors.border,
+    borderRadius: 14, paddingHorizontal: spacing.lg, paddingVertical: 14, backgroundColor: colors.card,
   },
-  fieldError: { borderColor: palette.error },
-  fieldInput: { flex: 1, color: palette.text, fontSize: 15, padding: 0 },
-  errorText: { color: palette.error, fontSize: 11, marginTop: 4 },
+  fieldError: { borderColor: colors.error },
+  fieldInput: { flex: 1, color: colors.text, fontSize: 15, padding: 0 },
+  errorText: { color: colors.error, fontSize: 11, marginTop: 4 },
   forgotRow: { alignSelf: 'flex-end', marginTop: spacing.md },
-  forgotText: { color: palette.accentBright, fontSize: 13, fontWeight: '600' },
+  forgotText: { color: colors.neon, fontSize: 13, fontWeight: '600' },
   primaryBtn: {
     borderRadius: 999, overflow: 'hidden', marginTop: spacing.xl,
-    shadowColor: palette.accent, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.35, shadowRadius: 20,
-    elevation: 8,
   },
-  primaryInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, backgroundColor: palette.accent },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  primaryInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, backgroundColor: colors.neon },
+  primaryBtnText: { color: colors.black, fontSize: 16, fontWeight: '700' },
   bottomRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xxl },
-  bottomText: { color: palette.textMuted, fontSize: 13 },
-  bottomLink: { color: palette.accentBright, fontSize: 13, fontWeight: '700' },
+  bottomText: { color: colors.textMuted, fontSize: 13 },
+  bottomLink: { color: colors.neon, fontSize: 13, fontWeight: '700' },
 })

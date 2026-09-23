@@ -69,7 +69,7 @@ export default function ProfileSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+      <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
         <Animated.View entering={FadeInDown.duration(400)}>
           <Text style={styles.title}>Profile</Text>
           <Text style={styles.subtitle}>Your public brand profile</Text>

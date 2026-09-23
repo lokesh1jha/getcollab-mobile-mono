@@ -70,7 +70,7 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
     } finally { setLoading(false); setRefreshing(false) }
   }, [filter, sortKey])
 
-  useFocusEffect(useCallback(() => { load(true) }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
   const onRefresh = () => { setRefreshing(true); load(false) }
 
   const filtered = useMemo(() => {
@@ -99,7 +99,7 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
     const isAccepted = item.status === 'accepted'
     const collabId = item.campaign?.collaborationId
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
         <Pressable
           onPress={() => {
             if (isAccepted && collabId) {
@@ -152,7 +152,7 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.title}>My Bids</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Filters" onPress={() => setShowSort(true)} style={styles.iconBtn}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Filters" onPress={() => setShowSort(true)} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.85 }]}>
             <Ionicons name="funnel-outline" size={18} color={colors.text} />
           </Pressable>
         </View>
@@ -160,14 +160,14 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
         <View style={styles.searchWrap}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput value={query} onChangeText={setQuery} placeholder="Search campaigns…" placeholderTextColor={colors.textSubtle} style={styles.searchInput} />
-          {query.length > 0 && <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.textMuted} /></Pressable>}
+          {query.length > 0 && <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={8} style={({ pressed }) => pressed && { opacity: 0.85 }}><Ionicons name="close-circle" size={18} color={colors.textMuted} /></Pressable>}
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
           {FILTERS.map(f => {
             const active = f === filter
             return (
-              <Pressable key={f} onPress={() => setFilter(f)} style={[styles.filterChip, active && styles.filterChipActive]}>
+              <Pressable key={f} onPress={() => setFilter(f)} style={({ pressed }) => [styles.filterChip, active && styles.filterChipActive, pressed && { opacity: 0.85 }]}>
                 <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{f.charAt(0).toUpperCase() + f.slice(1)}</Text>
               </Pressable>
             )
@@ -188,7 +188,7 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
               <Text style={styles.emptyTitle}>{filter === 'All' ? 'No bids yet' : `No ${filter} bids`}</Text>
               <Text style={styles.emptySub}>{filter === 'All' ? 'Discover campaigns and apply to start earning.' : 'Try a different filter.'}</Text>
               {filter === 'All' && (
-                <Pressable onPress={() => navigation?.navigate('Discover')} style={styles.discoverBtn}>
+                <Pressable onPress={() => navigation?.navigate('Discover')} style={({ pressed }) => [styles.discoverBtn, pressed && { opacity: 0.85 }]}>
                   <Text style={styles.discoverBtnText}>Find Campaigns</Text>
                 </Pressable>
               )}
@@ -204,7 +204,7 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
               <View style={styles.sheetHandle} />
               <Text style={styles.sheetTitle}>Sort by</Text>
               {SORTS.map(s => (
-                <Pressable key={s.key} onPress={() => { setSortKey(s.key); setShowSort(false) }} style={[styles.sheetOption, sortKey === s.key && styles.sheetOptionActive]}>
+                <Pressable key={s.key} onPress={() => { setSortKey(s.key); setShowSort(false) }} style={({ pressed }) => [styles.sheetOption, sortKey === s.key && styles.sheetOptionActive, pressed && { opacity: 0.85 }]}>
                   <Text style={[styles.sheetOptionText, sortKey === s.key && styles.sheetOptionTextActive]}>{s.label}</Text>
                   {sortKey === s.key && <Ionicons name="checkmark" size={16} color={colors.neon} />}
                 </Pressable>

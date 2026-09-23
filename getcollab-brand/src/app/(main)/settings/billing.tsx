@@ -49,7 +49,7 @@ export default function BillingSettingsScreen() {
   }
 
   const renderInvoice = ({ item, index }: { item: Invoice; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
       <Pressable style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]} onPress={() => handleDownload(item.id)}>
         <View style={{ flex: 1 }}>
           <Text style={styles.invoiceTitle}>{item.description || `Invoice ${item.id.slice(0, 8)}`}</Text>

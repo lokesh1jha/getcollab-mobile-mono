@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, RouteProp } from '@react-navigation/native'
 import { colors, spacing } from '@/src/theme'
@@ -59,54 +60,56 @@ export default function ResetPasswordScreen({ navigation }: ResetPasswordScreenP
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Reset your password</Text>
-        <Text style={styles.subtitle}>
-          Paste the token from your email and choose a new password.
-        </Text>
-
-        <Input
-          label="Reset Token"
-          value={token}
-          onChangeText={setToken}
-          placeholder="Paste reset token"
-          style={styles.input}
-        />
-
-        <Input
-          label="New Password"
-          value={password}
-          onChangeText={setPassword}
-          placeholder="At least 8 chars, mix of cases, number, symbol"
-          secureTextEntry
-          style={styles.input}
-        />
-
-        <Input
-          label="Confirm Password"
-          value={confirm}
-          onChangeText={setConfirm}
-          placeholder="Repeat password"
-          secureTextEntry
-          style={styles.input}
-        />
-
-        <Button
-          title={submitting ? 'Resetting...' : 'Reset Password'}
-          onPress={handleSubmit}
-          disabled={submitting}
-          loading={submitting}
-          fullWidth
-          style={styles.submitBtn}
-        />
-
-        <Button
-          title="Back to Sign In"
-          variant="ghost"
-          onPress={() => navigation?.navigate('SignIn')}
-          fullWidth
-        />
-      </ScrollView>
+      <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+        <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+          <Text style={styles.title}>Reset your password</Text>
+          <Text style={styles.subtitle}>
+            Paste the token from your email and choose a new password.
+          </Text>
+  
+          <Input
+            label="Reset Token"
+            value={token}
+            onChangeText={setToken}
+            placeholder="Paste reset token"
+            style={styles.input}
+          />
+  
+          <Input
+            label="New Password"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="At least 8 chars, mix of cases, number, symbol"
+            secureTextEntry
+            style={styles.input}
+          />
+  
+          <Input
+            label="Confirm Password"
+            value={confirm}
+            onChangeText={setConfirm}
+            placeholder="Repeat password"
+            secureTextEntry
+            style={styles.input}
+          />
+  
+          <Button
+            title={submitting ? 'Resetting...' : 'Reset Password'}
+            onPress={handleSubmit}
+            disabled={submitting}
+            loading={submitting}
+            fullWidth
+            style={styles.submitBtn}
+          />
+  
+          <Button
+            title="Back to Sign In"
+            variant="ghost"
+            onPress={() => navigation?.navigate('SignIn')}
+            fullWidth
+          />
+        </ScrollView>
+      </Animated.View>
     </SafeAreaView>
   )
 }

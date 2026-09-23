@@ -1,14 +1,17 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
-import { StyleSheet, View, ActivityIndicator, Text, Pressable, TextInput, Alert, FlatList, Image, KeyboardAvoidingView, Platform } from 'react-native'
+import { StyleSheet, View, ActivityIndicator, Text, Pressable, TextInput, Alert, FlatList, KeyboardAvoidingView, Platform } from 'react-native'
+import { Image } from 'expo-image'
 import Animated, { FadeIn } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePickerLib from 'expo-image-picker'
 import { colors, radius, spacing } from '@/src/theme'
 import { useChatStore } from '@shared/stores/chat-store'
+import { useShallow } from 'zustand/react/shallow'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { handleApiError } from '@shared/services/api'
 import type { Message } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 interface Props { navigation?: any; route?: any }
 
@@ -17,7 +20,9 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
   const chatMeta = route?.params?.chat
   const otherUserId = chatMeta?.influencerId || chatMeta?.userId || chatMeta?.brandId
 
-  const { messages, fetchMessages, sendMessage, sendImage, isLoading, isSending, markRoomRead, setTyping, typingUsers, presence, socket, initializeSocket } = useChatStore()
+  const { messages, fetchMessages, sendMessage, sendImage, isLoading, isSending, markRoomRead, setTyping, typingUsers, presence, socket, initializeSocket } = useChatStore(
+    useShallow((s) => ({ messages: s.messages, fetchMessages: s.fetchMessages, sendMessage: s.sendMessage, sendImage: s.sendImage, isLoading: s.isLoading, isSending: s.isSending, markRoomRead: s.markRoomRead, setTyping: s.setTyping, typingUsers: s.typingUsers, presence: s.presence, socket: s.socket, initializeSocket: s.initializeSocket })),
+  )
   const { user } = useAuthStore()
   const [input, setInput] = useState('')
   const [searchMode, setSearchMode] = useState(false)
@@ -33,7 +38,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
 
   const handleSend = async () => {
     if (!input.trim() || !roomId) return
-    const text = input.trim(); setInput(''); setTyping(roomId, false)
+    const text = input.trim(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setInput(''); setTyping(roomId, false)
     try { await sendMessage(roomId, text) } catch (err) { handleApiError(err, 'Failed to send') }
   }
 
@@ -74,7 +79,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
         {!isMe && (showAvatar ? <View style={styles.bubbleAvatar}><Text style={styles.bubbleAvatarText}>{(chatMeta?.influencerName || '?').charAt(0)}</Text></View> : <View style={styles.bubbleAvatarSpacer} />)}
         <View style={[styles.bubble, isMe ? styles.bubbleMine : styles.bubbleTheirs]}>
           {isImage ? (
-            <Image source={{ uri: item.attachmentUrl || item.content }} style={styles.bubbleImage} />
+            <Image transition={200} source={{ uri: item.attachmentUrl || item.content }} style={styles.bubbleImage} />
           ) : (
             <Text style={styles.bubbleText}>{item.content}</Text>
           )}

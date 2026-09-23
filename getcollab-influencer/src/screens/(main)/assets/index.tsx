@@ -1,5 +1,7 @@
 import React, { useCallback, useState } from 'react'
-import { ActivityIndicator, Alert, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { Image } from 'expo-image'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useFocusEffect } from '@react-navigation/native'
 import * as ImagePicker from 'expo-image-picker'
 import * as DocumentPicker from 'expo-document-picker'
@@ -25,7 +27,7 @@ export default function AssetsScreen() {
     finally { setLoading(false); setRefreshing(false) }
   }, [])
 
-  useFocusEffect(useCallback(() => { setLoading(true); load() }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
   const upload = async (file: { uri: string; mime: string; size: number; width?: number; height?: number }) => {
     if (!ACCEPT_MIMES.includes(file.mime)) {
@@ -75,30 +77,32 @@ export default function AssetsScreen() {
           <Text style={styles.uploadSecondaryText}>PDF / video</Text>
         </Pressable>
       </View>
-      <FlatList
-        style={styles.root}
-        contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}
-        data={items}
-        keyExtractor={(x) => String(x.id)}
-        numColumns={2}
-        columnWrapperStyle={styles.columns}
-        ListEmptyComponent={
-          <View style={styles.emptyWrap}>
-            <Ionicons name="images-outline" size={26} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No assets yet</Text>
-            <Text style={styles.emptySub}>Upload your first one above.</Text>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            {item.preview_url || item.previewUrl ? <Image source={{ uri: item.preview_url || item.previewUrl }} style={styles.image} /> : (
-              <View style={styles.file}><Text style={styles.fileText}>{String(item.mime || 'FILE').split('/').pop()?.toUpperCase()}</Text></View>
-            )}
-            <Text style={styles.meta}>{Math.round(Number(item.size_bytes || item.sizeBytes || 0) / 1024)} KB · {item.scan_status || item.scanStatus || 'pending'}</Text>
-          </View>
-        )}
-      />
+      <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+        <FlatList
+          style={styles.root}
+          contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}
+          data={items}
+          keyExtractor={(x) => String(x.id)}
+          numColumns={2}
+          columnWrapperStyle={styles.columns}
+          ListEmptyComponent={
+            <View style={styles.emptyWrap}>
+              <Ionicons name="images-outline" size={26} color={colors.textMuted} />
+              <Text style={styles.emptyTitle}>No assets yet</Text>
+              <Text style={styles.emptySub}>Upload your first one above.</Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              {item.preview_url || item.previewUrl ? <Image transition={200} source={{ uri: item.preview_url || item.previewUrl }} style={styles.image} /> : (
+                <View style={styles.file}><Text style={styles.fileText}>{String(item.mime || 'FILE').split('/').pop()?.toUpperCase()}</Text></View>
+              )}
+              <Text style={styles.meta}>{Math.round(Number(item.size_bytes || item.sizeBytes || 0) / 1024)} KB · {item.scan_status || item.scanStatus || 'pending'}</Text>
+            </View>
+          )}
+        />
+      </Animated.View>
     </SafeAreaView>
   )
 }

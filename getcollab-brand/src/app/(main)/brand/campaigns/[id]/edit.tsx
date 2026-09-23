@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Alert, TextInput, Pressable, Activi
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { Campaign } from '@shared/types'
 
@@ -11,13 +11,6 @@ type RouteParams = RouteProp<{ campaignEdit: { id: string } }, 'campaignEdit'>
 
 const STATUS_OPTIONS = ['draft', 'active', 'paused', 'completed', 'cancelled']
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  draft: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)' },
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  paused: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  completed: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)' },
-  cancelled: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
-}
 
 export default function CampaignEditScreen() {
   const route = useRoute<RouteParams>()
@@ -93,7 +86,7 @@ export default function CampaignEditScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+      <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
         <Animated.View entering={FadeInDown.duration(400)}>
           <Text style={styles.title}>Edit Campaign</Text>
           <Text style={styles.subtitle}>{campaign?.title}</Text>
@@ -120,7 +113,7 @@ export default function CampaignEditScreen() {
                 const active = form.status === st
                 const s = STATUS_COLORS[st] || STATUS_COLORS.draft
                 return (
-                  <Pressable key={st} onPress={() => setForm({ ...form, status: st })} style={[styles.statusChip, active && { backgroundColor: s.bg, borderColor: s.fg }]}>
+                  <Pressable key={st} onPress={() => setForm({ ...form, status: st })} style={({ pressed }) => [styles.statusChip, active && { backgroundColor: s.bg, borderColor: s.fg }, pressed && { opacity: 0.85 }]}>
                     <View style={[styles.statusDot, { backgroundColor: s.fg }]} />
                     <Text style={[styles.statusChipText, { color: active ? s.fg : colors.textMuted }]}>{st.charAt(0).toUpperCase() + st.slice(1)}</Text>
                   </Pressable>

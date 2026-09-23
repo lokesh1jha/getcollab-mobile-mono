@@ -131,7 +131,7 @@ export default function AnalyticsScreen() {
     }
   }, [])
 
-  useFocusEffect(useCallback(() => { load(true) }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
   const onRefresh = () => { setRefreshing(true); load(false) }
 
   const accepted = statusCounts['accepted'] || 0

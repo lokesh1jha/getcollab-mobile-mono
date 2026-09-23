@@ -57,7 +57,7 @@ function OpportunitiesBody({ site, navigation }: { site: GrowthSite; navigation?
         />
       ) : (
         opportunities.map((o: any, i: number) => (
-          <Animated.View key={o.id} entering={FadeInDown.delay(i * 40).duration(320)} style={growthStyles.card}>
+          <Animated.View key={o.id} entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)} style={growthStyles.card}>
             <View style={growthStyles.pillRow}>
               <View style={[growthStyles.pill, { backgroundColor: colors.blueSoft }]}>
                 <Text style={[growthStyles.pillText, { color: colors.blue }]}>{opportunityKindLabel(o.kind)}</Text>

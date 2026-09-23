@@ -71,7 +71,7 @@ export function DeliverablesPanel({
         <Text style={s.muted}>{done} of {progress.length} approved</Text>
       </View>
       {progress.map((p, i) => (
-        <Animated.View key={p.milestone.id} entering={FadeInDown.delay(60 * i).duration(300)}>
+        <Animated.View key={p.milestone.id} entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)}>
           <DeliverableCard dealId={dealId} p={p} isBrand={isBrand} maxRevisions={maxRevisions} theme={theme} onChanged={onChanged} />
         </Animated.View>
       ))}

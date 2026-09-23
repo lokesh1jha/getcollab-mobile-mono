@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { Ionicons } from '@expo/vector-icons'
@@ -8,6 +8,11 @@ import { useSubscriptionStore, getTrialDaysRemaining } from '../../../stores/sub
 import { SubscriptionExpiredModal } from '../../../components/SubscriptionExpiredModal'
 
 export default function SubscriptionScreen() {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await fetchStatus() } finally { setRefreshing(false) }
+  }
   const { subscription, loading, fetchStatus, openBillingPortal } = useSubscriptionStore()
   const [showExpiredModal, setShowExpiredModal] = useState(false)
 
@@ -39,7 +44,7 @@ export default function SubscriptionScreen() {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />} contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
           <Animated.View entering={FadeInDown.duration(400)}>
             <View style={styles.header}>
               <Text style={styles.title}>Workspace</Text>

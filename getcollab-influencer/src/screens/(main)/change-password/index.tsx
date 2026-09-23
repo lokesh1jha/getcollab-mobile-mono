@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, spacing } from '@/src/theme'
 import { Button } from '@shared/components/ui/Button'
@@ -57,55 +58,57 @@ export default function ChangePasswordScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Change Password</Text>
-        <Text style={styles.subtitle}>Update the password on your account.</Text>
-
-        <Input
-          label="Current Password"
-          value={current}
-          onChangeText={setCurrent}
-          secureTextEntry
-          style={styles.input}
-        />
-        <Input
-          label="New Password"
-          value={next}
-          onChangeText={setNext}
-          secureTextEntry
-          error={nextErr || undefined}
-          style={styles.input}
-        />
-        <Input
-          label="Confirm New Password"
-          value={confirm}
-          onChangeText={setConfirm}
-          secureTextEntry
-          style={styles.input}
-        />
-
-        <View style={styles.requirements}>
-          <Text style={styles.reqTitle}>Requirements</Text>
-          {[
-            'At least 8 characters',
-            'One uppercase letter',
-            'One lowercase letter',
-            'One number',
-            'One special character',
-          ].map((r) => (
-            <Text key={r} style={styles.reqText}>• {r}</Text>
-          ))}
-        </View>
-
-        <Button
-          title={submitting ? 'Updating...' : 'Update Password'}
-          onPress={handleSubmit}
-          disabled={submitting}
-          loading={submitting}
-          fullWidth
-          style={styles.submitBtn}
-        />
-      </ScrollView>
+      <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+        <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+          <Text style={styles.title}>Change Password</Text>
+          <Text style={styles.subtitle}>Update the password on your account.</Text>
+  
+          <Input
+            label="Current Password"
+            value={current}
+            onChangeText={setCurrent}
+            secureTextEntry
+            style={styles.input}
+          />
+          <Input
+            label="New Password"
+            value={next}
+            onChangeText={setNext}
+            secureTextEntry
+            error={nextErr || undefined}
+            style={styles.input}
+          />
+          <Input
+            label="Confirm New Password"
+            value={confirm}
+            onChangeText={setConfirm}
+            secureTextEntry
+            style={styles.input}
+          />
+  
+          <View style={styles.requirements}>
+            <Text style={styles.reqTitle}>Requirements</Text>
+            {[
+              'At least 8 characters',
+              'One uppercase letter',
+              'One lowercase letter',
+              'One number',
+              'One special character',
+            ].map((r) => (
+              <Text key={r} style={styles.reqText}>• {r}</Text>
+            ))}
+          </View>
+  
+          <Button
+            title={submitting ? 'Updating...' : 'Update Password'}
+            onPress={handleSubmit}
+            disabled={submitting}
+            loading={submitting}
+            fullWidth
+            style={styles.submitBtn}
+          />
+        </ScrollView>
+      </Animated.View>
     </SafeAreaView>
   )
 }

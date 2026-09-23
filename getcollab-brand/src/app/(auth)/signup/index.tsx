@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Image } from 'expo-image'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -50,7 +51,7 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
             <View style={styles.brandRow}>
-              <Image source={require('../../../../assets/getcollab_only_logo.png')} style={styles.logoImg} resizeMode="contain" />
+              <Image source={require('../../../../assets/getcollab_only_logo.png')} style={styles.logoImg} contentFit="contain" />
               <Text style={styles.logoText}><Text style={styles.logoGet}>Get</Text><Text style={styles.logoCollab}>Collab</Text></Text>
             </View>
             <View style={{ width: 36 }} />
@@ -93,7 +94,7 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
 
               <View style={styles.bottomRow}>
                 <Text style={styles.bottomText}>Already on GetCollab? </Text>
-                <Pressable testID="signup-go-signin" onPress={() => navigation?.navigate('SignIn')}>
+                <Pressable testID="signup-go-signin" onPress={() => navigation?.navigate('SignIn')} style={({ pressed }) => pressed && { opacity: 0.85 }}>
                   <Text style={styles.bottomLink}>Sign in</Text>
                 </Pressable>
               </View>
@@ -130,7 +131,7 @@ function Field({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
+  root: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm,

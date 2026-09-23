@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, matchScoreColor } from '@/src/theme'
 import { TrialGuard } from '../../../../components/TrialGuard'
 import apiService, { handleApiError } from '@shared/services/api'
 
@@ -146,9 +146,9 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
   const renderCreator = ({ item, index }: { item: Creator; index: number }) => {
     const followers = item.audienceSize || item.instagramMetrics?.followers || 0
     const score = item.matchScore
-    const scoreColor = score != null ? (score >= 90 ? colors.success : score >= 80 ? colors.blue : colors.warning) : colors.blue
+    const scoreColor = score != null ? matchScoreColor(score) : colors.blue
     return (
-      <Animated.View entering={FadeInDown.delay(index * 60).duration(320)} style={styles.creatorCard}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.creatorCard}>
         <View style={styles.creatorTopRow}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{item.name?.charAt(0).toUpperCase() || '?'}</Text>
@@ -249,7 +249,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
                     style={styles.searchInput}
                   />
                   {searchQuery.length > 0 && (
-                    <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setSearchQuery('')} hitSlop={8}>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setSearchQuery('')} hitSlop={8} style={({ pressed }) => pressed && { opacity: 0.85 }}>
                       <Ionicons name="close-circle" size={18} color={colors.textMuted} />
                     </Pressable>
                   )}
@@ -260,7 +260,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
                     {CATEGORIES.map((cat) => {
                       const active = (!selectedCategory && cat === 'All') || cat === selectedCategory
                       return (
-                        <Pressable key={cat} onPress={() => setSelectedCategory(cat === 'All' ? null : cat)} style={[styles.chip, active && styles.chipActive]}>
+                        <Pressable key={cat} onPress={() => setSelectedCategory(cat === 'All' ? null : cat)} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.85 }]}>
                           <Text style={[styles.chipText, active && styles.chipTextActive]}>{cat}</Text>
                         </Pressable>
                       )
@@ -278,9 +278,6 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
                       <Text style={styles.aiBannerSub}>{filtered.length} creators found</Text>
                     </View>
                   </View>
-                  <Pressable style={styles.aiBannerCta}>
-                    <Text style={styles.aiBannerCtaText}>View</Text>
-                  </Pressable>
                 </Animated.View>
               </View>
             }
@@ -324,8 +321,6 @@ const styles = StyleSheet.create({
   aiSparkle: { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(59,130,246,0.18)', alignItems: 'center', justifyContent: 'center' },
   aiBannerTitle: { color: '#fff', fontSize: 13, fontWeight: '600', lineHeight: 18 },
   aiBannerSub: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
-  aiBannerCta: { backgroundColor: colors.blue, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
-  aiBannerCtaText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 
   creatorCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg },
   creatorTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

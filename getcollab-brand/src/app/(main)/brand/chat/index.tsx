@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { View, Text, StyleSheet, FlatList, TextInput, Pressable, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TextInput, Pressable, ActivityIndicator, RefreshControl } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -26,6 +26,11 @@ const formatTimestamp = (date: Date): string => {
 }
 
 export default function BrandChatScreen({ navigation }: Props) {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await loadChats() } finally { setRefreshing(false) }
+  }
   const [chats, setChats] = useState<Chat[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -36,7 +41,6 @@ export default function BrandChatScreen({ navigation }: Props) {
   }, [])
 
   const loadChats = useCallback(async () => {
-    setLoading(true)
     try {
       const response = await apiService.getChats()
       const rooms = response?.data || response || []
@@ -54,7 +58,7 @@ export default function BrandChatScreen({ navigation }: Props) {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { loadChats(); initializeSocketConnection() }, [loadChats, initializeSocketConnection])
+  useEffect(() => { initializeSocketConnection() }, [initializeSocketConnection])
   useFocusEffect(useCallback(() => { loadChats() }, [loadChats]))
 
   const filtered = useMemo(() => chats.filter((c) => c.influencerName.toLowerCase().includes(searchQuery.toLowerCase()) || c.influencerHandle.toLowerCase().includes(searchQuery.toLowerCase()) || c.campaignTitle.toLowerCase().includes(searchQuery.toLowerCase())), [chats, searchQuery])
@@ -83,12 +87,12 @@ export default function BrandChatScreen({ navigation }: Props) {
           <TextInput value={searchQuery} onChangeText={setSearchQuery} placeholder="Search conversations" placeholderTextColor={colors.textSubtle} style={styles.searchInput} />
         </View>
 
-        <FlatList
+        <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
           data={filtered}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: spacing.xxl }}
           renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+            <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
               <Pressable
                 style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.card }]}
                 onPress={() => navigation?.navigate('ChatDetail', { chat: item, roomId: item.id })}

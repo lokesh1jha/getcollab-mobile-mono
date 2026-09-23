@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View, ActivityIndicator } from 'react-native'
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View, ActivityIndicator, RefreshControl } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { useChatStore } from '@shared/stores/chat-store'
+import { useShallow } from 'zustand/react/shallow'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
 
 function formatTime(value?: string): string {
@@ -22,7 +23,14 @@ function formatTime(value?: string): string {
 }
 
 export default function InfluencerChat({ navigation }: { navigation: InfluencerNavigationProp }) {
-  const { rooms, fetchRooms, unreadByRoom, isLoading } = useChatStore()
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await fetchRooms() } finally { setRefreshing(false) }
+  }
+  const { rooms, fetchRooms, unreadByRoom, isLoading } = useChatStore(
+    useShallow((s) => ({ rooms: s.rooms, fetchRooms: s.fetchRooms, unreadByRoom: s.unreadByRoom, isLoading: s.isLoading })),
+  )
   const [query, setQuery] = useState('')
 
   useFocusEffect(useCallback(() => { fetchRooms() }, [fetchRooms]))
@@ -39,7 +47,7 @@ export default function InfluencerChat({ navigation }: { navigation: InfluencerN
     const lastMsg = item.lastMessage?.content || 'Start a conversation'
     const isRead = unread === 0
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
         <Pressable
           onPress={() => navigation?.navigate('ChatDetail', { id: item.id, roomId: item.id, chat: { id: item.id, influencerName: name } })}
           style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.elevated }]}
@@ -83,7 +91,7 @@ export default function InfluencerChat({ navigation }: { navigation: InfluencerN
         <View style={styles.searchWrap}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput value={query} onChangeText={setQuery} placeholder="Search conversations…" placeholderTextColor={colors.textSubtle} style={styles.searchInput} />
-          {query.length > 0 && <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.textMuted} /></Pressable>}
+          {query.length > 0 && <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={8} style={({ pressed }) => pressed && { opacity: 0.85 }}><Ionicons name="close-circle" size={18} color={colors.textMuted} /></Pressable>}
         </View>
 
         {isLoading && rooms.length === 0 ? (
@@ -91,7 +99,7 @@ export default function InfluencerChat({ navigation }: { navigation: InfluencerN
             <ActivityIndicator size="large" color={colors.neon} />
           </View>
         ) : (
-          <FlatList
+          <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
             data={filtered}
             renderItem={renderRoom}
             keyExtractor={r => r.id}

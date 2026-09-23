@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, StyleSheet, Pressable } from 'react-native'
-import { colors, spacing } from '../constants'
+import { colors, spacing } from '@/src/theme'
 import { logger } from '../services/logger'
 
 interface State {
@@ -52,10 +52,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.lg,
+    padding: spacing.xl,
   },
   title: {
     fontSize: 22,
@@ -67,16 +67,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textMuted,
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   btn: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    backgroundColor: colors.neon,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
     borderRadius: 12,
   },
   btnText: {
-    color: colors.white,
+    color: colors.black,
     fontWeight: '600',
   },
 })

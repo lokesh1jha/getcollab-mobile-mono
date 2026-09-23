@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react'
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View, ActivityIndicator, Linking } from 'react-native'
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View, ActivityIndicator, Linking, RefreshControl } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
@@ -30,6 +31,11 @@ interface SettingsState {
 }
 
 export default function SettingsScreen({ navigation }: { navigation: InfluencerNavigationProp }) {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await load() } finally { setRefreshing(false) }
+  }
   const { signOut } = useAuthStore()
   const [settings, setSettings] = useState<SettingsState>({
     twoFactorEnabled: false,
@@ -66,7 +72,7 @@ export default function SettingsScreen({ navigation }: { navigation: InfluencerN
     finally { setLoading(false) }
   }, [])
 
-  useFocusEffect(useCallback(() => { setLoading(true); load() }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
   const toggleNotif = async (key: keyof NotificationSettings) => {
     const newVal = !settings.notifications[key]
@@ -115,43 +121,45 @@ export default function SettingsScreen({ navigation }: { navigation: InfluencerN
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
-          {/* No two-factor toggle: the API has no 2FA to switch on, so it
-              saved nothing. */}
-          {/* Notifications */}
-          <SectionHeader title="Notifications" />
-          <View style={styles.listCard}>
-            <ToggleRow icon="mail-outline" label="Email Notifications" value={settings.notifications.emailNotifications ?? false} onToggle={() => toggleNotif('emailNotifications')} loading={saving === 'emailNotifications'} divider />
-            <ToggleRow icon="phone-portrait-outline" label="Push Notifications" value={settings.notifications.pushNotifications ?? false} onToggle={() => toggleNotif('pushNotifications')} loading={saving === 'pushNotifications'} divider />
-            <ToggleRow icon="megaphone-outline" label="Campaign Updates" value={settings.notifications.campaignUpdates ?? false} onToggle={() => toggleNotif('campaignUpdates')} loading={saving === 'campaignUpdates'} divider />
-            <ToggleRow icon="chatbubble-outline" label="Message Notifications" value={settings.notifications.messageNotifications ?? false} onToggle={() => toggleNotif('messageNotifications')} loading={saving === 'messageNotifications'} divider />
-            <ToggleRow icon="cash-outline" label="Payment Notifications" value={settings.notifications.paymentNotifications ?? false} onToggle={() => toggleNotif('paymentNotifications')} loading={saving === 'paymentNotifications'} />
-          </View>
-
-          {/* Account */}
-          <SectionHeader title="Account" />
-          <View style={styles.listCard}>
-            <LinkRow icon="lock-closed-outline" label="Change Password" onPress={() => navigation?.navigate('ChangePassword')} divider />
-            <LinkRow icon="card-outline" label="Payout Details" onPress={() => navigation?.navigate('PayoutSettings')} divider />
-            <LinkRow icon="notifications-outline" label="Notification Preferences" onPress={() => navigation?.navigate('Notifications')} />
-          </View>
-
-          {/* Danger Zone */}
-          <SectionHeader title="Danger Zone" />
-          <View style={styles.listCard}>
-            <Pressable onPress={handleDeleteAccount} style={({ pressed }) => [styles.dangerRow, pressed && { opacity: 0.85 }]}>
-              <View style={[styles.rowIcon, { backgroundColor: colors.errorSoft }]}>
-                <Ionicons name="trash-outline" size={18} color={colors.error} />
-              </View>
-              <Text style={styles.dangerText}>Delete Account</Text>
+        <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+          <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />} contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
+            {/* No two-factor toggle: the API has no 2FA to switch on, so it
+                saved nothing. */}
+            {/* Notifications */}
+            <SectionHeader title="Notifications" />
+            <View style={styles.listCard}>
+              <ToggleRow icon="mail-outline" label="Email Notifications" value={settings.notifications.emailNotifications ?? false} onToggle={() => toggleNotif('emailNotifications')} loading={saving === 'emailNotifications'} divider />
+              <ToggleRow icon="phone-portrait-outline" label="Push Notifications" value={settings.notifications.pushNotifications ?? false} onToggle={() => toggleNotif('pushNotifications')} loading={saving === 'pushNotifications'} divider />
+              <ToggleRow icon="megaphone-outline" label="Campaign Updates" value={settings.notifications.campaignUpdates ?? false} onToggle={() => toggleNotif('campaignUpdates')} loading={saving === 'campaignUpdates'} divider />
+              <ToggleRow icon="chatbubble-outline" label="Message Notifications" value={settings.notifications.messageNotifications ?? false} onToggle={() => toggleNotif('messageNotifications')} loading={saving === 'messageNotifications'} divider />
+              <ToggleRow icon="cash-outline" label="Payment Notifications" value={settings.notifications.paymentNotifications ?? false} onToggle={() => toggleNotif('paymentNotifications')} loading={saving === 'paymentNotifications'} />
+            </View>
+  
+            {/* Account */}
+            <SectionHeader title="Account" />
+            <View style={styles.listCard}>
+              <LinkRow icon="lock-closed-outline" label="Change Password" onPress={() => navigation?.navigate('ChangePassword')} divider />
+              <LinkRow icon="card-outline" label="Payout Details" onPress={() => navigation?.navigate('PayoutSettings')} divider />
+              <LinkRow icon="notifications-outline" label="Notification Preferences" onPress={() => navigation?.navigate('Notifications')} />
+            </View>
+  
+            {/* Danger Zone */}
+            <SectionHeader title="Danger Zone" />
+            <View style={styles.listCard}>
+              <Pressable onPress={handleDeleteAccount} style={({ pressed }) => [styles.dangerRow, pressed && { opacity: 0.85 }]}>
+                <View style={[styles.rowIcon, { backgroundColor: colors.errorSoft }]}>
+                  <Ionicons name="trash-outline" size={18} color={colors.error} />
+                </View>
+                <Text style={styles.dangerText}>Delete Account</Text>
+              </Pressable>
+            </View>
+  
+            <Pressable onPress={() => Linking.openURL('mailto:support@getcollab.in')} style={({ pressed }) => [styles.supportLink, pressed && { opacity: 0.8 }]}>
+              <Text style={styles.supportText}>Need help? Contact support</Text>
             </Pressable>
-          </View>
-
-          <Pressable onPress={() => Linking.openURL('mailto:support@getcollab.in')} style={({ pressed }) => [styles.supportLink, pressed && { opacity: 0.8 }]}>
-            <Text style={styles.supportText}>Need help? Contact support</Text>
-          </Pressable>
-          <Text style={styles.versionText}>GetCollab v1.0.0 · For Creators</Text>
-        </ScrollView>
+            <Text style={styles.versionText}>GetCollab v1.0.0 · For Creators</Text>
+          </ScrollView>
+        </Animated.View>
       </SafeAreaView>
     </View>
   )

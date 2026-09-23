@@ -43,7 +43,7 @@ export default function ResetPasswordScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <Animated.View entering={FadeInDown.duration(400)}>
             <Text style={styles.title}>Reset your password</Text>
             <Text style={styles.subtitle}>Paste the token from your email and choose a new password.</Text>
@@ -93,7 +93,7 @@ export default function ResetPasswordScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
+  root: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.xl },
   title: { color: '#fff', fontSize: 28, fontWeight: '800', letterSpacing: -0.8, marginTop: spacing.lg, marginBottom: spacing.sm },
   subtitle: { color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 20, marginBottom: spacing.xl },

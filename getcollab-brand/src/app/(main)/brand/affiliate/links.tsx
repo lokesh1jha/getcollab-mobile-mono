@@ -42,7 +42,7 @@ export default function AffiliateLinksScreen() {
   }
 
   const renderItem = ({ item, index }: { item: AffiliateLink; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
       <View style={{ flex: 1 }}>
         <Text style={styles.code}>{item.code}</Text>
         <Text style={styles.url} numberOfLines={1}>{item.url}</Text>

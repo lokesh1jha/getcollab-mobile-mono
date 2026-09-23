@@ -22,6 +22,16 @@ import VerifyEmailScreen from './src/app/(main)/verify-email'
 
 const Stack = createNativeStackNavigator()
 
+// Bare back-button header: the screen draws its own title.
+const authHeaderOptions = {
+  headerShown: true,
+  headerTitle: '',
+  headerBackButtonDisplayMode: 'minimal' as const,
+  headerShadowVisible: false,
+  headerStyle: { backgroundColor: colors.bg },
+  headerTintColor: colors.text,
+}
+
 const navigationTheme = {
   ...DefaultTheme,
   dark: true,
@@ -62,7 +72,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const { appReady, apiError, initializeApp } = useAppInit({ splashDelayMs: 2000 })
+  const { appReady, apiError, initializeApp } = useAppInit()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   useEffect(() => {
@@ -97,8 +107,8 @@ function AppContent() {
                   <Stack.Screen name="Landing" component={LandingScreen} options={{ headerShown: false }} />
                   <Stack.Screen name="SignIn" component={SignInScreen} options={{ headerShown: false }} />
                   <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-                  <Stack.Screen name="ForgotPassword" getComponent={() => require('./src/app/(auth)/forgot-password').default} options={{ headerShown: true, headerTitle: 'Forgot Password' }} />
-                  <Stack.Screen name="ResetPassword" getComponent={() => require('./src/app/(auth)/reset-password').default} options={{ headerShown: true, headerTitle: 'Reset Password' }} />
+                  <Stack.Screen name="ForgotPassword" getComponent={() => require('./src/app/(auth)/forgot-password').default} options={authHeaderOptions} />
+                  <Stack.Screen name="ResetPassword" getComponent={() => require('./src/app/(auth)/reset-password').default} options={authHeaderOptions} />
                   <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ headerShown: false }} />
                 </>
               ) : (

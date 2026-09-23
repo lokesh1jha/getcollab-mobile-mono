@@ -73,7 +73,7 @@ export default function InviteCreatorScreen() {
                   {campaigns.map((c) => {
                     const selected = selectedCampaignId === c.id
                     return (
-                      <Pressable key={c.id} style={[styles.campaignRow, selected && styles.campaignRowSelected]} onPress={() => setSelectedCampaignId(c.id)}>
+                      <Pressable key={c.id} style={({ pressed }) => [styles.campaignRow, selected && styles.campaignRowSelected, pressed && { opacity: 0.85 }]} onPress={() => setSelectedCampaignId(c.id)}>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.campaignTitle} numberOfLines={1}>{c.title}</Text>
                           <Text style={styles.campaignMeta}>{c.status} · ₹{(c.budget || 0).toLocaleString()}</Text>

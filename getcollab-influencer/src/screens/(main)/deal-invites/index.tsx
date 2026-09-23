@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { ActivityIndicator, Alert, FlatList, Modal, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, RefreshControl, StyleSheet, Text, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
@@ -34,7 +34,7 @@ export default function DealInvitesScreen({ navigation }: { navigation: Influenc
     finally { setLoading(false); setRefreshing(false) }
   }, [])
 
-  useFocusEffect(useCallback(() => { setLoading(true); load() }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
   const accept = async (id: string) => {
     setBusy(id)
@@ -82,7 +82,7 @@ export default function DealInvitesScreen({ navigation }: { navigation: Influenc
           </View>
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(index * 40).duration(300)}>
+          <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
             <View style={styles.card}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
                 <View style={styles.inviteIcon}>
@@ -127,32 +127,34 @@ export default function DealInvitesScreen({ navigation }: { navigation: Influenc
 
       {/* Decline Modal */}
       <Modal visible={decliningId !== null} transparent animationType="slide">
-        <Pressable style={styles.overlay} onPress={() => { setDecliningId(null); setDeclineReason('') }} />
-        <View style={styles.sheet}>
-          <View style={styles.sheetHandle} />
-          <Text style={styles.sheetTitle}>Decline invitation</Text>
-          <Text style={styles.sheetSub}>Optional: let the brand know why you're passing.</Text>
-          <TextInput
-            value={declineReason}
-            onChangeText={setDeclineReason}
-            placeholder="Reason (optional)"
-            placeholderTextColor={colors.textSubtle}
-            multiline
-            style={styles.sheetInput}
-          />
-          <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
-            <Pressable onPress={() => { setDecliningId(null); setDeclineReason('') }} style={({ pressed }) => [styles.sheetBtnOutline, pressed && { opacity: 0.85 }]}>
-              <Text style={styles.sheetBtnOutlineText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              onPress={decline}
-              disabled={!!busy}
-              style={({ pressed }) => [styles.sheetBtnDanger, pressed && { opacity: 0.85 }, !!busy && { opacity: 0.5 }]}
-            >
-              <Text style={styles.sheetBtnDangerText}>{busy === decliningId ? 'Saving…' : 'Decline'}</Text>
-            </Pressable>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <Pressable style={styles.overlay} onPress={() => { setDecliningId(null); setDeclineReason('') }} />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Decline invitation</Text>
+            <Text style={styles.sheetSub}>Optional: let the brand know why you're passing.</Text>
+            <TextInput
+              value={declineReason}
+              onChangeText={setDeclineReason}
+              placeholder="Reason (optional)"
+              placeholderTextColor={colors.textSubtle}
+              multiline
+              style={styles.sheetInput}
+            />
+            <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
+              <Pressable onPress={() => { setDecliningId(null); setDeclineReason('') }} style={({ pressed }) => [styles.sheetBtnOutline, pressed && { opacity: 0.85 }]}>
+                <Text style={styles.sheetBtnOutlineText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={decline}
+                disabled={!!busy}
+                style={({ pressed }) => [styles.sheetBtnDanger, pressed && { opacity: 0.85 }, !!busy && { opacity: 0.5 }]}
+              >
+                <Text style={styles.sheetBtnDangerText}>{busy === decliningId ? 'Saving…' : 'Decline'}</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   )

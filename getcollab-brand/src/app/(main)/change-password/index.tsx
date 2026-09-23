@@ -56,7 +56,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+        <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
           <Animated.View entering={FadeInDown.duration(400)}>
             <Text style={styles.title}>Change Password</Text>
             <Text style={styles.subtitle}>Update the password on your account.</Text>

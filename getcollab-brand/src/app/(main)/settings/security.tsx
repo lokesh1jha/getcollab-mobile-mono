@@ -31,7 +31,7 @@ export default function SecuritySettingsScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+      <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
         <Animated.View entering={FadeInDown.duration(400)}>
           <Text style={styles.title}>Security</Text>
           <Text style={styles.subtitle}>Password and sign-in</Text>

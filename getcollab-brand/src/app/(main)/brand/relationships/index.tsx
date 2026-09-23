@@ -1,29 +1,13 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react'
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  ActivityIndicator,
-  TextInput,
-  Alert,
-} from 'react-native'
+import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl, ActivityIndicator, TextInput, Alert } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { Relationship } from '@shared/types'
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  pending: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  inactive: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)' },
-  blocked: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
-}
 
 interface Props {
   navigation?: any
@@ -109,7 +93,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
     const s = STATUS_COLORS[st] || STATUS_COLORS.pending
     const initial = item.otherParty?.name?.charAt(0).toUpperCase() ?? '?'
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
         <Pressable
           style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
           onPress={() => navigation?.navigate('RelationshipDetail', { id: item.id })}
@@ -177,7 +161,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
                   style={styles.searchInput}
                 />
                 {search.length > 0 && (
-                  <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => { setSearch(''); loadRelationships() }} hitSlop={8}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => { setSearch(''); loadRelationships() }} hitSlop={8} style={({ pressed }) => pressed && { opacity: 0.85 }}>
                     <Ionicons name="close-circle" size={18} color={colors.textMuted} />
                   </Pressable>
                 )}

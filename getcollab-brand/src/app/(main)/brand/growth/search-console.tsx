@@ -192,7 +192,7 @@ function SearchConsoleBody({ site, navigation }: { site: GrowthSite; navigation?
             />
           ) : (
             queries.map((row: any, i: number) => (
-              <Animated.View key={`${row.query}-${i}`} entering={FadeInDown.delay(i * 30).duration(320)} style={growthStyles.card}>
+              <Animated.View key={`${row.query}-${i}`} entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)} style={growthStyles.card}>
                 <Text style={growthStyles.rowLabel}>{row.query}</Text>
                 <Text style={growthStyles.meta}>
                   {row.clicks} clicks · shown {Number(row.impressions).toLocaleString()} · avg position{' '}

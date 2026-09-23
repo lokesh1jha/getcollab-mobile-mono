@@ -1,29 +1,17 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
-import {
-  StyleSheet,
-  View,
-  ActivityIndicator,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  FlatList,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Linking,
-  Modal,
-  Pressable,
-} from 'react-native'
+import { StyleSheet, View, ActivityIndicator, Text, TextInput, Alert, FlatList, KeyboardAvoidingView, Platform, Linking, Modal, Pressable } from 'react-native'
+import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePickerLib from 'expo-image-picker'
 import * as DocumentPickerLib from 'expo-document-picker'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, spacing } from '@shared/constants'
+import { colors, spacing } from '@/src/theme'
 import { useChatStore } from '@shared/stores/chat-store'
+import { useShallow } from 'zustand/react/shallow'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { handleApiError } from '@shared/services/api'
 import type { Message, ChatAttachment } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -62,7 +50,9 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     presence,
     socket,
     initializeSocket,
-  } = useChatStore()
+  } = useChatStore(
+    useShallow((s) => ({ messages: s.messages, fetchMessages: s.fetchMessages, sendMessage: s.sendMessage, sendImage: s.sendImage, sendAttachments: s.sendAttachments, isLoading: s.isLoading, isSending: s.isSending, hasMoreMessages: s.hasMoreMessages, markRoomRead: s.markRoomRead, setTyping: s.setTyping, typingUsers: s.typingUsers, readByUser: s.readByUser, presence: s.presence, socket: s.socket, initializeSocket: s.initializeSocket })),
+  )
   const { user } = useAuthStore()
   const [input, setInput] = useState('')
   const [searchMode, setSearchMode] = useState(false)
@@ -88,6 +78,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
   const handleSend = async () => {
     if (!input.trim() || !roomId) return
     const text = input.trim()
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setInput('')
     setTyping(roomId, false)
     try {
@@ -180,14 +171,14 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     if (attachment.type === 'IMAGE') {
       return (
         <Pressable key={attachment.id} onPress={() => setPreviewUri(attachment.url)} style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}>
-          <Image source={{ uri: attachment.url }} style={styles.bubbleImage} />
+          <Image transition={200} source={{ uri: attachment.url }} style={styles.bubbleImage} />
         </Pressable>
       )
     }
     return (
-      <TouchableOpacity
+      <Pressable
         key={attachment.id}
-        style={styles.attachmentFile}
+        style={({ pressed }) => [styles.attachmentFile, pressed && { opacity: 0.85 }]}
         onPress={() => Linking.openURL(attachment.url)}
       >
         <Text style={styles.attachmentFileIcon}>
@@ -197,7 +188,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
           <Text style={styles.attachmentFileName} numberOfLines={1}>{attachment.fileName}</Text>
           <Text style={styles.attachmentFileSize}>{formatFileSize(attachment.fileSize)}</Text>
         </View>
-      </TouchableOpacity>
+      </Pressable>
     )
   }
 
@@ -217,7 +208,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
           )}
           {isLegacyImage ? (
             <Pressable onPress={() => setPreviewUri(item.attachmentUrl || item.content)} style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}>
-              <Image source={{ uri: item.attachmentUrl || item.content }} style={styles.bubbleImage} />
+              <Image transition={200} source={{ uri: item.attachmentUrl || item.content }} style={styles.bubbleImage} />
             </Pressable>
           ) : item.content ? (
             <Text style={[styles.bubbleText, isMe ? styles.bubbleTextMe : styles.bubbleTextOther]}>
@@ -241,18 +232,18 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={colors.neon} />
         </View>
       </SafeAreaView>
     )
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.headerBar}>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" onPress={() => navigation?.goBack()} style={styles.headerBack}>
-          <Ionicons name="chevron-back" size={24} color={colors.primary} />
-        </TouchableOpacity>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.headerBack, pressed && { opacity: 0.85 }]}>
+          <Ionicons name="chevron-back" size={24} color={colors.neon} />
+        </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {chatMeta?.influencerName || chatMeta?.name || chatMeta?.brandName || 'Chat'}
@@ -261,9 +252,9 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
             {isOtherTyping ? 'typing…' : otherPresence?.online ? '● Online' : otherPresence?.lastSeen ? `Last seen ${new Date(otherPresence.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
           </Text>
         </View>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel={searchMode ? 'Close search' : 'Search messages'} onPress={() => setSearchMode((s) => !s)} style={styles.headerAction}>
+        <Pressable accessibilityRole="button" accessibilityLabel={searchMode ? 'Close search' : 'Search messages'} onPress={() => setSearchMode((s) => !s)} style={({ pressed }) => [styles.headerAction, pressed && { opacity: 0.85 }]}>
           <Ionicons name={searchMode ? 'close' : 'search'} size={20} color={colors.text} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {searchMode && (
@@ -295,7 +286,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
             hasMoreMessages ? (
               <Pressable onPress={loadOlder} disabled={loadingOlder} style={({ pressed }) => [styles.loadMoreBtn, pressed && { opacity: 0.7 }]}>
                 {loadingOlder ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
+                  <ActivityIndicator size="small" color={colors.neon} />
                 ) : (
                   <Text style={styles.loadMoreText}>Load older messages</Text>
                 )}
@@ -322,12 +313,12 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
         )}
 
         <View style={styles.inputBar}>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Attach image" style={styles.attachBtn} onPress={handleAttach}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Attach image" style={({ pressed }) => [styles.attachBtn, pressed && { opacity: 0.85 }]} onPress={handleAttach}>
             <Ionicons name="image-outline" size={22} color={colors.textMuted} />
-          </TouchableOpacity>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Attach file" style={styles.attachBtn} onPress={handleAttachDocument}>
+          </Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Attach file" style={({ pressed }) => [styles.attachBtn, pressed && { opacity: 0.85 }]} onPress={handleAttachDocument}>
             <Ionicons name="document-attach-outline" size={22} color={colors.textMuted} />
-          </TouchableOpacity>
+          </Pressable>
           <TextInput
             style={styles.input}
             placeholder="Message..."
@@ -336,25 +327,25 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
             onChangeText={handleInputChange}
             multiline
           />
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Send message"
-            style={[styles.sendBtn, !input.trim() && styles.sendBtnDisabled]}
+          <Pressable accessibilityRole="button" accessibilityLabel="Send message"
+            style={({ pressed }) => [styles.sendBtn, !input.trim() && styles.sendBtnDisabled, pressed && { opacity: 0.85 }]}
             disabled={!input.trim() || isSending}
             onPress={handleSend}
           >
-            <Ionicons name="send" size={18} color={colors.white} />
-          </TouchableOpacity>
+            <Ionicons name="send" size={18} color={colors.black} />
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
 
       {/* Image preview modal */}
       <Modal visible={!!previewUri} transparent animationType="fade" onRequestClose={() => setPreviewUri(null)}>
-        <Pressable style={({ pressed }) => [styles.previewOverlay, pressed && { opacity: 0.9 }]} onPress={() => setPreviewUri(null)}>
+        <Pressable style={({ pressed }) => [styles.previewOverlay, pressed && { opacity: 0.85 }]} onPress={() => setPreviewUri(null)}>
           <SafeAreaView style={{ flex: 1 }}>
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
+              {previewUri && <Image transition={200} source={{ uri: previewUri }} style={styles.previewImage} contentFit="contain" />}
             </View>
             <Pressable accessibilityRole="button" accessibilityLabel="Close preview" onPress={() => setPreviewUri(null)} style={({ pressed }) => [styles.previewClose, pressed && { opacity: 0.7 }]}>
-              <Ionicons name="close" size={28} color={colors.white} />
+              <Ionicons name="close" size={28} color={colors.text} />
             </Pressable>
           </SafeAreaView>
         </Pressable>
@@ -364,38 +355,38 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.bg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
   },
   headerBack: { paddingRight: spacing.sm },
   headerTitle: { color: colors.text, fontWeight: '700', fontSize: 16 },
   headerStatus: { color: colors.textMuted, fontSize: 12 },
   headerAction: { paddingHorizontal: spacing.sm },
-  searchBar: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: colors.surface },
+  searchBar: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, backgroundColor: colors.card },
   searchInput: {
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: colors.elevated,
     borderRadius: 8,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     color: colors.text,
   },
-  messagesList: { padding: spacing.md, paddingBottom: spacing.lg },
+  messagesList: { padding: spacing.lg, paddingBottom: spacing.xl },
   bubbleRow: { flexDirection: 'row', marginBottom: spacing.sm },
   bubbleRowMe: { justifyContent: 'flex-end' },
   bubbleRowOther: { justifyContent: 'flex-start' },
-  bubble: { maxWidth: '78%', borderRadius: 16, padding: spacing.sm, paddingHorizontal: spacing.md },
-  bubbleMe: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
-  bubbleOther: { backgroundColor: colors.surface, borderBottomLeftRadius: 4 },
+  bubble: { maxWidth: '78%', borderRadius: 16, padding: spacing.sm, paddingHorizontal: spacing.lg },
+  bubbleMe: { backgroundColor: colors.blue, borderBottomRightRadius: 4 },
+  bubbleOther: { backgroundColor: colors.card, borderBottomLeftRadius: 4 },
   bubbleText: { fontSize: 15, lineHeight: 20 },
-  bubbleTextMe: { color: colors.white },
+  bubbleTextMe: { color: colors.text },
   bubbleTextOther: { color: colors.text },
   bubbleTime: { fontSize: 10, marginTop: 4 },
   bubbleTimeMe: { color: 'rgba(255,255,255,0.7)', textAlign: 'right' },
@@ -413,7 +404,7 @@ const styles = StyleSheet.create({
   attachmentFileIcon: { fontSize: 22 },
   attachmentFileName: { color: colors.text, fontSize: 13, fontWeight: '600' },
   attachmentFileSize: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
-  typingHint: { paddingHorizontal: spacing.md, paddingBottom: spacing.xs },
+  typingHint: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xs },
   typingHintText: { color: colors.textMuted, fontStyle: 'italic', fontSize: 12 },
   inputBar: {
     flexDirection: 'row',
@@ -421,21 +412,21 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
   },
   attachBtn: { padding: spacing.sm },
   input: {
     flex: 1,
-    backgroundColor: colors.surfaceLight,
+    backgroundColor: colors.elevated,
     borderRadius: 18,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     color: colors.text,
     maxHeight: 100,
     fontSize: 15,
   },
   sendBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.neon,
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -444,9 +435,9 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
   },
   sendBtnDisabled: { opacity: 0.4 },
-  loadMoreBtn: { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 999, backgroundColor: colors.surface, marginBottom: spacing.sm },
+  loadMoreBtn: { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 999, backgroundColor: colors.card, marginBottom: spacing.sm },
   loadMoreText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
-  chatStart: { alignSelf: 'center', marginBottom: spacing.md },
+  chatStart: { alignSelf: 'center', marginBottom: spacing.lg },
   chatStartText: { color: colors.textMuted, fontSize: 12 },
   emptyChat: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 8 },
   emptyChatTitle: { color: colors.textMuted, fontSize: 16, fontWeight: '700' },

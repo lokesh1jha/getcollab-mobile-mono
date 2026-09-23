@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Image, ActivityIndicator, TextInput } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, TextInput, RefreshControl } from 'react-native'
+import { Image } from 'expo-image'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -26,6 +27,11 @@ const SETTINGS_ROWS = [
 interface Props { navigation?: any }
 
 export default function BrandProfileScreen({ navigation }: Props) {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await Promise.all([loadProfile(), fetchMyCampaigns().catch(() => undefined)]) } finally { setRefreshing(false) }
+  }
   const { user, updateProfile } = useAuthStore()
   const { myCampaigns, fetchMyCampaigns } = useCampaignStore()
   const subscription = useSubscriptionStore((s) => s.subscription)
@@ -97,7 +103,7 @@ export default function BrandProfileScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />} contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <Text style={styles.title}>Profile</Text>
             <Pressable accessibilityRole="button" accessibilityLabel={isEditing ? 'Cancel editing' : 'Edit profile'} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]} onPress={() => setIsEditing(!isEditing)}>
@@ -106,9 +112,9 @@ export default function BrandProfileScreen({ navigation }: Props) {
           </View>
 
           <Animated.View entering={FadeInDown.duration(400)} style={styles.brandCard}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Change photo" onPress={isEditing ? pickAvatar : undefined} style={styles.logoWrap}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Change photo" onPress={isEditing ? pickAvatar : undefined} style={({ pressed }) => [styles.logoWrap, pressed && { opacity: 0.85 }]}>
               {avatar ? (
-                <Image source={{ uri: avatar }} style={styles.avatarImg} />
+                <Image transition={200} source={{ uri: avatar }} style={styles.avatarImg} />
               ) : (
                 <View style={styles.logo}>
                   <View style={styles.logoInner} />

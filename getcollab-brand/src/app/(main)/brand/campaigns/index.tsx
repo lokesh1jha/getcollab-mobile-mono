@@ -4,18 +4,11 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 
 const FILTERS = ['All', 'active', 'draft', 'completed', 'paused'] as const
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string; dot: string }> = {
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)', dot: '#22C55E' },
-  draft: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)', dot: '#A1A1AA' },
-  completed: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)', dot: '#3B82F6' },
-  paused: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)', dot: '#F59E0B' },
-  cancelled: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)', dot: '#EF4444' },
-}
 
 interface Campaign { id: string; title: string; status: string; budget: number; bidCount?: number; applications?: number; createdAt: string }
 interface Props { navigation?: any }
@@ -72,8 +65,8 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
     const st = item.status || 'draft'
     const s = STATUS_COLORS[st] || STATUS_COLORS.draft
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
-        <Pressable onPress={() => navigation?.navigate('CampaignDetails', { id: item.id, campaign: item })} style={({ pressed }) => [{}, pressed && { opacity: 0.9 }]}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
+        <Pressable onPress={() => navigation?.navigate('CampaignDetails', { id: item.id, campaign: item })} style={({ pressed }) => [{}, pressed && { opacity: 0.85 }]}>
           <View style={styles.cardTop}>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardName} numberOfLines={1}>{item.title}</Text>
@@ -153,7 +146,7 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
                   {FILTERS.map((f) => {
                     const active = f === filter
                     return (
-                      <Pressable key={f} onPress={() => setFilter(f)} style={[styles.chip, active && styles.chipActive]}>
+                      <Pressable key={f} onPress={() => setFilter(f)} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.85 }]}>
                         <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.charAt(0).toUpperCase() + f.slice(1)}</Text>
                       </Pressable>
                     )

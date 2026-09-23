@@ -4,7 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 
@@ -33,13 +33,6 @@ interface MonthlyPoint {
   spent: number
 }
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  draft: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)' },
-  completed: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)' },
-  paused: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  cancelled: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
-}
 
 type Tab = 'campaigns' | 'creators'
 
@@ -165,7 +158,7 @@ export default function AnalyticsScreen({ navigation }: any) {
   const renderCampaign = ({ item, index }: { item: CampaignMetric; index: number }) => {
     const s = STATUS_COLORS[item.status] || STATUS_COLORS.draft
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
         <Pressable style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('CampaignAnalytics', { id: item.id, title: item.title })}>
           <View style={{ flex: 1 }}>
             <Text style={styles.rowTitle} numberOfLines={1}>{item.title}</Text>
@@ -181,7 +174,7 @@ export default function AnalyticsScreen({ navigation }: any) {
   }
 
   const renderCreator = ({ item, index }: { item: CreatorMetric; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
       <Pressable style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('RelationshipDetail', { id: item.id })}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, FlatList, Pressable } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing, radius } from '@/src/theme'
@@ -450,7 +451,7 @@ function IndustryPicker({ value, onChange }: { value: string[]; onChange: (v: st
           {value.map((item) => (
             <View key={item} style={styles.pill}>
               <Text style={styles.pillText}>{item}</Text>
-              <Pressable accessibilityRole="button" accessibilityLabel="Remove" onPress={() => remove(item)} hitSlop={6}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Remove" onPress={() => remove(item)} hitSlop={6} style={({ pressed }) => pressed && { opacity: 0.85 }}>
                 <Ionicons name="close" size={14} color={colors.neon} />
               </Pressable>
             </View>
@@ -475,7 +476,7 @@ function IndustryPicker({ value, onChange }: { value: string[]; onChange: (v: st
           <View style={styles.modalHandle} />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Select Industries</Text>
-            <Pressable onPress={() => setOpen(false)}>
+            <Pressable onPress={() => setOpen(false)} style={({ pressed }) => pressed && { opacity: 0.85 }}>
               <Text style={styles.modalDone}>Done</Text>
             </Pressable>
           </View>
@@ -509,7 +510,9 @@ function IndustryPicker({ value, onChange }: { value: string[]; onChange: (v: st
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
   <SafeAreaView style={styles.container}>
-    <ScrollView contentContainerStyle={styles.content}>{children}</ScrollView>
+    <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.content}>{children}</ScrollView>
+    </Animated.View>
   </SafeAreaView>
 )
 

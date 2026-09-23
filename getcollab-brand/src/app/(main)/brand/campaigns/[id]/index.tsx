@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Dimensions, Alert } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Dimensions, Alert, RefreshControl } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { useCampaignStore } from '@shared/stores/campaign-store'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { Campaign } from '@shared/types'
@@ -12,14 +12,13 @@ import { logger } from '@shared/services/logger'
 
 type RouteParams = RouteProp<{ campaignDetails: { id: string; campaign?: Campaign } }, 'campaignDetails'>
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string; dot: string }> = {
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)', dot: '#22C55E' },
-  draft: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)', dot: '#A1A1AA' },
-  completed: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)', dot: '#3B82F6' },
-  cancelled: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)', dot: '#EF4444' },
-}
 
 export default function BrandCampaignDetailsScreen() {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await loadCampaign() } finally { setRefreshing(false) }
+  }
   const route = useRoute<RouteParams>()
   const navigation = useNavigation()
   const { id, campaign: preloadedCampaign } = route.params || {}
@@ -78,7 +77,7 @@ export default function BrandCampaignDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />} contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
         <Animated.View entering={FadeInDown.duration(400)}>
           <View style={styles.headerRow}>
             <Text style={styles.title}>{campaign.title}</Text>

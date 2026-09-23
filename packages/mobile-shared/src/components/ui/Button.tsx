@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   View,
   StyleSheet,
@@ -9,7 +9,8 @@ import {
   TextStyle,
   StyleProp,
 } from "react-native";
-import { colors, spacing, borderRadius } from "../../constants";
+import { colors, spacing, radius } from '@/src/theme'
+import * as Haptics from 'expo-haptics'
 
 interface ButtonProps {
   title: string;
@@ -37,17 +38,17 @@ export const Button: React.FC<ButtonProps> = ({
   variant = "primary",
 }) => {
   return (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={onPress}
+    <Pressable
+      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress() }}
       disabled={disabled || loading}
-      style={[
+      style={({ pressed }) => [
         styles.button,
         variant === "outline" && styles.outline,
         variant === "secondary" && styles.secondary,
         variant === "ghost" && styles.ghost,
         fullWidth && styles.fullWidth,
         (disabled || loading) && styles.disabled,
+        pressed && styles.pressed,
         style,
       ]}
     >
@@ -57,21 +58,21 @@ export const Button: React.FC<ButtonProps> = ({
         <View style={styles.inner}>
           {leftIcon}
 
-          <Text style={[styles.text, variant === "outline" && styles.outlineText, textStyle]}>{title}</Text>
+          <Text style={[styles.text, variant !== "primary" && styles.outlineText, textStyle]}>{title}</Text>
 
           {rightIcon}
         </View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: borderRadius.full,
+    borderRadius: radius.pill,
     overflow: "hidden",
-    marginTop: spacing.xl,
-    backgroundColor: colors.primary,
+    marginTop: spacing.xxl,
+    backgroundColor: colors.neon,
   },
 
   fullWidth: {
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
   },
 
   text: {
-    color: colors.text,
+    color: colors.black,
     fontSize: 16,
     fontWeight: "700",
   },
@@ -96,13 +97,16 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.6,
   },
+  pressed: {
+    opacity: 0.85,
+  },
   outline: {
     backgroundColor: "transparent",
     borderWidth: 1,
     borderColor: colors.border,
   },
   secondary: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.card,
   },
   ghost: {
     backgroundColor: "transparent",
