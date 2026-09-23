@@ -107,7 +107,6 @@ export default function NotificationsSettingsScreen() {
             <SettingRow label="Campaign Updates" description="New bids, status changes, and milestones" valueKey="emailCampaignUpdates" />
             <SettingRow label="Bid Alerts" description="When a creator applies to your campaign" valueKey="emailBidAlerts" />
             <SettingRow label="Message Alerts" description="New chat messages" valueKey="emailMessageAlerts" />
-            <SettingRow label="Weekly Digest" description="Summary of weekly activity" valueKey="emailWeeklyDigest" />
           </View>
 
           <Text style={styles.sectionLabel}>Push</Text>

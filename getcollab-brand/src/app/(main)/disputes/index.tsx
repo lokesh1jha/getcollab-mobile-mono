@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, ActivityIndicator, TextInput, Alert, RefreshControl, Image, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, ActivityIndicator, TextInput, Alert, RefreshControl, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
-import * as ImagePickerLib from 'expo-image-picker'
 import { colors, spacing, radius } from '@/src/theme'
 import { Card, Button } from '@shared/components/ui'
 import apiService, { handleApiError } from '@shared/services/api'
@@ -24,13 +23,6 @@ interface DisputesScreenProps {
   navigation?: any
 }
 
-interface AttachmentDraft {
-  uri: string
-  base64: string
-  uploading: boolean
-  url?: string
-}
-
 export default function DisputesScreen({ navigation }: DisputesScreenProps) {
   const [refreshing, setRefreshing] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -40,7 +32,6 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
   const [formData, setFormData] = useState({ reason: '', description: '', dealId: '' })
   // Disputes are filed against a collaboration (deal); the API requires dealId.
   const [deals, setDeals] = useState<any[]>([])
-  const [attachments, setAttachments] = useState<AttachmentDraft[]>([])
   const [submitting, setSubmitting] = useState(false)
 
   const fetchDisputes = useCallback(async () => {
@@ -71,59 +62,9 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
     setRefreshing(false)
   }
 
-  const pickAttachment = async () => {
-    if (attachments.length >= 5) {
-      Alert.alert('Limit reached', 'You can attach up to 5 images per dispute.')
-      return
-    }
-    const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Please enable photo library access in settings.')
-      return
-    }
-    try {
-      const result = await ImagePickerLib.launchImageLibraryAsync({
-        mediaTypes: ImagePickerLib.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 0.7,
-        base64: true,
-      })
-      if (result.canceled || !result.assets[0]) return
-      const asset = result.assets[0]
-      if (!asset.base64) {
-        Alert.alert('Error', 'Failed to read image data')
-        return
-      }
-      const draft: AttachmentDraft = {
-        uri: asset.uri,
-        base64: `data:image/jpeg;base64,${asset.base64}`,
-        uploading: true,
-      }
-      setAttachments((prev) => [...prev, draft])
-
-      try {
-        const response = await apiService.uploadImage(draft.base64)
-        const url = response?.url || response?.imageUrl || response?.data?.url
-        setAttachments((prev) =>
-          prev.map((a) => (a.uri === draft.uri ? { ...a, uploading: false, url } : a))
-        )
-      } catch (err) {
-        setAttachments((prev) => prev.filter((a) => a.uri !== draft.uri))
-        handleApiError(err, 'Upload failed')
-      }
-    } catch (err) {
-      console.error('Failed to pick image:', err)
-      Alert.alert('Error', 'Failed to pick image')
-    }
-  }
-
-  const removeAttachment = (uri: string) => {
-    setAttachments((prev) => prev.filter((a) => a.uri !== uri))
-  }
 
   const resetForm = () => {
     setFormData({ reason: '', description: '', dealId: '' })
-    setAttachments([])
     setShowForm(false)
   }
 
@@ -132,15 +73,10 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
       Alert.alert('Error', 'Choose the collaboration and fill in reason and description.')
       return
     }
-    if (attachments.some((a) => a.uploading)) {
-      Alert.alert('Hold on', 'Wait for attachments to finish uploading.')
-      return
-    }
-
-    const uploadedUrls = attachments.filter((a) => a.url).map((a) => a.url!)
-    const descriptionWithEvidence = uploadedUrls.length
-      ? `${formData.description.trim()}\n\nEvidence:\n${uploadedUrls.map((u, i) => `${i + 1}. ${u}`).join('\n')}`
-      : formData.description.trim()
+    // Evidence photos were uploaded to /profile/upload, which does not exist,
+    // and disputes carry text only; the evidence picker is gone until the
+    // dispute model can hold attachments.
+    const descriptionWithEvidence = formData.description.trim()
 
     setSubmitting(true)
     try {
@@ -323,41 +259,6 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
                   numberOfLines={4}
                 />
 
-                <Text style={styles.fieldLabel}>Evidence (optional)</Text>
-                <Text style={styles.fieldHint}>
-                  Attach screenshots or photos. URLs will be added to your dispute description.
-                </Text>
-
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.attachmentRow}
-                  contentContainerStyle={styles.attachmentRowContent}
-                >
-                  {attachments.map((att) => (
-                    <View key={att.uri} style={styles.attachmentItem}>
-                      <Image source={{ uri: att.uri }} style={styles.attachmentImage} />
-                      {att.uploading && (
-                        <View style={styles.attachmentOverlay}>
-                          <ActivityIndicator color={"#fff"} />
-                        </View>
-                      )}
-                      {!att.uploading && (
-                        <TouchableOpacity style={styles.attachmentRemove} onPress={() => removeAttachment(att.uri)}>
-                          <Text style={styles.attachmentRemoveText}>×</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  ))}
-
-                  {attachments.length < 5 && (
-                    <TouchableOpacity style={styles.attachmentAdd} onPress={pickAttachment}>
-                      <Text style={styles.attachmentAddIcon}>＋</Text>
-                      <Text style={styles.attachmentAddText}>Add Image</Text>
-                    </TouchableOpacity>
-                  )}
-                </ScrollView>
-
                 <View style={styles.formButtons}>
                   <Button
                     title="Cancel"
@@ -463,11 +364,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     marginTop: spacing.sm,
   },
-  fieldHint: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginBottom: spacing.sm,
-  },
   input: {
     backgroundColor: colors.elevated,
     borderRadius: radius.sm,
@@ -480,69 +376,6 @@ const styles = StyleSheet.create({
   textArea: {
     height: 100,
     textAlignVertical: 'top',
-  },
-  attachmentRow: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  attachmentRowContent: {
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  attachmentItem: {
-    width: 80,
-    height: 80,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-    backgroundColor: colors.elevated,
-    marginRight: spacing.sm,
-  },
-  attachmentImage: {
-    width: '100%',
-    height: '100%',
-  },
-  attachmentOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  attachmentRemove: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: colors.error,
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  attachmentRemoveText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: 'bold',
-    lineHeight: 16,
-  },
-  attachmentAdd: {
-    width: 80,
-    height: 80,
-    borderRadius: radius.sm,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-  },
-  attachmentAddIcon: {
-    fontSize: 24,
-    color: colors.neon,
-  },
-  attachmentAddText: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
   },
   formButtons: {
     flexDirection: 'row',

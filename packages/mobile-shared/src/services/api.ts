@@ -1,3 +1,4 @@
+import { rowsForToggle, toggleStates, type PrefRow } from '../lib/notification-prefs'
 import { Alert } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import { resolveApiBaseUrl } from '../utils/api-url'
@@ -429,6 +430,10 @@ class ApiService {
     return this.request(`/chat/messages?${queryParams.toString()}`)
   }
 
+  async markChatRoomRead(roomId: string): Promise<any> {
+    return this.request(`/chat/rooms/${encodeURIComponent(roomId)}/read`, { method: 'POST', body: JSON.stringify({}) })
+  }
+
   async sendChatMessage(roomId: string, content: string, type: string = 'text'): Promise<any> {
     // The API reads `message`; this sent `content`, so every mobile message
     // was saved with an empty body.
@@ -456,10 +461,16 @@ class ApiService {
     })
   }
 
+  /** Opens (or reuses) the brand's room with a creator. /chat/direct does not
+   *  exist; rooms are opened with POST /chat/rooms for the caller's brand
+   *  org. influencerId may be the creator's profile or user id. */
   async createDirectChat(influencerId: string, campaignId?: string): Promise<any> {
-    return this.request('/chat/direct', {
+    const me: any = await this.request('/auth/me')
+    const brandOrgId = me?.tenant_id || me?.memberships?.[0]?.org_id
+    if (!brandOrgId) throw new Error('Messaging a creator needs a brand workspace')
+    return this.request('/chat/rooms', {
       method: 'POST',
-      body: JSON.stringify({ influencerId, campaignId }),
+      body: JSON.stringify({ brand_org_id: brandOrgId, influencer_id: influencerId, campaign_id: campaignId ?? '' }),
     })
   }
 
@@ -529,10 +540,7 @@ class ApiService {
   }
 
   async updateGeneralProfile(data: { name?: string; websiteUrl?: string; industry?: string; phoneNumbers?: string[] }): Promise<any> {
-    return this.request('/settings/profile', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+    return this.updateAccount(data)
   }
 
   async updateRole(role: 'brand' | 'influencer'): Promise<any> {
@@ -564,11 +572,15 @@ class ApiService {
     })
   }
 
-  async uploadImage(base64Image: string): Promise<any> {
-    return this.request('/profile/upload', {
-      method: 'POST',
-      body: JSON.stringify({ image: base64Image }),
-    })
+  /** Uploads a campaign cover and returns its public URL. /profile/upload,
+   *  which this used, does not exist; campaigns have their own upload URL. */
+  async uploadCampaignCover(dataUri: string, contentType = 'image/jpeg'): Promise<string> {
+    const r: any = await this.request(`/campaigns/upload-url?contentType=${encodeURIComponent(contentType)}`)
+    if (!r?.uploadUrl || !r?.publicUrl) throw new Error('Upload URL unavailable')
+    const blob = await (await fetch(dataUri)).blob()
+    const put = await fetch(r.uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: blob as any })
+    if (!put.ok) throw new Error('Cover upload failed')
+    return r.publicUrl
   }
 
   async updatePricing(data: any): Promise<any> {
@@ -590,22 +602,67 @@ class ApiService {
     return this.request('/reference-data/all')
   }
 
+  // /v1/settings (GET/PUT), /settings/notifications and /settings/profile do
+  // not exist on the Go API, so every settings screen loaded defaults and
+  // every save failed. These keep the screens' shape and compose it from the
+  // real endpoints: /auth/me + PATCH /auth/account (name, phone, brand
+  // website/industry), /profile (bio, location, website), and
+  // /notifications/preferences (per event type, mapped from the toggles).
+
+  private async getPreferenceRows(): Promise<PrefRow[]> {
+    const res: any = await this.request('/notifications/preferences')
+    return (res?.preferences ?? []).map((p: any) => ({
+      event_type: p.eventType, in_app: !!p.inApp, email: !!p.email, web_push: !!p.webPush, mobile_push: !!p.mobilePush,
+    }))
+  }
+
   async getSettings(): Promise<any> {
-    return this.request('/settings')
+    const [me, profile, rows] = await Promise.all([
+      this.request('/auth/me') as Promise<any>,
+      (this.request('/profile') as Promise<any>).catch(() => null),
+      this.getPreferenceRows().catch(() => [] as PrefRow[]),
+    ])
+    const prof = profile?.profile ?? profile ?? {}
+    return {
+      name: me?.name ?? '',
+      email: me?.email ?? '',
+      phoneNumbers: me?.phoneNumbers ?? [],
+      image: me?.image,
+      bio: prof.bio ?? '',
+      location: [prof.city, prof.state].filter(Boolean).join(', '),
+      websiteUrl: prof.website ?? '',
+      industry: prof.industries?.[0] ?? '',
+      notifications: toggleStates(rows),
+    }
   }
 
-  async updateSettings(data: any): Promise<any> {
-    return this.request('/settings', {
-      method: 'PUT',
-      body: JSON.stringify(data),
+  /** PATCH /auth/account replaces name, phone and (brands) website/industry
+   *  together, so unchanged fields are read back first rather than cleared. */
+  async updateAccount(changes: { name?: string; phoneNumbers?: string[]; websiteUrl?: string; industry?: string }): Promise<any> {
+    const cur = await this.getSettings()
+    return this.request('/auth/account', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        name: changes.name ?? cur.name,
+        phoneNumbers: changes.phoneNumbers ?? cur.phoneNumbers,
+        websiteUrl: changes.websiteUrl ?? cur.websiteUrl,
+        industry: changes.industry ?? cur.industry,
+      }),
     })
   }
 
-  async updateNotificationSettings(data: any): Promise<any> {
-    return this.request('/settings/notifications', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+  async updateSettings(data: { phoneNumbers?: string[]; name?: string }): Promise<any> {
+    return this.updateAccount(data)
+  }
+
+  /** Accepts the screens' toggle keys, e.g. { emailBidAlerts: false }. */
+  async updateNotificationSettings(data: Record<string, boolean>): Promise<any> {
+    const rows = await this.getPreferenceRows()
+    for (const [key, value] of Object.entries(data)) {
+      for (const row of rowsForToggle(rows, key, value)) {
+        await this.request('/notifications/preferences', { method: 'PUT', body: JSON.stringify(row) })
+      }
+    }
   }
 
   // ------- Notifications -------
@@ -756,6 +813,11 @@ class ApiService {
     return this.request(
       `/collabs/${encodeURIComponent(dealId)}/assets/${encodeURIComponent(submissionId)}/url?download=${download ? 1 : 0}`,
     )
+  }
+
+  /** The campaign's escrow pool (404 until the brand funds it). */
+  async getCampaignPool(campaignId: string): Promise<any> {
+    return this.request(`/escrow/campaigns/${encodeURIComponent(campaignId)}/pool`)
   }
 
   async getDealEvents(dealId: string): Promise<any> {

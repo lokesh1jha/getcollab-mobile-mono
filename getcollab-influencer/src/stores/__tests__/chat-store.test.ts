@@ -9,6 +9,7 @@ jest.mock('@shared/services/api', () => ({
     getChatMessages: jest.fn(),
     sendChatMessage: jest.fn(),
     sendChatMessageWithAttachments: jest.fn(),
+    markChatRoomRead: jest.fn(() => Promise.resolve({})),
   },
   uploadMediaBlob: jest.fn(),
 }))
@@ -36,6 +37,8 @@ describe('chat-store', () => {
     useChatStore.setState({ unreadByRoom: { r1: 3, r2: 1 } })
     useChatStore.getState().markRoomRead('r1')
     expect(useChatStore.getState().unreadByRoom).toEqual({ r2: 1 })
+    // Read state is saved on the server (the socket event never reached it).
+    expect(apiService.markChatRoomRead).toHaveBeenCalledWith('r1')
   })
 
   it('totalUnread sums across rooms', () => {

@@ -192,7 +192,8 @@ describe('NotificationsSettingsScreen', () => {
     expect(await screen.findByText('Email and push preferences')).toBeOnTheScreen()
     expect(screen.getAllByText('Campaign Updates')).toHaveLength(2)
     // 4 email toggles + 3 push toggles
-    expect(screen.UNSAFE_getAllByType(Switch)).toHaveLength(7)
+    // Six: the weekly digest had no backend and was removed.
+    expect(screen.UNSAFE_getAllByType(Switch)).toHaveLength(6)
   })
 
   it('persists a toggle change', async () => {

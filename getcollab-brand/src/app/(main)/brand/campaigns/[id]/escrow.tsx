@@ -26,35 +26,35 @@ export default function CampaignEscrowScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
+  // Reads the campaign's escrow pool. This used to present the campaign
+  // budget as "funded" and the org-wide wallet balance as held for this
+  // campaign, neither of which is escrow.
   const loadEscrow = useCallback(async () => {
     try {
-      const [campaignRes, walletRes] = await Promise.all([
-        apiService.getCampaign(campaignId).catch(() => null),
-        apiService.fetchWalletSummary().catch(() => null),
-      ])
-      const c = campaignRes?.campaign || campaignRes || {}
-      const budget = c.budget || 0
-      const wallet = walletRes?.summary || walletRes || {}
-      const available = wallet.available_minor || wallet.available || 0
-      const reserved = wallet.reserved_minor || wallet.reserved || wallet.held_minor || wallet.held || 0
-
-      // Only show what we know from real data
-      const items: EscrowItem[] = []
-      if (budget > 0) {
-        items.push({ id: '1', label: 'Campaign budget', amount: budget, status: 'funded', date: c.createdAt })
+      const pool = await apiService.getCampaignPool(campaignId).catch((e: any) => {
+        if (e?.code === 'not_found' || /not found/i.test(String(e?.message))) return null
+        throw e
+      })
+      if (!pool) {
+        setEscrow({ totalBudget: 0, funded: 0, released: 0, held: 0, items: [] })
+        return
       }
-      if (reserved > 0) {
-        items.push({ id: '2', label: 'Reserved from wallet', amount: reserved / 100, status: 'held' })
-      }
-      if (available > 0) {
-        items.push({ id: '3', label: 'Wallet available', amount: available / 100, status: 'released' })
-      }
-
+      const rupees = (minor?: number) => (minor ?? 0) / 100
+      const rows: Array<[string, number, string]> = [
+        ['Funded into escrow', pool.fundedMinor, 'funded'],
+        ['Reserved for creators', pool.reservedMinor, 'held'],
+        ['Released to creators', (pool.releasedMinor ?? 0) + (pool.paidMinor ?? 0), 'released'],
+        ['Refunded to you', pool.refundedMinor, 'pending'],
+        ['Available to reserve', pool.availableMinor, 'funded'],
+      ]
+      const items: EscrowItem[] = rows
+        .filter(([, minor]) => (minor ?? 0) > 0)
+        .map(([label, minor, status], idx) => ({ id: String(idx), label, amount: rupees(minor), status }))
       setEscrow({
-        totalBudget: budget,
-        funded: budget,
-        released: 0,
-        held: reserved / 100,
+        totalBudget: rupees(pool.budgetMinor),
+        funded: rupees(pool.fundedMinor),
+        released: rupees((pool.releasedMinor ?? 0) + (pool.paidMinor ?? 0)),
+        held: rupees(pool.reservedMinor),
         items,
       })
     } catch (err) {
@@ -100,7 +100,7 @@ export default function CampaignEscrowScreen() {
 
           {escrow && escrow.items.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Transactions</Text>
+              <Text style={styles.sectionTitle}>Escrow</Text>
               <View style={styles.listCard}>
                 {escrow.items.map((item, idx) => {
                   const s = STATUS_COLORS[item.status] || STATUS_COLORS.pending
@@ -126,8 +126,8 @@ export default function CampaignEscrowScreen() {
           {(!escrow || escrow.items.length === 0) && (
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="cash-outline" size={26} color={colors.textMuted} /></View>
-              <Text style={styles.emptyTitle}>No escrow activity</Text>
-              <Text style={styles.emptySub}>Fund transactions will appear here once the campaign is active.</Text>
+              <Text style={styles.emptyTitle}>Nothing in escrow yet</Text>
+              <Text style={styles.emptySub}>Funds appear here once you fund the campaign or a creator&apos;s collaboration.</Text>
             </View>
           )}
         </Animated.View>

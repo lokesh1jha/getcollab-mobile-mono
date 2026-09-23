@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { io, Socket } from 'socket.io-client'
 import apiService, { uploadMediaBlob } from '../services/api'
 import { logger } from '../services/logger'
 import { unwrapArray } from '../utils/unwrap-api'
@@ -10,11 +9,6 @@ export interface PendingAttachmentFile {
   fileName: string
   mimeType: string
   fileSize: number
-}
-
-const getSocketUrl = (): string => {
-  const baseUrl = apiService.getBaseUrl?.() || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'
-  return baseUrl.replace(/\/api\/v\d+$/, '')
 }
 
 interface PresenceState {
@@ -30,7 +24,12 @@ interface ChatState {
   isSending: boolean
   error: string | null
   hasMoreMessages: boolean
-  socket: Socket | null
+  // Poll handle while a chat screen is open. The backend speaks Sockudo
+  // (Pusher protocol), not socket.io, so the socket.io client never
+  // connected; chat polls as the web app does. Kept under this name so the
+  // screens' `if (!socket) initializeSocket()` still works.
+  socket: { timer: ReturnType<typeof setInterval> } | null
+  activeRoomId: string | null
   isSocketConnected: boolean
   listeners: any | null
   typingUsers: Record<string, Set<string>>
@@ -68,6 +67,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   error: null,
   hasMoreMessages: true,
   socket: null,
+  activeRoomId: null,
   isSocketConnected: false,
   listeners: null,
   typingUsers: {},
@@ -75,104 +75,41 @@ export const useChatStore = create<ChatState>((set, get) => ({
   presence: {},
   unreadByRoom: {},
 
+  // ponytail: polling (5s messages, 60s rooms) like web; move to Sockudo
+  // (pusher-js) when push latency matters. Typing and presence are gone: the
+  // backend never sent them.
   initializeSocket: async () => {
-    try {
-      const token = await apiService.getToken()
-      if (!token) return
-
-      const currentSocket = get().socket
-      if (currentSocket) currentSocket.disconnect()
-
-      const socket = io(getSocketUrl(), {
-        auth: { token: `Bearer ${token}` },
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: 5,
-      })
-
-      const onConnect = () => set({ isSocketConnected: true })
-      const onDisconnect = () => set({ isSocketConnected: false })
-
-      const onReceiveMessage = (message: Message) => {
-        get().addMessage(message)
-        const isCurrent = get().currentRoom?.id === message.roomId
-        if (!isCurrent) {
-          set((state) => ({
-            unreadByRoom: {
-              ...state.unreadByRoom,
-              [message.roomId]: (state.unreadByRoom[message.roomId] || 0) + 1,
-            },
-          }))
+    if (get().socket) return
+    const token = await apiService.getToken()
+    if (!token) return
+    let tick = 0
+    const timer = setInterval(async () => {
+      tick++
+      const roomId = get().activeRoomId
+      if (roomId) {
+        try {
+          const response = await apiService.getChatMessages(roomId, { limit: 50 })
+          const incoming = [...unwrapArray(response, ['data', 'messages'])].reverse() as Message[]
+          const known = new Set(get().messages.map((m) => m.id))
+          const fresh = incoming.filter((m) => !known.has(m.id))
+          if (fresh.length > 0 && get().activeRoomId === roomId) {
+            set((state) => ({ messages: [...state.messages, ...fresh] }))
+          }
+        } catch (error: any) {
+          logger.warn('Chat poll failed', { error: error?.message })
         }
       }
-
-      const onReadReceipt = (data: { roomId: string; userId: string; messageId: string; readAt?: string }) => {
-        set((state) => ({
-          readByUser: {
-            ...state.readByUser,
-            [data.userId]: {
-              ...(state.readByUser[data.userId] || {}),
-              [data.roomId]: data.messageId,
-            },
-          },
-        }))
-      }
-
-      const onTyping = (data: { roomId: string; userId: string; isTyping: boolean }) => {
-        set((state) => {
-          const next = { ...state.typingUsers }
-          const set_ = ensureSet(next, data.roomId)
-          if (data.isTyping) set_.add(data.userId)
-          else set_.delete(data.userId)
-          return { typingUsers: next }
-        })
-      }
-
-      const onPresence = (data: { userId: string; online: boolean; lastSeen?: string }) => {
-        set((state) => ({
-          presence: {
-            ...state.presence,
-            [data.userId]: { online: data.online, lastSeen: data.lastSeen },
-          },
-        }))
-      }
-
-      const onError = (error: any) => {
-        logger.warn('Socket error', { error: error?.message })
-      }
-
-      socket.on('connect', onConnect)
-      socket.on('disconnect', onDisconnect)
-      socket.on('receiveMessage', onReceiveMessage)
-      socket.on('readReceipt', onReadReceipt)
-      socket.on('typing', onTyping)
-      socket.on('presence', onPresence)
-      socket.on('error', onError)
-
-      set({
-        socket,
-        listeners: { onConnect, onDisconnect, onReceiveMessage, onReadReceipt, onTyping, onPresence, onError },
-      })
-    } catch (error) {
-      logger.warn('Socket init failed', { error: (error as any)?.message })
-    }
+      if (tick % 12 === 0) get().fetchRooms().catch(() => {})
+    }, 5000)
+    set({ socket: { timer }, isSocketConnected: true })
   },
 
   disconnectSocket: () => {
     const socket = get().socket
-    const listeners = get().listeners
-    if (socket) {
-      if (listeners) {
-        Object.entries(listeners).forEach(([event, fn]) => {
-          socket.off(event.replace(/^on/, '').replace(/^./, (c) => c.toLowerCase()), fn as any)
-        })
-      }
-      socket.disconnect()
-      set({ socket: null, isSocketConnected: false, listeners: null })
-    }
+    if (socket) clearInterval(socket.timer)
+    set({ socket: null, isSocketConnected: false, listeners: null })
   },
+
 
   fetchRooms: async () => {
     set({ isLoading: true, error: null })
@@ -198,7 +135,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   fetchMessages: async (roomId: string, params) => {
-    set({ isLoading: true, error: null })
+    set({ isLoading: true, error: null, activeRoomId: roomId })
     try {
       const response = await apiService.getChatMessages(roomId, { before: params?.before, limit: 50 })
       const incoming = [...unwrapArray(response, ['data', 'messages'])] as Message[]
@@ -221,10 +158,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const finalMessage = attachmentUrl ? { ...message, attachmentUrl, type } : message
       set((state) => ({ messages: [...state.messages, finalMessage], isSending: false }))
 
-      const socket = get().socket
-      if (socket && socket.connected) {
-        socket.emit('sendMessage', { roomId, content, type, attachmentUrl })
-      }
     } catch (error: any) {
       set({ error: error?.message || 'Failed to send message', isSending: false })
       throw error
@@ -282,25 +215,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const { [roomId]: _, ...rest } = state.unreadByRoom
       return { unreadByRoom: rest }
     })
-    const socket = get().socket
-    if (socket && socket.connected) {
-      socket.emit('markRead', { roomId })
-    }
+    apiService.markChatRoomRead(roomId).catch((error: any) => {
+      logger.warn('Mark room read failed', { error: error?.message })
+    })
   },
 
-  setTyping: (roomId: string, isTyping: boolean) => {
-    const socket = get().socket
-    if (socket && socket.connected) {
-      socket.emit('typing', { roomId, isTyping })
-    }
-  },
+  // No typing indicator on the backend; kept so screens can call it.
+  setTyping: () => {},
 
   clearError: () => set({ error: null }),
 
   reset: () => {
     const socket = get().socket
-    if (socket) socket.disconnect()
+    if (socket) clearInterval(socket.timer)
     set({
+      activeRoomId: null,
       rooms: [],
       currentRoom: null,
       messages: [],

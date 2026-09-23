@@ -116,31 +116,8 @@ export default function SettingsScreen({ navigation }: { navigation: InfluencerN
         </View>
 
         <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
-          {/* Security */}
-          <SectionHeader title="Security" />
-          <View style={styles.listCard}>
-            <ToggleRow
-              icon="shield-checkmark-outline"
-              label="Two-Factor Authentication"
-              description="Add an extra layer of security"
-              value={settings.twoFactorEnabled}
-              onToggle={async () => {
-                const newVal = !settings.twoFactorEnabled
-                setSettings(prev => ({ ...prev, twoFactorEnabled: newVal }))
-                setSaving('twoFactorEnabled')
-                try {
-                  await apiService.updateSettings({ twoFactorEnabled: newVal })
-                } catch (err: any) {
-                  setSettings(prev => ({ ...prev, twoFactorEnabled: !newVal }))
-                  handleApiError(err, 'Failed to update 2FA setting')
-                } finally {
-                  setSaving(null)
-                }
-              }}
-              loading={saving === 'twoFactorEnabled'}
-            />
-          </View>
-
+          {/* No two-factor toggle: the API has no 2FA to switch on, so it
+              saved nothing. */}
           {/* Notifications */}
           <SectionHeader title="Notifications" />
           <View style={styles.listCard}>

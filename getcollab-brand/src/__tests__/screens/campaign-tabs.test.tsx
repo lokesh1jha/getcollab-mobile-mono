@@ -34,6 +34,7 @@ jest.mock('@shared/services/api', () => {
     getDeals: jest.fn(),
     getBrandInvites: jest.fn(),
     fetchWalletSummary: jest.fn(),
+    getCampaignPool: jest.fn(),
   }
   return { __esModule: true, apiService: api, default: api, handleApiError: jest.fn() }
 })
@@ -206,20 +207,26 @@ describe('CampaignOutreachScreen', () => {
 })
 
 describe('CampaignEscrowScreen', () => {
-  it('derives escrow rows from the campaign budget and wallet', async () => {
-    api.fetchWalletSummary.mockResolvedValue({ reserved_minor: 200000 })
+  it('shows the campaign pool, not the budget or the org wallet', async () => {
+    api.fetchWalletSummary.mockResolvedValue({ reserved_minor: 999900 })
+    api.getCampaignPool.mockResolvedValue({
+      budgetMinor: 5000000, fundedMinor: 3000000, reservedMinor: 1200000, releasedMinor: 0, paidMinor: 400000,
+      refundedMinor: 0, availableMinor: 1800000,
+    })
     renderScreen(CampaignEscrowScreen)
 
-    expect(await screen.findByText('Escrow')).toBeOnTheScreen()
-    expect(screen.getByText('Campaign budget')).toBeOnTheScreen()
-    expect(screen.getByText('Reserved from wallet')).toBeOnTheScreen()
+    expect(await screen.findByText('Funded into escrow')).toBeOnTheScreen()
+    expect(screen.getByText('Reserved for creators')).toBeOnTheScreen()
+    expect(screen.getByText('Released to creators')).toBeOnTheScreen()
+    expect(api.getCampaignPool).toHaveBeenCalledWith('c1')
+    expect(screen.queryByText('Reserved from wallet')).toBeNull()
   })
 
-  it('shows an empty state when nothing is funded', async () => {
-    api.getCampaign.mockResolvedValue({ campaign: { ...CAMPAIGN, budget: 0 } })
+  it('shows an empty state when the campaign has no pool yet', async () => {
+    api.getCampaignPool.mockRejectedValue(Object.assign(new Error('not found'), { code: 'not_found' }))
     renderScreen(CampaignEscrowScreen)
 
-    expect(await screen.findByText('No escrow activity')).toBeOnTheScreen()
+    expect(await screen.findByText('Nothing in escrow yet')).toBeOnTheScreen()
   })
 })
 

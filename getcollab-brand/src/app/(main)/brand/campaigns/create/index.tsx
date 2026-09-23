@@ -172,8 +172,8 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
       let coverImageUrl: string | undefined
       if (coverBase64) {
         try {
-          const uploadRes = await apiService.uploadImage(coverBase64)
-          coverImageUrl = uploadRes?.url || uploadRes?.imageUrl || uploadRes?.data?.url
+          const dataUri = coverBase64.startsWith('data:') ? coverBase64 : `data:image/jpeg;base64,${coverBase64}`
+          coverImageUrl = await apiService.uploadCampaignCover(dataUri)
         } catch (err) {
           console.warn('Cover upload failed, continuing without image:', err)
         }
@@ -190,7 +190,8 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
         startDate: toIsoDate(formData.startDate),
         endDate: toIsoDate(formData.endDate),
       }
-      if (coverImageUrl) payload.coverImage = coverImageUrl
+      // The API reads featuredImage; coverImage was ignored, so no cover was saved.
+      if (coverImageUrl) payload.featuredImage = coverImageUrl
 
       await apiService.createCampaign(payload)
 

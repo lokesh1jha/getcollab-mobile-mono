@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, Pressable, Dimensions } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { apiService } from '@shared/services/api'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -43,6 +44,7 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [showExpiredModal, setShowExpiredModal] = useState(false)
+  const [walletFunded, setWalletFunded] = useState(false)
 
   const { myCampaigns, fetchMyCampaigns } = useCampaignStore()
   const { influencers, fetchInfluencers } = useInfluencerStore()
@@ -53,7 +55,13 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
     setLoadError(null)
     try {
       setLoading(true)
-      await Promise.all([fetchMyCampaigns(), fetchInfluencers()])
+      const [, , wallet] = await Promise.all([
+        fetchMyCampaigns(),
+        fetchInfluencers(),
+        apiService.fetchWalletSummary().catch(() => null),
+      ])
+      const w = (wallet as any)?.summary ?? wallet
+      setWalletFunded(((w?.available_minor ?? 0) + (w?.reserved_minor ?? 0)) > 0)
     } catch (error: any) {
       const message = error?.message || 'Failed to load dashboard data'
       setLoadError(message)
@@ -79,7 +87,9 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
 
   const onboardingComplete = !!(user?.onboardingComplete || user?.companyName)
   const hasCampaigns = myCampaigns.length > 0
-  const hasPaymentMethod = false // TODO: wire when backend exposes payment method flag
+  // Brands pay creators from their wallet (escrow draws from it), so the
+  // step is done once the wallet holds money.
+  const hasPaymentMethod = walletFunded
 
   const checklist = [
     {
@@ -92,11 +102,11 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
     },
     {
       id: 'payment',
-      title: 'Add a way to pay creators',
-      sub: 'UPI or bank account — nothing charged today',
+      title: 'Fund your wallet',
+      sub: 'Creators are paid from escrow funded by your wallet',
       done: hasPaymentMethod,
-      action: 'Add payment',
-      route: 'Billing',
+      action: 'Add funds',
+      route: 'Wallet',
     },
     {
       id: 'campaign',

@@ -9,6 +9,7 @@ jest.mock('@shared/services/api', () => ({
     getChatMessages: jest.fn(),
     sendChatMessage: jest.fn(),
     sendChatMessageWithAttachments: jest.fn(),
+    markChatRoomRead: jest.fn(() => Promise.resolve({})),
   },
   uploadMediaBlob: jest.fn(),
 }))
@@ -36,6 +37,8 @@ describe('chat-store', () => {
     useChatStore.setState({ unreadByRoom: { r1: 3, r2: 1 } })
     useChatStore.getState().markRoomRead('r1')
     expect(useChatStore.getState().unreadByRoom).toEqual({ r2: 1 })
+    // Read state is saved on the server (the socket event never reached it).
+    expect(apiService.markChatRoomRead).toHaveBeenCalledWith('r1')
   })
 
   it('totalUnread sums across rooms', () => {
@@ -58,5 +61,27 @@ describe('chat-store', () => {
     expect(uploadMediaBlob).toHaveBeenCalledWith(expect.objectContaining({ uri: 'data:image/jpeg;base64,xxxx', mime: 'image/jpeg' }))
     expect(apiService.sendChatMessageWithAttachments).toHaveBeenCalledWith('r1', '', ['b1'])
     expect(useChatStore.getState().messages).toHaveLength(1)
+  })
+
+  it('polls the open room and appends only messages it has not seen', async () => {
+    jest.useFakeTimers()
+    const m = (id: string) => ({ id, content: id, senderId: 'u2', roomId: 'r1', createdAt: new Date().toISOString() })
+    apiService.getChatMessages.mockResolvedValueOnce({ messages: [m('m1')] })
+    await useChatStore.getState().fetchMessages('r1')
+    await useChatStore.getState().initializeSocket()
+
+    // Newest first from the API: m2 is new, m1 is already on screen.
+    apiService.getChatMessages.mockResolvedValue({ messages: [m('m2'), m('m1')] })
+    await jest.advanceTimersByTimeAsync(5000)
+    expect(useChatStore.getState().messages.map((x) => x.id)).toEqual(['m1', 'm2'])
+
+    await jest.advanceTimersByTimeAsync(5000)
+    expect(useChatStore.getState().messages).toHaveLength(2)
+
+    useChatStore.getState().disconnectSocket()
+    apiService.getChatMessages.mockClear()
+    await jest.advanceTimersByTimeAsync(10000)
+    expect(apiService.getChatMessages).not.toHaveBeenCalled()
+    jest.useRealTimers()
   })
 })
