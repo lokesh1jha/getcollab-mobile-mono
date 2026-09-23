@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, TextInput, Alert, RefreshControl, Image, ScrollView } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, ActivityIndicator, TextInput, Alert, RefreshControl, Image, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import * as ImagePickerLib from 'expo-image-picker'
@@ -37,13 +37,19 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
   const [disputes, setDisputes] = useState<Dispute[]>([])
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ reason: '', description: '', campaignId: '' })
+  const [formData, setFormData] = useState({ reason: '', description: '', dealId: '' })
+  // Disputes are filed against a collaboration (deal); the API requires dealId.
+  const [deals, setDeals] = useState<any[]>([])
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([])
   const [submitting, setSubmitting] = useState(false)
 
   const fetchDisputes = useCallback(async () => {
     try {
-      const response = await apiService.getDisputes()
+      const [response, dealsRes] = await Promise.all([
+        apiService.getDisputes(),
+        apiService.getDeals({ limit: '100' }).catch(() => null),
+      ])
+      setDeals(dealsRes?.deals || dealsRes?.data || [])
       const list = response?.data || response?.disputes || (Array.isArray(response) ? response : [])
       setDisputes(Array.isArray(list) ? list : [])
     } catch (err) {
@@ -116,14 +122,14 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
   }
 
   const resetForm = () => {
-    setFormData({ reason: '', description: '', campaignId: '' })
+    setFormData({ reason: '', description: '', dealId: '' })
     setAttachments([])
     setShowForm(false)
   }
 
   const handleSubmitDispute = async () => {
-    if (!formData.reason.trim() || !formData.description.trim()) {
-      Alert.alert('Error', 'Please fill in reason and description.')
+    if (!formData.dealId || !formData.reason.trim() || !formData.description.trim()) {
+      Alert.alert('Error', 'Choose the collaboration and fill in reason and description.')
       return
     }
     if (attachments.some((a) => a.uploading)) {
@@ -138,10 +144,10 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
 
     setSubmitting(true)
     try {
+      // The API keeps one text field; the short reason leads it.
       await apiService.createDispute({
-        reason: formData.reason.trim(),
-        description: descriptionWithEvidence,
-        campaignId: formData.campaignId.trim() || undefined,
+        dealId: formData.dealId,
+        reason: `${formData.reason.trim()}: ${descriptionWithEvidence}`,
       })
       Alert.alert('Success', 'Dispute filed successfully. Our team will review it.')
       resetForm()
@@ -188,7 +194,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
       <View style={styles.disputeHeader}>
         <View style={styles.disputeInfo}>
           <Text style={styles.disputeReason}>{item.reason}</Text>
-          <Text style={styles.disputeCampaign}>{item.campaign?.title || 'General Dispute'}</Text>
+          <Text style={styles.disputeCampaign}>Collaboration from {formatDate(deals.find((d: any) => d.id === (item as any).dealId)?.created_at ?? item.createdAt)}</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
           <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
@@ -282,14 +288,29 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
                   onChangeText={(text) => setFormData({ ...formData, reason: text })}
                 />
 
-                <Text style={styles.fieldLabel}>Campaign ID (optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Related campaign ID"
-                  placeholderTextColor={colors.textMuted}
-                  value={formData.campaignId}
-                  onChangeText={(text) => setFormData({ ...formData, campaignId: text })}
-                />
+                <Text style={styles.fieldLabel}>Collaboration *</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                  {deals.length === 0 && <Text style={{ color: colors.textMuted, fontSize: 13 }}>No collaborations to dispute.</Text>}
+                  {deals.map((d: any) => {
+                    const on = formData.dealId === d.id
+                    return (
+                      <Pressable
+                        key={d.id}
+                        onPress={() => setFormData({ ...formData, dealId: d.id })}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: on }}
+                        style={({ pressed }) => [
+                          { borderWidth: 1, borderColor: on ? colors.neon : colors.border, borderRadius: 999, paddingHorizontal: spacing.md, paddingVertical: 6 },
+                          pressed && { opacity: 0.85 },
+                        ]}
+                      >
+                        <Text style={{ color: on ? colors.neon : colors.text, fontSize: 12, fontWeight: '600' }}>
+                          {new Date(d.created_at).toLocaleDateString()} · {d.status}
+                        </Text>
+                      </Pressable>
+                    )
+                  })}
+                </View>
 
                 <Text style={styles.fieldLabel}>Description *</Text>
                 <TextInput

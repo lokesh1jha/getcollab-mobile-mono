@@ -159,24 +159,30 @@ describe('CampaignResponsesScreen', () => {
 })
 
 describe('CampaignExecuteScreen', () => {
-  it('flattens deal deliverables and shows an empty state when there are none', async () => {
+  it('shows an empty state when the campaign has no collaborations', async () => {
     renderScreen(CampaignExecuteScreen)
 
     expect(await screen.findByText('Execute')).toBeOnTheScreen()
-    expect(screen.getByText('No deliverables yet')).toBeOnTheScreen()
-    expect(api.getDeals).toHaveBeenCalledWith({ campaignId: 'c1' })
+    expect(screen.getByText('No creators yet')).toBeOnTheScreen()
   })
 
-  it('renders one row per deliverable across deals', async () => {
+  it('lists this campaign\'s collaborations by creator and opens the review screen', async () => {
+    // /collabs ignores campaignId, so the screen filters; names come from bids.
     api.getDeals.mockResolvedValue({
       deals: [
-        { id: 'd1', status: 'in_progress', influencer: { name: 'Riya' }, deliverables: ['Reel', { title: 'Story set' }] },
+        { id: 'd1', campaign_id: 'c1', bid_id: 'b1', status: 'in_progress', stage: 'PRODUCTION', payment_status: 'held' },
+        { id: 'd2', campaign_id: 'other', bid_id: 'b2', status: 'pending', stage: 'CONTRACT', payment_status: 'unpaid' },
       ],
     })
+    api.getBidsForCampaign.mockResolvedValue({ bids: [{ id: 'b1', influencer: { name: 'Riya' } }] })
     renderScreen(CampaignExecuteScreen)
 
-    expect(await screen.findByText('Reel')).toBeOnTheScreen()
-    expect(screen.getByText('Story set')).toBeOnTheScreen()
+    expect(await screen.findByText('Riya')).toBeOnTheScreen()
+    expect(screen.getByText('In production')).toBeOnTheScreen()
+    expect(screen.queryAllByText('Creator')).toHaveLength(0)
+
+    fireEvent.press(screen.getByText('Riya'))
+    expect(navigation.navigate).toHaveBeenCalledWith('DealReview', { id: 'd1', title: 'Summer Launch · Riya' })
   })
 })
 

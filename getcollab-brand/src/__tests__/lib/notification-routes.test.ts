@@ -15,6 +15,9 @@ describe('routeFromDeepLink', () => {
     ['/dashboard/analytics', 'Analytics', undefined],
     ['/dashboard/growth/seo', 'Growth', undefined],
     ['/dashboard/invites', 'Invites', undefined],
+    // Deal events (deals.event fan-out) open the collaboration itself.
+    ['/dashboard/collaborations/deal-1', 'Collaborations', { id: 'deal-1' }],
+    ['/dashboard/deal-invites', 'DealInvites', undefined],
     ['/dashboard/bids', 'Bids', undefined],
     ['/dashboard/disputes', 'Disputes', undefined],
     ['/dashboard/billing', 'Billing', undefined],

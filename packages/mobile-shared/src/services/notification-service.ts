@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications'
 import Constants from 'expo-constants'
+import { Platform } from 'react-native'
 import { createNavigationContainerRef } from '@react-navigation/native'
 import apiService from './api'
 import { logger } from './logger'
@@ -126,7 +127,10 @@ class NotificationService {
    */
   private async registerPushToken(token: string): Promise<void> {
     try {
-      await apiService.post('/notifications/device-tokens', { platform: 'expo', token })
+      // The API accepts web|android|ios; 'expo' was rejected, so no phone was
+      // ever registered. The token is an Expo push token either way; the
+      // worker's mobile_push channel sends it through Expo.
+      await apiService.post('/notifications/device-tokens', { platform: Platform.OS === 'ios' ? 'ios' : 'android', token })
       logger.debug('Push token registered with backend')
     } catch (error) {
       logger.error('Failed to register push token', error)

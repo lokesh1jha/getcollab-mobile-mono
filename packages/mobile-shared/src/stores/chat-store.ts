@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { io, Socket } from 'socket.io-client'
-import apiService from '../services/api'
+import apiService, { uploadMediaBlob } from '../services/api'
 import { logger } from '../services/logger'
 import { unwrapArray } from '../utils/unwrap-api'
 import type { ChatRoom, Message } from '../types'
@@ -231,57 +231,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  sendImage: async (roomId: string, base64: string) => {
-    set({ isSending: true, error: null })
-    try {
-      let imageUrl = ''
-      try {
-        const response = await apiService.uploadChatImage(base64)
-        imageUrl = response?.url || response?.imageUrl || response?.data?.url || ''
-      } catch (uploadErr) {
-        // Fallback to profile upload route if chat upload not available
-        const response = await apiService.uploadImage(base64)
-        imageUrl = response?.url || response?.imageUrl || response?.data?.url || ''
-      }
-      if (!imageUrl) throw new Error('Upload returned no URL')
-      await get().sendMessage(roomId, imageUrl, 'image', imageUrl)
-    } catch (error: any) {
-      set({ error: error?.message || 'Failed to send image', isSending: false })
-      throw error
-    }
+  // Images and files go through the media service (start, PUT, complete) and
+  // are sent as blob ids, as on web. These used to call /chat/upload and
+  // /profile/upload, which do not exist, and read s3Key/uploadUrl, which the
+  // presign endpoint never returned, so nothing could be attached.
+  sendImage: async (roomId: string, dataUri: string) => {
+    // ponytail: size unknown for a data URI; the server records 0 and the upload still validates.
+    await get().sendAttachments(roomId, [{ uri: dataUri, fileName: 'image.jpg', mimeType: 'image/jpeg', fileSize: 0 }])
   },
 
   sendAttachments: async (roomId: string, files: PendingAttachmentFile[], caption = '') => {
     set({ isSending: true, error: null })
     try {
-      const presignRes = await apiService.presignChatAttachments(
-        roomId,
-        files.map((f) => ({ fileName: f.fileName, mimeType: f.mimeType, fileSize: f.fileSize })),
-      )
-      const uploads: { s3Key: string; uploadUrl: string; fileName: string }[] =
-        presignRes?.uploads || presignRes?.data?.uploads || []
+      const blobIds: string[] = []
+      for (const file of files) {
+        const done = await uploadMediaBlob({ uri: file.uri, mime: file.mimeType, sizeBytes: file.fileSize })
+        const blobId = done?.id || done?.blob_id || done?.blobId
+        if (!blobId) throw new Error(`Upload failed for ${file.fileName}`)
+        blobIds.push(String(blobId))
+      }
 
-      await Promise.all(uploads.map(async (upload, i) => {
-        const file = files[i]
-        const blob = await (await fetch(file.uri)).blob()
-        const putRes = await fetch(upload.uploadUrl, {
-          method: 'PUT',
-          body: blob,
-          headers: { 'Content-Type': file.mimeType },
-        })
-        if (!putRes.ok) throw new Error(`Upload failed for ${file.fileName}`)
-      }))
-
-      const attachments = uploads.map((upload, i) => ({
-        s3Key: upload.s3Key,
-        fileName: files[i].fileName,
-        mimeType: files[i].mimeType,
-        fileSize: files[i].fileSize,
-      }))
-
-      const response = await apiService.sendChatMessageWithAttachments(roomId, caption, attachments)
-      const created = response?.message || response?.data?.message
-      if (created) {
+      const response = await apiService.sendChatMessageWithAttachments(roomId, caption, blobIds)
+      const created = response?.message || response?.data?.message || response
+      if (created?.id) {
         const message: Message = {
           id: created.id,
           content: created.message ?? caption,
@@ -294,11 +266,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set((state) => ({ messages: [...state.messages, message], isSending: false }))
       } else {
         set({ isSending: false })
-      }
-
-      const socket = get().socket
-      if (socket && socket.connected) {
-        socket.emit('sendMessage', { roomId, content: caption, type: 'file' })
       }
     } catch (error: any) {
       set({ error: error?.message || 'Failed to send attachments', isSending: false })

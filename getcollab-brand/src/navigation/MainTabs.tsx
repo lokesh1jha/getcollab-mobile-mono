@@ -15,6 +15,7 @@ import CampaignEdit from '../app/(main)/brand/campaigns/[id]/edit'
 import CampaignDiscover from '../app/(main)/brand/campaigns/[id]/discover'
 import CampaignResponses from '../app/(main)/brand/campaigns/[id]/responses'
 import CampaignExecute from '../app/(main)/brand/campaigns/[id]/execute'
+import DealReview from '../app/(main)/brand/deals/[id]'
 import CampaignOutreach from '../app/(main)/brand/campaigns/[id]/outreach'
 import CampaignEscrow from '../app/(main)/brand/campaigns/[id]/escrow'
 import CampaignCircle from '../app/(main)/brand/campaigns/[id]/circle'
@@ -265,6 +266,18 @@ function BrandStackInner() {
         name="CampaignExecute"
         component={CampaignExecute}
         options={{ headerTitle: 'Execute', ...stackHeaderOptions }}
+      />
+      <Stack.Screen
+        name="DealReview"
+        component={DealReview}
+        options={{ headerTitle: 'Collaboration', ...stackHeaderOptions }}
+      />
+      {/* Notification deep links (/dashboard/collaborations/{id}) resolve to
+          "Collaborations"; on the brand app that is the deal review. */}
+      <Stack.Screen
+        name="Collaborations"
+        component={DealReview}
+        options={{ headerTitle: 'Collaboration', ...stackHeaderOptions }}
       />
       <Stack.Screen
         name="CampaignOutreach"

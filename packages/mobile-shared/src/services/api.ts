@@ -430,9 +430,11 @@ class ApiService {
   }
 
   async sendChatMessage(roomId: string, content: string, type: string = 'text'): Promise<any> {
+    // The API reads `message`; this sent `content`, so every mobile message
+    // was saved with an empty body.
     return this.request('/chat/messages', {
       method: 'POST',
-      body: JSON.stringify({ roomId, content, type }),
+      body: JSON.stringify({ roomId, message: content, type }),
     })
   }
 
@@ -446,14 +448,11 @@ class ApiService {
     })
   }
 
-  async sendChatMessageWithAttachments(
-    roomId: string,
-    message: string,
-    attachments: { s3Key: string; fileName: string; mimeType: string; fileSize: number }[],
-  ): Promise<any> {
+  /** blobIds come from presignChatAttachments (uploads[].blobId). */
+  async sendChatMessageWithAttachments(roomId: string, message: string, blobIds: string[]): Promise<any> {
     return this.request('/chat/messages', {
       method: 'POST',
-      body: JSON.stringify({ roomId, message, attachments }),
+      body: JSON.stringify({ roomId, message, type: 'file', blob_ids: blobIds }),
     })
   }
 
@@ -685,7 +684,9 @@ class ApiService {
     return this.request('/disputes')
   }
 
-  async createDispute(data: { campaignId?: string; reason: string; description: string; respondentId?: string }): Promise<any> {
+  /** Disputes are filed against a deal. This sent campaignId/description,
+   *  which the API does not read, so no dispute could be filed. */
+  async createDispute(data: { dealId: string; reason: string }): Promise<any> {
     return this.request('/disputes', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -724,6 +725,52 @@ class ApiService {
 
   async submitDealProof(id: string, payload: Record<string, any>): Promise<any> {
     return this.request(`/collabs/${encodeURIComponent(id)}/proof/submit`, { method: 'POST', body: JSON.stringify(payload) })
+  }
+
+  /** Hand in a script, content or live post link for one deliverable. */
+  async submitDeliverableWork(
+    dealId: string,
+    milestoneId: string,
+    body: { kind: 'SCRIPT' | 'CONTENT' | 'LIVE_LINK'; bodyText?: string; blobIds?: string[]; caption?: string; liveUrl?: string },
+  ): Promise<any> {
+    return this.request(
+      `/collabs/${encodeURIComponent(dealId)}/deliverables/${encodeURIComponent(milestoneId)}/submissions`,
+      { method: 'POST', body: JSON.stringify(body) },
+    )
+  }
+
+  /** Brand review of one submission. A note is required to request changes or reject. */
+  async reviewSubmission(
+    dealId: string,
+    submissionId: string,
+    body: { action: 'approve' | 'request_changes' | 'reject'; note?: string },
+  ): Promise<any> {
+    return this.request(
+      `/collabs/${encodeURIComponent(dealId)}/submissions/${encodeURIComponent(submissionId)}/review`,
+      { method: 'POST', body: JSON.stringify(body) },
+    )
+  }
+
+  /** Signed URL for a submission's upload (scan-gated for the brand). */
+  async getSubmissionFileUrl(dealId: string, submissionId: string, download = false): Promise<any> {
+    return this.request(
+      `/collabs/${encodeURIComponent(dealId)}/assets/${encodeURIComponent(submissionId)}/url?download=${download ? 1 : 0}`,
+    )
+  }
+
+  async getDealEvents(dealId: string): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(dealId)}/events`)
+  }
+
+  async fundDeal(dealId: string): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(dealId)}/fund`, {
+      method: 'POST',
+      body: JSON.stringify({ idempotencyKey: `fund-${dealId}` }),
+    })
+  }
+
+  async releaseDealPayment(dealId: string): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(dealId)}/mark-paid`, { method: 'POST', body: JSON.stringify({}) })
   }
 
   async getDealShipping(id: string): Promise<any> {
@@ -1186,10 +1233,12 @@ class ApiService {
     })
   }
 
+  /** influencerId is the creator's profile id. /campaigns/{id}/invite does
+   *  not exist; invites live under /deals. */
   async inviteCreatorToCampaign(campaignId: string, influencerId: string, message?: string): Promise<any> {
-    return this.request(`/campaigns/${campaignId}/invite`, {
+    return this.request('/deals/invites', {
       method: 'POST',
-      body: JSON.stringify({ influencerId, message }),
+      body: JSON.stringify({ influencerId, campaignId, message: message ?? '' }),
     })
   }
 
