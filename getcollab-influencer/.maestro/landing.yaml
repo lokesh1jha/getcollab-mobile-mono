@@ -1,0 +1,15 @@
+appId: in.getcollab.creator
+name: Landing shows the pitch and both entry points
+---
+- clearKeychain
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "landing-signin-btn"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "Turn your.*income.*"
+- assertVisible:
+    id: "landing-creator-btn"

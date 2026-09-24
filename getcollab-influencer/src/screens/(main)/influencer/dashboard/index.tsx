@@ -8,7 +8,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, spacing, radius } from '@/src/theme'
+import { colors, spacing, radius, overline } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { useChatStore } from '@shared/stores/chat-store'
@@ -62,8 +62,8 @@ interface ChecklistItem {
 }
 
 const QUICK_ACTIONS: { id: string; icon: string; label: string; screen: ScreenName }[] = [
-  { id: 'discover', icon: 'compass-outline', label: 'Find\nCampaigns', screen: 'Discover' },
-  { id: 'bids', icon: 'document-text-outline', label: 'My\nBids', screen: 'MyCampaigns' },
+  { id: 'discover', icon: 'compass-outline', label: 'Find\ncampaigns', screen: 'Discover' },
+  { id: 'bids', icon: 'document-text-outline', label: 'Applications', screen: 'MyCampaigns' },
   { id: 'analytics', icon: 'stats-chart-outline', label: 'Analytics', screen: 'Analytics' },
   { id: 'chat', icon: 'chatbubbles-outline', label: 'Messages', screen: 'Chat' },
   { id: 'earnings', icon: 'wallet-outline', label: 'Earnings', screen: 'Earnings' },
@@ -90,7 +90,7 @@ function formatTime(value?: string): string {
 
 function getGreeting(name?: string): string {
   const firstName = name ? name.trim().split(' ')[0] : 'Creator'
-  return `Hey, ${firstName} 👋`
+  return `Hi, ${firstName}`
 }
 
 function ActionCard({ item, index, navigation }: { item: typeof QUICK_ACTIONS[0]; index: number; navigation: InfluencerNavigationProp }) {
@@ -110,7 +110,7 @@ function ActionCard({ item, index, navigation }: { item: typeof QUICK_ACTIONS[0]
         style={styles.actionCard}
       >
         <View style={styles.actionIcon}>
-          <Ionicons name={item.icon as any} size={18} color={colors.neon} />
+          <Ionicons name={item.icon as any} size={18} color={colors.primary} />
         </View>
         <Text style={styles.actionLabel}>{item.label}</Text>
       </Pressable>
@@ -228,26 +228,26 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
 
       setChecklist([
         {
-          title: 'Creator profile added',
-          sub: 'Display name, niche and rates brands see first.',
+          title: 'Complete your profile',
+          sub: 'Name, niche and rates brands see first.',
           done: onboardingComplete,
           screen: 'Profile',
         },
         {
           title: 'Add your social accounts',
-          sub: 'Instagram, YouTube and get verified',
+          sub: 'Link Instagram or YouTube to get verified.',
           done: hasConnectedSocial,
           screen: 'Profile',
         },
         {
           title: 'Apply to your first campaign',
-          sub: 'Browse open briefs and send a pitch with your rate.',
+          sub: 'Send a pitch with your price.',
           done: totalBidsCount > 0,
           screen: 'Discover',
         },
       ])
     } catch (err: any) {
-      handleApiError(err, 'Failed to load dashboard')
+      handleApiError(err, "Couldn't load your dashboard")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -264,7 +264,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
   if (loading) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -275,7 +275,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
         <ScrollView
           contentContainerStyle={{ paddingBottom: 48, paddingHorizontal: spacing.lg }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
         >
           <EmailVerificationBanner />
 
@@ -283,7 +283,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
           <Animated.View entering={FadeIn.duration(500)} style={styles.header}>
             <View style={{ flex: 1 }}>
               <Text style={styles.greeting}>{getGreeting(user?.name)}</Text>
-              <Text style={styles.subtitle}>Here's your overview</Text>
+              <Text style={styles.subtitle}>Your overview</Text>
             </View>
             <View style={styles.headerRight}>
               <Pressable accessibilityRole="button" accessibilityLabel="Change photo"
@@ -304,7 +304,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
           {/* Total Earnings Hero Card */}
           <Animated.View entering={FadeInDown.delay(100).duration(450)} style={styles.heroCard}>
             <View style={styles.heroHeader}>
-              <Text style={styles.heroEyebrow}>TOTAL EARNINGS</Text>
+              <Text style={styles.heroEyebrow}>Total earnings</Text>
             </View>
             <View style={styles.heroBody}>
               <Text style={styles.heroAmount}>₹{stats.earnings.toLocaleString()}</Text>
@@ -362,7 +362,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
           {/* Recent Activity / Deliverables */}
           <Animated.View entering={FadeInDown.delay(300).duration(450)} style={styles.section}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>{deliverables.length > 0 ? 'Upcoming deliverables' : 'Recent Activity'}</Text>
+              <Text style={styles.sectionTitle}>{deliverables.length > 0 ? 'Upcoming deliverables' : 'Recent activity'}</Text>
               {activities.length > 0 && (
                 <Pressable onPress={() => navigation?.navigate('Notifications')} style={({ pressed }) => pressed && { opacity: 0.85 }}>
                   <Text style={styles.sectionLink}>View all</Text>
@@ -375,7 +375,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
                 {deliverables.map((d, idx) => (
                   <Animated.View key={d.campaignId || idx} entering={FadeInDown.delay(320 + Math.min(idx, 5) * 80).duration(380)} style={styles.activityCard}>
                     <View style={styles.activityIcon}>
-                      <Text style={{ color: colors.neon, fontSize: 14, fontWeight: '800' }}>{(d.title || d.campaign || 'D').charAt(0).toUpperCase()}</Text>
+                      <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '800' }}>{(d.title || d.campaign || 'D').charAt(0).toUpperCase()}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.activityTitle} numberOfLines={1}>{d.title || d.campaign || 'Deliverable'}</Text>
@@ -395,7 +395,7 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
                   <Ionicons name="notifications-outline" size={26} color={colors.textMuted} />
                 </View>
                 <Text style={styles.emptyTitle}>No activity yet</Text>
-                <Text style={styles.emptySub}>Bids, payments and approvals will appear here.</Text>
+                <Text style={styles.emptySub}>Applications, payments and approvals show up here.</Text>
               </View>
             ) : (
               <View style={{ gap: 10 }}>
@@ -426,9 +426,9 @@ export default function InfluencerDashboard({ navigation }: { navigation: Influe
           {hasActivity && (
             <Animated.View entering={FadeInDown.delay(380).duration(450)} style={styles.escrowCard}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.escrowLabel}>Money held safely for you</Text>
+                <Text style={styles.escrowLabel}>Pending payments</Text>
                 <Text style={styles.escrowAmount}>₹{stats.pendingEarnings.toLocaleString()}</Text>
-                <Text style={styles.escrowSub}>Pending in escrow until posts go live</Text>
+                <Text style={styles.escrowSub}>Paid out after the brand approves your work</Text>
               </View>
               <Pressable onPress={() => navigation?.navigate('Earnings')} style={({ pressed }) => [styles.escrowLink, pressed && { opacity: 0.85 }]}>
                 <Text style={styles.escrowLinkText}>Earnings →</Text>
@@ -472,9 +472,9 @@ const styles = StyleSheet.create({
     padding: 22, marginTop: 8,
   },
   heroHeader: { marginBottom: 12 },
-  heroEyebrow: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
+  heroEyebrow: { ...overline },
   heroBody: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  heroAmount: { color: colors.neon, fontSize: 32, fontWeight: '800', letterSpacing: -0.8 },
+  heroAmount: { color: colors.primary, fontSize: 32, fontWeight: '800', letterSpacing: -0.8 },
   heroSub: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
 
   statsRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
@@ -490,10 +490,10 @@ const styles = StyleSheet.create({
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   sectionTitle: { color: colors.text, fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
   sectionSub: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
-  sectionLink: { color: colors.neon, fontSize: 13, fontWeight: '600' },
+  sectionLink: { color: colors.primary, fontSize: 13, fontWeight: '600' },
 
   progressTrack: { height: 7, borderRadius: 4, backgroundColor: colors.elevated, marginBottom: 14, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 4, backgroundColor: colors.neon },
+  progressFill: { height: '100%', borderRadius: 4, backgroundColor: colors.primary },
 
   checkRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
     shadowColor: colors.bg, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 6, elevation: 1,
   },
   activityIcon: {
-    width: 36, height: 36, borderRadius: 10, backgroundColor: colors.neonSoft,
+    width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primarySoft,
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
   activityTitle: { color: colors.text, fontSize: 14, fontWeight: '700', marginBottom: 2 },
@@ -540,8 +540,8 @@ const styles = StyleSheet.create({
   escrowLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
   escrowAmount: { color: colors.text, fontSize: 22, fontWeight: '800', marginTop: 4 },
   escrowSub: { color: colors.textSubtle, fontSize: 12, marginTop: 2 },
-  escrowLink: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, backgroundColor: colors.neonSoft },
-  escrowLinkText: { color: colors.neon, fontSize: 12, fontWeight: '700' },
+  escrowLink: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, backgroundColor: colors.primarySoft },
+  escrowLinkText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
 
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   actionCard: {
@@ -549,6 +549,6 @@ const styles = StyleSheet.create({
     borderRadius: 16, padding: 14, alignItems: 'flex-start', gap: 10, minHeight: 86,
     shadowColor: colors.bg, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 6, elevation: 1,
   },
-  actionIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: colors.neonSoft, alignItems: 'center', justifyContent: 'center' },
+  actionIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   actionLabel: { color: colors.text, fontSize: 12, fontWeight: '600', lineHeight: 16 },
 })

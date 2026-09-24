@@ -33,7 +33,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         <View style={styles.container}>
           <Text style={styles.title}>Something went wrong</Text>
           <Text style={styles.message}>
-            {__DEV__ ? this.state.error?.message : 'The error has been reported. Please try again.'}
+            {__DEV__ ? this.state.error?.message : "We've been notified. Try again."}
           </Text>
           <Pressable
             style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   btn: {
-    backgroundColor: colors.neon,
+    backgroundColor: colors.primary,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
     borderRadius: 12,

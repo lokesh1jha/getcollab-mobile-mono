@@ -100,7 +100,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
   const pickCoverImage = async () => {
     const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
     if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Please enable photo library access in settings.')
+      Alert.alert('Photo access needed', 'Allow photo access in Settings.')
       return
     }
     try {
@@ -118,7 +118,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
         setCoverBase64(`data:image/jpeg;base64,${asset.base64}`)
       }
     } catch (err) {
-      handleApiError(err, 'Failed to pick cover image')
+      handleApiError(err, "Couldn't add cover image")
     }
   }
 
@@ -135,7 +135,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
     if (!formData.budget) {
       newErrors.budget = 'Budget is required'
     } else if (isNaN(budgetNum) || budgetNum < 0 || !Number.isInteger(budgetNum)) {
-      newErrors.budget = 'Enter a valid whole-number budget'
+      newErrors.budget = 'Enter a whole number'
     }
     const startIso = toIsoDate(formData.startDate)
     const endIso = toIsoDate(formData.endDate)
@@ -187,11 +187,11 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
       await apiService.createCampaign(payload)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
 
-      Alert.alert('Success', 'Campaign created successfully!', [
+      Alert.alert('Campaign created', 'Find it in your campaigns list.', [
         { text: 'OK', onPress: () => navigation?.navigate('Campaigns') },
       ])
     } catch (error: any) {
-      handleApiError(error, 'Failed to create campaign')
+      handleApiError(error, "Couldn't create campaign")
     } finally {
       setLoading(false)
     }
@@ -212,8 +212,8 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
               keyboardShouldPersistTaps="handled"
             >
               <Animated.View entering={FadeInDown.duration(400)}>
-                <Text style={styles.title}>Create New Campaign</Text>
-                <Text style={styles.subtitle}>Fill in the details for your campaign</Text>
+                <Text style={styles.title}>New campaign</Text>
+                <Text style={styles.subtitle}>Add the details creators will see</Text>
               </Animated.View>
 
               <Pressable style={({ pressed }) => [styles.coverPicker, pressed && { opacity: 0.85 }]} onPress={pickCoverImage}>
@@ -222,7 +222,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
                 ) : (
                   <View style={styles.coverPlaceholder}>
                     <Ionicons name="camera-outline" size={32} color={colors.textMuted} />
-                    <Text style={styles.coverPlaceholderText}>Tap to add a cover image</Text>
+                    <Text style={styles.coverPlaceholderText}>Add cover image</Text>
                     <Text style={styles.coverPlaceholderHint}>16:9 ratio recommended</Text>
                   </View>
                 )}
@@ -230,10 +230,10 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
 
               {/* Title */}
               <View style={styles.field}>
-                <Text style={styles.label}>Campaign Title</Text>
+                <Text style={styles.label}>Title</Text>
                 <TextInput
                   style={[styles.input, errors.title && styles.inputError]}
-                  placeholder="Enter campaign title"
+                  placeholder="e.g. Summer launch"
                   placeholderTextColor={colors.textSubtle}
                   value={formData.title}
                   onChangeText={(v) => handleInputChange('title', v)}
@@ -247,7 +247,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
                 <View style={[styles.textArea, errors.description && styles.inputError]}>
                   <TextInput
                     style={styles.textAreaInput}
-                    placeholder="Describe your campaign (min 20 characters)..."
+                    placeholder="What should creators know? (20+ characters)"
                     placeholderTextColor={colors.textSubtle}
                     value={formData.description}
                     onChangeText={(v) => handleInputChange('description', v)}
@@ -263,7 +263,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
                 <Text style={styles.label}>Budget (₹)</Text>
                 <TextInput
                   style={[styles.input, errors.budget && styles.inputError]}
-                  placeholder="Enter budget amount"
+                  placeholder="Amount in ₹"
                   placeholderTextColor={colors.textSubtle}
                   value={formData.budget}
                   onChangeText={(v) => handleInputChange('budget', v)}
@@ -275,25 +275,25 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
               {/* Dates */}
               <View style={styles.dateRow}>
                 <View style={styles.dateField}>
-                  <Text style={styles.label}>Start Date</Text>
+                  <Text style={styles.label}>Start date</Text>
                   <Pressable
                     style={({ pressed }) => [styles.dateButton, errors.startDate && styles.inputError, pressed && { opacity: 0.85 }]}
                     onPress={() => setShowDatePicker('start')}
                   >
                     <Text style={[styles.dateButtonText, startDateObj && { color: colors.text }]}>
-                      {startDateObj ? formatDisplayDate(startDateObj) : 'Select start date'}
+                      {startDateObj ? formatDisplayDate(startDateObj) : 'Select date'}
                     </Text>
                   </Pressable>
                   {errors.startDate ? <Text style={styles.errorText}>{errors.startDate}</Text> : null}
                 </View>
                 <View style={styles.dateField}>
-                  <Text style={styles.label}>End Date</Text>
+                  <Text style={styles.label}>End date</Text>
                   <Pressable
                     style={({ pressed }) => [styles.dateButton, errors.endDate && styles.inputError, pressed && { opacity: 0.85 }]}
                     onPress={() => setShowDatePicker('end')}
                   >
                     <Text style={[styles.dateButtonText, endDateObj && { color: colors.text }]}>
-                      {endDateObj ? formatDisplayDate(endDateObj) : 'Select end date'}
+                      {endDateObj ? formatDisplayDate(endDateObj) : 'Select date'}
                     </Text>
                   </Pressable>
                   {errors.endDate ? <Text style={styles.errorText}>{errors.endDate}</Text> : null}
@@ -393,7 +393,7 @@ export default function CreateCampaignScreen({ navigation }: CreateCampaignScree
                   {loading ? (
                     <ActivityIndicator size="small" color="#000" />
                   ) : (
-                    <Text style={styles.primaryBtnText}>Create Campaign</Text>
+                    <Text style={styles.primaryBtnText}>Create campaign</Text>
                   )}
                 </Pressable>
                 <Pressable
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     backgroundColor: colors.card,
   },
-  chipActive: { backgroundColor: colors.neon, borderColor: colors.neon },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 13, color: colors.text, fontWeight: '500' },
   chipTextActive: { color: '#000', fontWeight: '600' },
 
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
   primaryBtn: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.neon,
+    backgroundColor: colors.primary,
     borderRadius: radius.pill,
     paddingVertical: 14,
   },

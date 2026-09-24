@@ -31,21 +31,21 @@ export default function SettlementsScreen() {
     try {
       const r = await apiService.getSettlements()
       setItems(r?.settlementRequests || r?.data || [])
-    } catch (e) { handleApiError(e, 'Failed to load settlements') }
+    } catch (e) { handleApiError(e, "Couldn't load settlements") }
     finally { setLoading(false); setRefreshing(false) }
   }, [])
 
   useFocusEffect(useCallback(() => { load() }, [load]))
 
   const submit = async () => {
-    if (!campaignId.trim()) return Alert.alert('Campaign required', 'Enter the campaign ID for the completed deal.')
+    if (!campaignId.trim()) return Alert.alert('Campaign required', 'Enter the campaign ID of the completed collaboration.')
     setSaving(true)
     try {
       await apiService.createSettlement({ campaignId: campaignId.trim(), amount: amount.trim() ? Math.round(Number(amount) * 100) : undefined, message })
       setCampaignId(''); setAmount(''); setMessage('')
-      Alert.alert('Submitted', 'Settlement request created.')
+      Alert.alert('Request sent', 'Your settlement request was created.')
       load()
-    } catch (e) { handleApiError(e, 'Failed to create settlement') }
+    } catch (e) { handleApiError(e, "Couldn't send the request. Try again.") }
     finally { setSaving(false) }
   }
 
@@ -66,7 +66,7 @@ export default function SettlementsScreen() {
 
   if (loading) return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.center}><ActivityIndicator color={colors.neon} /></View>
+      <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>
     </SafeAreaView>
   )
 
@@ -75,18 +75,18 @@ export default function SettlementsScreen() {
       <FlatList automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
         style={styles.root}
         contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.primary} />}
         data={items}
         keyExtractor={(x) => String(x.id)}
         ListHeaderComponent={
           <View>
             <Text style={styles.heading}>Request settlement</Text>
-            <Text style={styles.hint}>Use this for a completed collaboration while the brand reviews payment.</Text>
+            <Text style={styles.hint}>For a completed collaboration awaiting payment.</Text>
             <TextInput value={campaignId} onChangeText={setCampaignId} placeholder="Campaign ID" placeholderTextColor={colors.textSubtle} style={styles.input} />
             <TextInput value={amount} onChangeText={setAmount} placeholder="Amount in ₹ (optional)" keyboardType="numeric" placeholderTextColor={colors.textSubtle} style={styles.input} />
             <TextInput value={message} onChangeText={setMessage} placeholder="Message (optional)" placeholderTextColor={colors.textSubtle} style={styles.input} />
             <Pressable onPress={submit} disabled={saving} style={({ pressed }) => [styles.primary, pressed && { opacity: 0.85 }, saving && { opacity: 0.5 }]}>
-              <Text style={styles.primaryText}>{saving ? 'Submitting...' : 'Request settlement'}</Text>
+              <Text style={styles.primaryText}>{saving ? 'Sending…' : 'Request'}</Text>
             </Pressable>
             <Text style={[styles.heading, { marginTop: spacing.xl }]}>History</Text>
           </View>
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   heading: { color: colors.text, fontSize: 20, fontWeight: '800', marginTop: spacing.md },
   hint: { color: colors.textMuted, lineHeight: 19, marginBottom: spacing.md },
   input: { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, color: colors.text, marginBottom: spacing.md },
-  primary: { alignItems: 'center', backgroundColor: colors.neon, borderRadius: radius.pill, padding: spacing.md },
+  primary: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: radius.pill, padding: spacing.md },
   primaryText: { color: '#000', fontWeight: '800' },
   card: { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, padding: spacing.lg },
   statusDot: { width: 8, height: 8, borderRadius: 4 },

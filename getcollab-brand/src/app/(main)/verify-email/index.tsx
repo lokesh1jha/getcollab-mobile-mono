@@ -35,11 +35,11 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
       await apiService.verifyEmail(email, token.trim())
       if (user) {
         await fetchCurrentUser()
-        Alert.alert('Verified', 'Your email is now verified.', [
+        Alert.alert('Verified', 'Your email is verified.', [
           { text: 'OK', onPress: () => navigation?.goBack() },
         ])
       } else {
-        Alert.alert('Verified', 'Your email is now verified. Please sign in.', [
+        Alert.alert('Verified', 'Your email is verified. Sign in to continue.', [
           { text: 'OK', onPress: () => navigation?.navigate('SignIn', { email }) },
         ])
       }
@@ -58,7 +58,7 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
     setResending(true)
     try {
       await apiService.resendEmailOtp(email)
-      Alert.alert('Email sent', `A new verification code was sent to ${email}.`)
+      Alert.alert('Code sent', `We sent a new code to ${email}.`)
     } catch (err) {
       handleApiError(err, 'Failed to resend')
     } finally {
@@ -73,18 +73,17 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
           <Animated.View entering={FadeInDown.duration(400)}>
             <Text style={styles.title}>Verify your email</Text>
             <Text style={styles.subtitle}>
-              We sent a verification code to <Text style={styles.email}>{email}</Text>.
-              Please enter the code below.
+              Enter the code we sent to <Text style={styles.email}>{email}</Text>.
             </Text>
           </Animated.View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Verification Code</Text>
+            <Text style={styles.label}>Verification code</Text>
             <TextInput
               style={styles.input}
               value={token}
               onChangeText={setToken}
-              placeholder="Enter 6-digit code"
+              placeholder="6-digit code"
               placeholderTextColor={colors.textSubtle}
               keyboardType="number-pad"
             />
@@ -95,7 +94,7 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
           </Pressable>
 
           <Pressable style={({ pressed }) => [styles.secondaryBtn, pressed && { opacity: 0.75 }]} onPress={handleResend} disabled={resending}>
-            <Text style={styles.secondaryBtnText}>{resending ? 'Sending…' : 'Resend Email'}</Text>
+            <Text style={styles.secondaryBtnText}>{resending ? 'Sending…' : 'Resend code'}</Text>
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -111,7 +110,7 @@ const styles = StyleSheet.create({
   field: { marginBottom: spacing.lg },
   label: { fontSize: 12, fontWeight: '600', color: colors.textMuted, letterSpacing: 0.4, marginBottom: spacing.sm },
   input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 12, color: colors.text, fontSize: 14, backgroundColor: colors.bg },
-  primaryBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 14, marginBottom: spacing.md },
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 14, marginBottom: spacing.md },
   primaryBtnText: { color: '#000', fontSize: 14, fontWeight: '700' },
   secondaryBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.borderStrong, borderRadius: radius.pill, paddingVertical: 14 },
   secondaryBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },

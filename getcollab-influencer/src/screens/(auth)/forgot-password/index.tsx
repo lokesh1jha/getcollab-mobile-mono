@@ -23,7 +23,7 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
 
   const handleSend = async () => {
     if (!email.trim() || !email.includes('@')) {
-      Alert.alert('Invalid email', 'Please enter a valid email address.')
+      Alert.alert('Invalid email', 'Enter a valid email address.')
       return
     }
     setSending(true)
@@ -31,7 +31,7 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
       await apiService.forgotPassword(email.trim())
       setSent(true)
     } catch (err) {
-      handleApiError(err, 'Failed to send reset email')
+      handleApiError(err, "Couldn't send the reset email. Try again.")
     } finally {
       setSending(false)
     }
@@ -47,18 +47,18 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
         <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <Text style={styles.title}>Forgot password?</Text>
           <Text style={styles.subtitle}>
-            Enter your email and we'll send you a link to reset your password.
+            Enter your email to get a reset link.
           </Text>
   
           {sent ? (
             <View style={styles.successCard}>
-              <Text style={styles.successTitle}>Check your inbox 📬</Text>
+              <Text style={styles.successTitle}>Check your inbox</Text>
               <Text style={styles.successText}>
-                If <Text style={styles.successEmail}>{email}</Text> matches an account, you'll receive a reset
-                link shortly. The link expires in 30 minutes.
+                If <Text style={styles.successEmail}>{email}</Text> has an account, a reset link is on its way.
+                It expires in 30 minutes.
               </Text>
               <Button
-                title="Back to Sign In"
+                title="Back to sign in"
                 variant="outline"
                 onPress={() => navigation?.navigate('SignIn')}
                 fullWidth
@@ -86,7 +86,7 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
               />
   
               <Button
-                title={sending ? 'Sending...' : 'Send Reset Link'}
+                title={sending ? 'Sending…' : 'Send reset link'}
                 onPress={handleSend}
                 disabled={sending}
                 loading={sending}
@@ -95,7 +95,7 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
               />
   
               <Button
-                title="Back to Sign In"
+                title="Back to sign in"
                 variant="ghost"
                 onPress={() => navigation?.goBack()}
                 fullWidth
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: 'rgba(217,255,0,0.14)',
+    backgroundColor: 'rgba(255,255,255,0.14)',
   },
   glowBottom: {
     position: 'absolute',
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: 'rgba(217,255,0,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.10)',
   },
 
   content: {
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   successEmail: {
-    color: colors.neon,
+    color: colors.primary,
     fontWeight: '600',
   },
   backBtn: {

@@ -69,7 +69,7 @@ export default function CampaignExecuteScreen() {
         }))
       setDeliverables(mapped)
     } catch (err) {
-      handleApiError(err, 'Failed to load deliverables')
+      handleApiError(err, "Couldn't load collaborations")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -111,7 +111,7 @@ export default function CampaignExecuteScreen() {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -127,8 +127,8 @@ export default function CampaignExecuteScreen() {
           ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
           ListHeaderComponent={
             <View style={styles.header}>
-              <Text style={styles.title}>Execute</Text>
-              <Text style={styles.subtitle}>Creators on {title || 'this campaign'} — tap one to review their work</Text>
+              <Text style={styles.title}>Collaborations</Text>
+              <Text style={styles.subtitle}>Tap a creator to review their work</Text>
             </View>
           }
           ListEmptyComponent={
@@ -138,7 +138,7 @@ export default function CampaignExecuteScreen() {
               <Text style={styles.emptySub}>Accept an application or invite a creator to start.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadDeliverables() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadDeliverables() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>

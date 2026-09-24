@@ -15,7 +15,7 @@ const SAVED_CREATORS_KEY = '@getcollab:brand:saved_creators'
 // brand across devices instead of living only in this install's storage.
 const SAVED_CIRCLE_NAME = 'Saved Creators'
 
-interface Creator { id: string; name: string; avatar?: string; image?: string; bio?: string; location?: string; categories?: string[]; audienceSize?: number; engagementRate?: number; verified?: boolean; instagramHandle?: string; instagramMetrics?: { followers?: number }; matchScore?: number }
+interface Creator { id: string; name: string; avatar?: string; image?: string; bio?: string; location?: string; categories?: string[]; audienceSize?: number; engagementRate?: number; verified?: boolean; instagramHandle?: string; instagramMetrics?: { followers?: number }; matchScore?: number; pricePerPost?: number }
 interface Props { navigation?: any }
 
 const CATEGORIES = ['All', 'Saved', 'Skincare', 'Fashion', 'Fitness', 'Tech', 'Travel', 'Food', 'Beauty']
@@ -105,7 +105,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
       // Roll back rather than show a bookmark the server never stored.
       setShortlisted(shortlisted)
       mirrorLocally(shortlisted)
-      handleApiError(err, 'Failed to update saved creators')
+      handleApiError(err, "Couldn't update saved creators")
     }
   }
 
@@ -117,7 +117,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
       const response = await apiService.getMarketplace(params)
       const list = response?.influencers || response?.data || (Array.isArray(response) ? response : [])
       setCreators(Array.isArray(list) ? list : [])
-    } catch (err) { handleApiError(err, 'Failed to load creators') }
+    } catch (err) { handleApiError(err, "Couldn't load creators") }
     finally { setLoading(false) }
   }, [searchQuery, selectedCategory])
 
@@ -141,7 +141,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
       const room = await apiService.createDirectChat(creator.id)
       const roomId = room?.id || room?.data?.id
       navigation?.navigate('ChatDetail', { roomId, chat: { id: roomId, influencerName: creator.name } })
-    } catch (err) { handleApiError(err, 'Failed to start chat') }
+    } catch (err) { handleApiError(err, "Couldn't start chat") }
   }
 
   const renderCreator = ({ item, index }: { item: Creator; index: number }) => {
@@ -189,8 +189,8 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
 
         <View style={styles.creatorBottom}>
           <View style={styles.priceWrap}>
-            <Text style={styles.priceLabel}>Range</Text>
-            <Text style={styles.priceValue}>Variable</Text>
+            <Text style={styles.priceLabel}>Price</Text>
+            <Text style={styles.priceValue}>{item.pricePerPost ? `₹${item.pricePerPost.toLocaleString('en-IN')}/post` : '—'}</Text>
           </View>
           <View style={styles.creatorActions}>
             <Pressable style={({ pressed }) => [styles.viewBtn, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('CreatorReport', { id: item.id })}>
@@ -200,7 +200,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
               <Text style={styles.viewBtnText}>Invite</Text>
             </Pressable>
             <Pressable style={({ pressed }) => [styles.viewBtn, styles.messageBtn, pressed && { opacity: 0.85 }]} onPress={() => handleStartChat(item)}>
-              <Text style={styles.viewBtnText}>Message</Text>
+              <Text style={[styles.viewBtnText, { color: colors.black }]}>Message</Text>
             </Pressable>
             <Pressable
               onPress={() => toggleSaved(item.id)}
@@ -219,7 +219,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -245,7 +245,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
                   <TextInput
                     value={searchQuery}
                     onChangeText={setSearchQuery}
-                    placeholder="Search by name, handle, category..."
+                    placeholder="Search name, handle or category"
                     placeholderTextColor={colors.textSubtle}
                     style={styles.searchInput}
                   />
@@ -272,10 +272,10 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
                 <Animated.View entering={FadeIn.duration(360)} style={styles.aiBanner}>
                   <View style={styles.aiBannerLeft}>
                     <View style={styles.aiSparkle}>
-                      <Ionicons name="sparkles" size={14} color={colors.blue} />
+                      <Ionicons name="people" size={14} color={colors.blue} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.aiBannerTitle}>AI found creators matching your needs</Text>
+                      <Text style={styles.aiBannerTitle}>Creators</Text>
                       <Text style={styles.aiBannerSub}>{filtered.length} creators found</Text>
                     </View>
                   </View>
@@ -291,11 +291,11 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
                 <Text style={styles.emptySub}>
                   {selectedCategory === 'Saved'
                     ? 'Star profiles to build a saved list.'
-                    : 'Try adjusting your search or category filter.'}
+                    : 'Try a different search or filter.'}
                 </Text>
               </View>
             }
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
           />
         </SafeAreaView>
       </View>
@@ -346,10 +346,10 @@ const styles = StyleSheet.create({
   priceValue: { color: '#fff', fontSize: 13, fontWeight: '600', marginTop: 2 },
   creatorActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   viewBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, borderWidth: 1, borderColor: colors.borderStrong },
-  messageBtn: { backgroundColor: colors.blue, borderColor: colors.blue },
+  messageBtn: { backgroundColor: colors.primary, borderColor: colors.primary },
   viewBtnText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   shortlistBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
-  shortlistBtnActive: { backgroundColor: colors.neon, borderColor: colors.neon },
+  shortlistBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
 
   empty: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.sm },
   emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },

@@ -42,7 +42,7 @@ const navigationTheme = {
     card: colors.card,
     text: colors.text,
     border: colors.border,
-    notification: colors.neon,
+    notification: colors.primary,
   },
 }
 
@@ -55,7 +55,7 @@ function SplashScreen() {
         </View>
         <Text style={styles.title}>GetCollab</Text>
         <Text style={styles.subtitle}>For Brands</Text>
-        <ActivityIndicator size="large" color={colors.neon} style={styles.loading} />
+        <ActivityIndicator size="large" color={colors.primary} style={styles.loading} />
       </View>
     </SafeAreaView>
   )
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   content: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.sm },
   logoBadge: {
-    width: 48, height: 48, borderRadius: 14, backgroundColor: colors.neon,
+    width: 48, height: 48, borderRadius: 14, backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm,
   },
   logoDot: { width: 16, height: 16, borderRadius: 4, backgroundColor: colors.black },

@@ -15,8 +15,8 @@ import * as Haptics from 'expo-haptics'
 const CATEGORIES = ['All', 'Fashion', 'Beauty', 'Fitness', 'Tech', 'Travel', 'Food', 'Lifestyle', 'Gaming']
 const SORTS = [
   { key: 'newest', label: 'Newest' },
-  { key: 'budget_desc', label: 'Budget: High-Low' },
-  { key: 'budget_asc', label: 'Budget: Low-High' },
+  { key: 'budget_desc', label: 'Budget: high to low' },
+  { key: 'budget_asc', label: 'Budget: low to high' },
 ]
 const BUDGET_RANGES = [
   { key: 'all', label: 'Any budget' },
@@ -82,7 +82,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
       const list: Campaign[] = res?.data || res?.campaigns || (Array.isArray(res) ? res : [])
       setCampaigns(Array.isArray(list) ? list : [])
     } catch (err: any) {
-      handleApiError(err, 'Failed to load campaigns')
+      handleApiError(err, "Couldn't load campaigns")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -117,9 +117,9 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
       setBidTarget(null)
       setBidAmount('')
       setBidPitch('')
-      Alert.alert('Applied!', 'Your application was submitted.')
+      Alert.alert('Application sent', 'The brand will review it.')
     } catch (err: any) {
-      handleApiError(err, 'Failed to submit bid')
+      handleApiError(err, "Couldn't send your application. Try again.")
     } finally {
       setBidding(false)
     }
@@ -232,7 +232,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
 
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={colors.neon} />
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
           <FlatList
@@ -242,16 +242,16 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
             contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xxl }}
             ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
             showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
             ListHeaderComponent={
               filtered.length > 0 ? (
                 <Animated.View entering={FadeIn.duration(360)} style={styles.aiBanner}>
                   <View style={styles.aiLeft}>
                     <View style={styles.aiSparkle}>
-                      <Ionicons name="sparkles" size={14} color={colors.blue} />
+                      <Ionicons name="megaphone-outline" size={14} color={colors.blue} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.aiBannerTitle}>{filtered.length} campaigns available for you</Text>
+                      <Text style={styles.aiBannerTitle}>{filtered.length} open campaigns</Text>
                       <Text style={styles.aiBannerSub}>{category !== 'All' ? category : 'All categories'} · {sortKey === 'newest' ? 'Newest first' : sortKey === 'budget_desc' ? 'Highest budget' : 'Lowest budget'}</Text>
                     </View>
                   </View>
@@ -264,7 +264,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
                   <Ionicons name="compass-outline" size={26} color={colors.textMuted} />
                 </View>
                 <Text style={styles.emptyTitle}>No campaigns found</Text>
-                <Text style={styles.emptySub}>Try a different category, budget filter, or clear your search.</Text>
+                <Text style={styles.emptySub}>Try another category or budget, or clear your search.</Text>
               </View>
             }
           />
@@ -283,7 +283,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
                 {SORTS.map(s => (
                   <Pressable key={s.key} onPress={() => { Haptics.selectionAsync(); setSortKey(s.key) }} style={({ pressed }) => [styles.sheetOption, sortKey === s.key && styles.sheetOptionActive, pressed && { opacity: 0.85 }]}>
                     <Text style={[styles.sheetOptionText, sortKey === s.key && styles.sheetOptionTextActive]}>{s.label}</Text>
-                    {sortKey === s.key && <Ionicons name="checkmark" size={16} color={colors.neon} />}
+                    {sortKey === s.key && <Ionicons name="checkmark" size={16} color={colors.primary} />}
                   </Pressable>
                 ))}
               </View>
@@ -293,7 +293,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
                 {BUDGET_RANGES.map(b => (
                   <Pressable key={b.key} onPress={() => { Haptics.selectionAsync(); setBudgetRange(b.key) }} style={({ pressed }) => [styles.sheetOption, budgetRange === b.key && styles.sheetOptionActive, pressed && { opacity: 0.85 }]}>
                     <Text style={[styles.sheetOptionText, budgetRange === b.key && styles.sheetOptionTextActive]}>{b.label}</Text>
-                    {budgetRange === b.key && <Ionicons name="checkmark" size={16} color={colors.neon} />}
+                    {budgetRange === b.key && <Ionicons name="checkmark" size={16} color={colors.primary} />}
                   </Pressable>
                 ))}
               </View>
@@ -314,25 +314,25 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
               <Text style={styles.sheetTitle}>{bidTarget?.title}</Text>
               <Text style={styles.sheetSubtitle}>Budget: {formatBudget(bidTarget?.budget, bidTarget?.budgetCurrency, bidTarget?.budgetDisclosed !== false)}</Text>
 
-              <Text style={styles.sheetLabel}>Your bid amount (₹)</Text>
+              <Text style={styles.sheetLabel}>Your price (₹)</Text>
               <View style={styles.sheetInput}>
                 <Ionicons name="cash-outline" size={18} color={colors.textMuted} />
                 <TextInput
                   value={bidAmount}
                   onChangeText={setBidAmount}
-                  placeholder="Enter your rate"
+                  placeholder="e.g. 5000"
                   placeholderTextColor={colors.textSubtle}
                   keyboardType="numeric"
                   style={styles.sheetInputText}
                 />
               </View>
 
-              <Text style={styles.sheetLabel}>Pitch / Cover note</Text>
+              <Text style={styles.sheetLabel}>Pitch</Text>
               <View style={[styles.sheetInput, { alignItems: 'flex-start', minHeight: 100, paddingTop: 14 }]}>
                 <TextInput
                   value={bidPitch}
                   onChangeText={setBidPitch}
-                  placeholder="Tell the brand why you're the right fit…"
+                  placeholder="Why you're a good fit"
                   placeholderTextColor={colors.textSubtle}
                   multiline
                   style={[styles.sheetInputText, { textAlignVertical: 'top' }]}
@@ -345,7 +345,7 @@ export default function InfluencerDiscover({ navigation }: { navigation: Influen
                 style={({ pressed }) => [styles.submitBtn, (bidding || !bidAmount.trim() || !bidPitch.trim()) && { opacity: 0.5 }, pressed && { opacity: 0.85 }]}
               >
                 <Ionicons name="flash" size={18} color="#000" />
-                <Text style={styles.submitBtnText}>{bidding ? 'Submitting…' : 'Submit Application'}</Text>
+                <Text style={styles.submitBtnText}>{bidding ? 'Sending…' : 'Apply'}</Text>
               </Pressable>
             </View>
           </KeyboardAvoidingView>
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   urgencyPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.elevated, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   urgencyText: { color: colors.textMuted, fontSize: 11, fontWeight: '600' },
-  applyBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.neon, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 },
+  applyBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999 },
   applyBtnText: { color: '#000', fontSize: 12, fontWeight: '700' },
 
   empty: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.sm },
@@ -423,12 +423,12 @@ const styles = StyleSheet.create({
   sheetLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: '600', letterSpacing: 0.4, marginBottom: 8, marginTop: spacing.md },
   sheetInput: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.elevated, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 14 },
   sheetInputText: { flex: 1, color: colors.text, fontSize: 15, padding: 0 },
-  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 16, marginTop: spacing.xl },
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 16, marginTop: spacing.xl },
   submitBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
 
   sheetOptions: { gap: spacing.sm },
   sheetOption: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.elevated },
-  sheetOptionActive: { borderColor: colors.neon, backgroundColor: colors.neonSoft },
+  sheetOptionActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
   sheetOptionText: { color: colors.text, fontSize: 14 },
-  sheetOptionTextActive: { color: colors.neon, fontWeight: '700' },
+  sheetOptionTextActive: { color: colors.primary, fontWeight: '700' },
 })

@@ -40,7 +40,7 @@ function ActiveDot() {
 }
 
 function TabIcon({ name, focused, badge }: { name: string; focused: boolean; badge?: number }) {
-  const color = focused ? colors.neon : colors.textMuted
+  const color = focused ? colors.primary : colors.textMuted
   return (
     <View style={[styles.tabIconWrap, focused && styles.tabIconActive]}>
       <Ionicons name={name as any} size={22} color={color} />
@@ -90,7 +90,7 @@ function InfluencerTabs() {
         name="MyCampaigns"
         component={InfluencerCampaigns}
         options={{
-          tabBarAccessibilityLabel: 'My Bids',
+          tabBarAccessibilityLabel: 'Applications',
           tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'document-text' : 'document-text-outline'} focused={focused} />,
         }}
       />
@@ -144,13 +144,13 @@ function InfluencerStack() {
       <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ ...sharedHeaderOptions, headerTitle: '' }} />
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ ...sharedHeaderOptions, headerTitle: '' }} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="ProfilePreview" component={ProfilePreviewScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Public Profile' }} />
+      <Stack.Screen name="ProfilePreview" component={ProfilePreviewScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Public profile' }} />
       <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Analytics' }} />
       <Stack.Screen name="PayoutSettings" component={PayoutSettingsScreen} options={{ ...sharedHeaderOptions, headerTitle: '' }} />
       <Stack.Screen name="DealInvites" component={DealInvitesScreen} options={{ ...sharedHeaderOptions, headerTitle: '' }} />
       <Stack.Screen name="Affiliate" component={AffiliateScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Affiliate' }} />
       <Stack.Screen name="Relationships" component={RelationshipsScreen} options={{ ...sharedHeaderOptions, headerTitle: '' }} />
-      <Stack.Screen name="Assets" component={AssetsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Asset Library' }} />
+      <Stack.Screen name="Assets" component={AssetsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Asset library' }} />
       <Stack.Screen name="Settlements" component={SettlementsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Settlements' }} />
       <Stack.Screen name="Collaborations" component={CollaborationsScreen} options={{ ...sharedHeaderOptions, headerTitle: '' }} />
     </Stack.Navigator>
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   tabIconActive: {
-    backgroundColor: colors.neonSoft,
+    backgroundColor: colors.primarySoft,
   },
   activeDot: {
     position: 'absolute',
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.neon,
+    backgroundColor: colors.primary,
   },
   badge: {
     position: 'absolute',

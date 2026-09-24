@@ -44,7 +44,7 @@ export default function AccountSettingsScreen() {
       await apiService.updateSettings({
         phoneNumbers: form.phone ? [form.phone] : [],
       })
-      Alert.alert('Saved', 'Account updated successfully.')
+      Alert.alert('Saved', 'Account updated.')
     } catch (err) {
       handleApiError(err, 'Failed to update account')
     } finally {
@@ -55,7 +55,7 @@ export default function AccountSettingsScreen() {
   if (loading) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -65,7 +65,7 @@ export default function AccountSettingsScreen() {
       <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
         <Animated.View entering={FadeInDown.duration(400)}>
           <Text style={styles.title}>Account</Text>
-          <Text style={styles.subtitle}>Login and contact details</Text>
+          <Text style={styles.subtitle}>Sign-in and contact details</Text>
 
           <View style={styles.card}>
             <Text style={styles.label}>Name</Text>
@@ -79,7 +79,7 @@ export default function AccountSettingsScreen() {
           </View>
 
           <Pressable style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSave() }} disabled={saving}>
-            <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Changes'}</Text>
+            <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
           </Pressable>
         </Animated.View>
       </ScrollView>
@@ -94,6 +94,6 @@ const styles = StyleSheet.create({
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
   label: { color: colors.textMuted, fontSize: 12, fontWeight: '600', letterSpacing: 0.4 },
   input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 12, color: '#fff', fontSize: 14, backgroundColor: colors.bg },
-  saveBtn: { backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
+  saveBtn: { backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
   saveBtnText: { color: '#000', fontSize: 14, fontWeight: '700' },
 })

@@ -25,22 +25,22 @@ export default function MaintenanceScreen({ onRetry, logo }: MaintenanceScreenPr
           <Text style={styles.icon}>🔧</Text>
         </View>
 
-        <Text style={styles.title}>Under Maintenance</Text>
+        <Text style={styles.title}>Down for maintenance</Text>
         <Text style={styles.subtitle}>We'll be back soon</Text>
 
         <Text style={styles.description}>
-          We're currently performing maintenance to improve your experience. Please try again in a few moments.
+          We're making improvements. Try again in a few minutes.
         </Text>
 
         <Pressable
           style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
           onPress={onRetry}
         >
-          <Text style={styles.buttonText}>Try Again</Text>
+          <Text style={styles.buttonText}>Try again</Text>
         </Pressable>
 
         <Text style={styles.footer}>
-          Need help? Contact us at support@getcollab.com
+          Need help? Contact us at contact@getcollab.in
         </Text>
       </View>
     </SafeAreaView>
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: colors.neon,
+    color: colors.primary,
     marginBottom: spacing.xl,
     textAlign: 'center',
     fontWeight: '600',
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   button: {
-    backgroundColor: colors.neon,
+    backgroundColor: colors.primary,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
     borderRadius: 8,

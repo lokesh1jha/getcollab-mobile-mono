@@ -45,6 +45,17 @@ describe('subscription-store', () => {
     expect(useSubscriptionStore.getState().loading).toBe(false)
   })
 
+  it('reads the real /subscriptions/status endpoint and its lowercase status', async () => {
+    // Shape returned by getcollab-go for a brand on a trial.
+    mockApi.get.mockResolvedValueOnce({ plan: 'STARTER', status: 'trialing', isActive: true, trialEndsAt: '2026-10-01T02:46:53+05:30' })
+    await useSubscriptionStore.getState().fetchStatus()
+
+    expect(mockApi.get).toHaveBeenCalledWith('/subscriptions/status')
+    const sub = useSubscriptionStore.getState().subscription
+    expect(sub?.status).toBe('TRIALING')
+    expect(sub?.plan).toBe('STARTER')
+  })
+
   it('treats {status:NONE} as no subscription', async () => {
     mockApi.get.mockResolvedValueOnce({ status: 'NONE' })
     await useSubscriptionStore.getState().fetchStatus()

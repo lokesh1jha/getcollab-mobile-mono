@@ -84,14 +84,14 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     try {
       await sendMessage(roomId, text)
     } catch (err) {
-      handleApiError(err, 'Failed to send')
+      handleApiError(err, "Couldn't send. Try again.")
     }
   }
 
   const handleAttach = async () => {
     const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
     if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Enable photo library access in settings.')
+      Alert.alert('Permission needed', 'Allow photo access in Settings.')
       return
     }
     try {
@@ -116,7 +116,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
       if (!asset.base64) return
       await sendImage(roomId, `data:image/jpeg;base64,${asset.base64}`)
     } catch (err) {
-      handleApiError(err, 'Attachment send failed')
+      handleApiError(err, "Couldn't send the attachment. Try again.")
     }
   }
 
@@ -132,7 +132,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
         fileSize: asset.size || 0,
       }])
     } catch (err) {
-      handleApiError(err, 'Document send failed')
+      handleApiError(err, "Couldn't send the file. Try again.")
     }
   }
 
@@ -151,7 +151,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
       const oldest = messages[0]
       await fetchMessages(roomId, { before: oldest?.id })
     } catch (e) {
-      handleApiError(e, 'Failed to load older messages')
+      handleApiError(e, "Couldn't load older messages")
     } finally {
       setLoadingOlder(false)
     }
@@ -232,7 +232,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.neon} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     )
@@ -242,7 +242,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.headerBar}>
         <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.headerBack, pressed && { opacity: 0.85 }]}>
-          <Ionicons name="chevron-back" size={24} color={colors.neon} />
+          <Ionicons name="chevron-back" size={24} color={colors.primary} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle} numberOfLines={1}>
@@ -261,7 +261,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
         <View style={styles.searchBar}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search this conversation..."
+            placeholder="Search messages"
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -286,14 +286,14 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
             hasMoreMessages ? (
               <Pressable onPress={loadOlder} disabled={loadingOlder} style={({ pressed }) => [styles.loadMoreBtn, pressed && { opacity: 0.7 }]}>
                 {loadingOlder ? (
-                  <ActivityIndicator size="small" color={colors.neon} />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <Text style={styles.loadMoreText}>Load older messages</Text>
                 )}
               </Pressable>
             ) : messages.length > 0 ? (
               <View style={styles.chatStart}>
-                <Text style={styles.chatStartText}>Beginning of conversation</Text>
+                <Text style={styles.chatStartText}>Start of conversation</Text>
               </View>
             ) : null
           }
@@ -301,7 +301,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
             <View style={styles.emptyChat}>
               <Ionicons name="chatbubbles-outline" size={40} color={colors.textMuted} />
               <Text style={styles.emptyChatTitle}>No messages yet</Text>
-              <Text style={styles.emptyChatSub}>Say hello to start the conversation.</Text>
+              <Text style={styles.emptyChatSub}>Say hello to get started.</Text>
             </View>
           }
         />
@@ -321,7 +321,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
           </Pressable>
           <TextInput
             style={styles.input}
-            placeholder="Message..."
+            placeholder="Message"
             placeholderTextColor={colors.textMuted}
             value={input}
             onChangeText={handleInputChange}
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   sendBtn: {
-    backgroundColor: colors.neon,
+    backgroundColor: colors.primary,
     width: 40,
     height: 40,
     borderRadius: 20,

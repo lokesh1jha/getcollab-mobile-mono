@@ -42,9 +42,13 @@ blue:         '#3B82F6'
 blueDeep:     '#1E3A8A'
 blueSoft:     'rgba(59,130,246,0.12)'
 
-// Brand — Neon Yellow (primary CTA buttons, active states, logo)
-neon:         '#D9FF00'
-neonSoft:     'rgba(217,255,0,0.15)'
+// Primary — White (primary CTA buttons, active states). Monochrome, shadcn-like:
+// white surfaces carry black text/icons on the black canvas.
+primary:      '#FFFFFF'
+primarySoft:  'rgba(255,255,255,0.10)'
+
+// Logo accent — "Collab" in the wordmark, matches the web logo
+logoAccent:   '#27BEFF'
 
 black:        '#000000'
 
@@ -129,26 +133,15 @@ All negative letter-spacing on headings (`-0.3` to `-1.2`) is mandatory — it m
 
 ## 6. Buttons
 
-### 6.1 Primary CTA — Neon Yellow Gradient
+### 6.1 Primary CTA — Solid white
 ```tsx
-// The main action on every screen (Get Started, Send, Invite, etc.)
-<Pressable
-  style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
->
-  <LinearGradient
-    colors={['#E8FF33', '#D9FF00']}
-    start={{ x: 0, y: 0 }}
-    end={{ x: 1, y: 1 }}
-    style={styles.primaryGradient}
-  >
-    <Text style={styles.primaryBtnText}>Action Label</Text>
-    <Ionicons name="arrow-forward" size={18} color="#000" />
-  </LinearGradient>
+// The main action on every screen (Sign in, Send, Invite, etc.)
+<Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}>
+  <Text style={styles.primaryBtnText}>Action label</Text>
 </Pressable>
 
-primaryBtn: { borderRadius: 999, overflow: 'hidden' }
-primaryGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18 }
-primaryBtnText: { color: '#000', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 }
+primaryBtn: { backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 16, alignItems: 'center' }
+primaryBtnText: { color: colors.black, fontSize: 16, fontWeight: '700' }
 ```
 
 ### 6.2 Blue Action Button
@@ -178,8 +171,8 @@ pressed state: `{ opacity: 0.75 }` or `{ opacity: 0.7 }`
 ```tsx
 // Inactive state
 shortlistBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' }
-// Active state — neon fill
-shortlistBtnActive: { backgroundColor: colors.neon, borderColor: colors.neon }
+// Active state — white fill
+shortlistBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary }
 // Icon color: inactive → '#fff', active → '#000'
 ```
 
@@ -205,7 +198,7 @@ chipTextActive: { color: '#000' }
 ```
 
 ### Rules
-- **NEVER** use a flat `backgroundColor: colors.primary` button with rounded corners as the primary action — always neon gradient
+- The primary action is a solid white pill (`colors.primary`) with black text — no gradients, no bright accent colours
 - **NEVER** use opacity-only for disabled state — use a lower-contrast border + text instead
 - Every `Pressable` must have an explicit `pressed` state feedback (`opacity`, `scale`, or both)
 - `hitSlop={10}` on all icon buttons
@@ -276,14 +269,14 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 - Duration range: **320ms – 500ms**. Never go below 280ms or above 600ms
 - Delay stagger: **80ms increments** for list items
 - **No looping animations, no spring physics on entrance, no bounce**
-- Pull-to-refresh `tintColor` must always be `colors.neon`
+- Pull-to-refresh `tintColor` must always be `colors.primary`
 
 ### 8.3 Button Press Animation
 ```tsx
 // Quick action grid cards only:
 pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }
 // All other pressables:
-pressed && { opacity: 0.85 }   // primary/neon
+pressed && { opacity: 0.85 }   // primary
 pressed && { opacity: 0.75 }   // icon buttons
 pressed && { opacity: 0.7 }    // ghost/text buttons
 ```
@@ -409,19 +402,15 @@ sectionLink: { color: colors.blue, fontSize: 13, fontWeight: '600' }
 
 ## 14. Logo
 
-```tsx
-// Neon badge mark + text wordmark
-<View style={styles.logoWrap}>
-  <View style={styles.logoBadge}>
-    <View style={styles.logoDot} />
-  </View>
-  <Text style={styles.logoText}>GetCollab</Text>
-</View>
+Always use the shared component — it matches the web wordmark
+(`getcollab/src/components/ui/brand-logo.tsx`): icon on a white rounded tile,
+"Get" in white, "Collab" in `colors.logoAccent` (`#27BEFF`).
 
-logoWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm }
-logoBadge: { width: 28, height: 28, borderRadius: 8, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center' }
-logoDot: { width: 10, height: 10, borderRadius: 2, backgroundColor: '#000' }
-logoText: { color: '#fff', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }
+```tsx
+import { BrandLogo } from '@shared/components/BrandLogo'
+
+<BrandLogo />            // 28px — headers, auth screens
+<BrandLogo size={36} />  // landing
 ```
 
 ---
@@ -461,7 +450,7 @@ timestamp: { color: colors.textSubtle, fontSize: 10, marginTop: 4, alignSelf: 'f
 
 // Input bar
 inputBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xl, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.border }
-sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center' }
+sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }
 // Send icon: send, size 18, color '#000'
 ```
 
@@ -484,7 +473,7 @@ aiBannerCtaText: { color: '#fff', fontSize: 12, fontWeight: '700' }
 
 > **Important:** The shared package `@shared/constants` still uses the OLD color system (Linear indigo `#5e6ad2` primary, different backgrounds). Do NOT import colors from `@shared/constants` for any new UI work. Always import from `@/src/theme` instead.
 >
-> Old screens may still use `colors.primary` (indigo) — replace with `colors.neon` or `colors.blue` based on context when rebuilding those screens.
+> Old screens may still use `colors.primary` (indigo) — replace with `colors.primary` or `colors.blue` based on context when rebuilding those screens.
 
 Create this file at `getcollab-brand/src/theme.ts`:
 
@@ -502,8 +491,9 @@ export const colors = {
   blueDeep: '#1E3A8A',
   blueSoft: 'rgba(59,130,246,0.12)',
   black: '#000000',
-  neon: '#D9FF00',
-  neonSoft: 'rgba(217,255,0,0.15)',
+  primary: '#FFFFFF',
+  primarySoft: 'rgba(255,255,255,0.10)',
+  logoAccent: '#27BEFF',
   success: '#22C55E',
   warning: '#F59E0B',
   error: '#EF4444',

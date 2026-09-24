@@ -63,7 +63,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
 
   const handleAddRelationship = async () => {
     if (!newEmail.trim()) {
-      Alert.alert('Error', 'Enter an email or user ID')
+      Alert.alert('Details needed', 'Enter an email or user ID.')
       return
     }
     setAdding(true)
@@ -122,7 +122,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -141,7 +141,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
               <View style={styles.header}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.title}>Relationships</Text>
-                  <Text style={styles.subtitle}>Manage your creator relationships</Text>
+                  <Text style={styles.subtitle}>Creators you work with</Text>
                 </View>
                 <Pressable
                   style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.85 }]}
@@ -157,7 +157,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
                 <TextInput
                   value={search}
                   onChangeText={handleSearchChange}
-                  placeholder="Search relationships..."
+                  placeholder="Search relationships"
                   placeholderTextColor={colors.textSubtle}
                   style={styles.searchInput}
                 />
@@ -175,12 +175,12 @@ export default function RelationshipsScreen({ navigation }: Props) {
                 <Ionicons name="people-outline" size={26} color={colors.textMuted} />
               </View>
               <Text style={styles.emptyTitle}>
-                {search.trim() ? 'No relationships match your search' : 'No relationships yet'}
+                {search.trim() ? 'No matches' : 'No relationships yet'}
               </Text>
               <Text style={styles.emptySub}>
                 {search.trim()
-                  ? 'Try a different search term.'
-                  : 'Add a creator to start tracking collaborations and conversations.'}
+                  ? 'Try a different search.'
+                  : 'Add a creator to track your collaborations.'}
               </Text>
               {!search.trim() && (
                 <Pressable
@@ -192,7 +192,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
               )}
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadRelationships() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadRelationships() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
 
@@ -200,13 +200,13 @@ export default function RelationshipsScreen({ navigation }: Props) {
       {dialogOpen && (
         <Pressable style={styles.modalOverlay} onPress={() => setDialogOpen(false)}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Add Relationship</Text>
-            <Text style={styles.modalBody}>Enter the creator's user ID or email to add them.</Text>
+            <Text style={styles.modalTitle}>Add relationship</Text>
+            <Text style={styles.modalBody}>Enter the creator's email or user ID.</Text>
             <TextInput
               style={styles.input}
               value={newEmail}
               onChangeText={setNewEmail}
-              placeholder="User ID or email"
+              placeholder="Email or user ID"
               placeholderTextColor={colors.textSubtle}
               autoCapitalize="none"
             />
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: spacing.md, marginBottom: spacing.md },
   title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
-  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.neon, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.pill },
+  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.pill },
   addBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
 
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: spacing.lg, paddingVertical: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, marginBottom: spacing.md },
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { color: '#fff', fontSize: 15, fontWeight: '700', marginTop: spacing.sm },
   emptySub: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
-  emptyCta: { backgroundColor: colors.neon, paddingHorizontal: 20, paddingVertical: 12, borderRadius: radius.pill, marginTop: spacing.md },
+  emptyCta: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: radius.pill, marginTop: spacing.md },
   emptyCtaText: { color: '#000', fontSize: 13, fontWeight: '700' },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
@@ -265,6 +265,6 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
   outlinedBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong },
   outlinedBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, backgroundColor: colors.neon },
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, backgroundColor: colors.primary },
   primaryBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
 })

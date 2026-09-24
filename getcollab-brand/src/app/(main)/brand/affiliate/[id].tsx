@@ -60,7 +60,7 @@ export default function AffiliateDetailScreen() {
   }, [id, loadProgram])
 
   const handleSave = async () => {
-    if (!form.name.trim()) { Alert.alert('Error', 'Name is required'); return }
+    if (!form.name.trim()) { Alert.alert('Name needed', 'Enter a program name.'); return }
     setSaving(true)
     try {
       await apiService.updateAffiliateProgram(id, {
@@ -99,7 +99,7 @@ export default function AffiliateDetailScreen() {
 
   const handleClose = async () => {
     if (!program) return
-    Alert.alert('Close Program?', 'This will stop new referrals. Existing commissions remain.', [
+    Alert.alert('Close program?', 'New referrals stop. Existing commissions stay.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Close',
@@ -118,14 +118,14 @@ export default function AffiliateDetailScreen() {
 
   const handleIncreaseBudget = async () => {
     if (!program) return
-    Alert.alert('Increase Budget', 'Enter additional amount in rupees.', [
+    Alert.alert('Add budget', 'Add ₹5,000 to this program?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Add ₹5,000',
         onPress: async () => {
           try {
             await apiService.increaseAffiliateBudget(program.id, 5000 * 100)
-            Alert.alert('Success', 'Budget increased.')
+            Alert.alert('Budget added', 'Your program budget is updated.')
             loadProgram()
           } catch (err) {
             handleApiError(err, 'Failed to increase budget')
@@ -139,7 +139,7 @@ export default function AffiliateDetailScreen() {
     return (
       <SafeAreaView style={styles.root}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.neon} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     )
@@ -151,7 +151,7 @@ export default function AffiliateDetailScreen() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg }}>
           <Text style={{ color: colors.error, fontSize: 16 }}>Program not found</Text>
           <Pressable style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.8 }]} onPress={() => navigation.goBack()}>
-            <Text style={styles.outlinedBtnText}>Go Back</Text>
+            <Text style={styles.outlinedBtnText}>Go back</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -166,7 +166,7 @@ export default function AffiliateDetailScreen() {
     <SafeAreaView style={styles.root}>
       <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadProgram() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadProgram() }} tintColor={colors.primary} />}
       >
         <Animated.View entering={FadeInDown.duration(400)}>
           <View style={styles.headerRow}>
@@ -194,14 +194,14 @@ export default function AffiliateDetailScreen() {
                 </View>
               </View>
               <Pressable style={({ pressed }) => [styles.budgetBtn, pressed && { opacity: 0.85 }]} onPress={handleIncreaseBudget}>
-                <Text style={styles.budgetBtnText}>Increase Budget</Text>
+                <Text style={styles.budgetBtnText}>Add budget</Text>
               </Pressable>
             </View>
           )}
 
           {editing ? (
             <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Edit Program</Text>
+              <Text style={styles.sectionTitle}>Edit program</Text>
               <Text style={styles.fieldLabel}>Name</Text>
               <TextInput style={styles.input} value={form.name} onChangeText={(v) => setForm({ ...form, name: v })} placeholderTextColor={colors.textSubtle} />
               <Text style={styles.fieldLabel}>Description</Text>
@@ -251,18 +251,18 @@ export default function AffiliateDetailScreen() {
 
           <View style={styles.actionsRow}>
             <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); (navigation as any).navigate('AffiliateLinks', { programId: program.id }) }}>
-              <Ionicons name="link-outline" size={16} color="#fff" />
+              <Ionicons name="link-outline" size={16} color={colors.black} />
               <Text style={styles.actionBtnText}>Links</Text>
             </Pressable>
             <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); (navigation as any).navigate('AffiliateCommissions', { programId: program.id }) }}>
-              <Ionicons name="cash-outline" size={16} color="#fff" />
+              <Ionicons name="cash-outline" size={16} color={colors.black} />
               <Text style={styles.actionBtnText}>Commissions</Text>
             </Pressable>
           </View>
 
           {program.status !== 'closed' && (
             <Pressable style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.85 }]} onPress={handleClose}>
-              <Text style={styles.closeBtnText}>Close Program</Text>
+              <Text style={styles.closeBtnText}>Close program</Text>
             </Pressable>
           )}
         </Animated.View>
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   budgetBlock: { flex: 1, alignItems: 'center' },
   budgetValue: { color: '#fff', fontSize: 16, fontWeight: '700' },
   budgetLabel: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
-  budgetBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 12, marginTop: spacing.sm },
+  budgetBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 12, marginTop: spacing.sm },
   budgetBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
 
   detailBody: { color: colors.textMuted, fontSize: 14, lineHeight: 22, marginBottom: spacing.md },
@@ -297,14 +297,14 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 12, fontWeight: '600', color: colors.textMuted, letterSpacing: 0.4, marginBottom: spacing.sm, marginTop: spacing.md },
   input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 12, color: colors.text, fontSize: 14, backgroundColor: colors.bg },
   editActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
-  primaryBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 12 },
+  primaryBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 12 },
   primaryBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
   secondaryBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.borderStrong, borderRadius: radius.pill, paddingVertical: 12 },
   secondaryBtnText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
 
   actionsRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
-  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.blue, borderRadius: radius.pill, paddingVertical: 12 },
-  actionBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 12 },
+  actionBtnText: { color: colors.black, fontSize: 13, fontWeight: '700' },
 
   closeBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.error + '55', borderRadius: radius.pill, paddingVertical: 12, backgroundColor: colors.errorSoft },
   closeBtnText: { color: colors.error, fontSize: 13, fontWeight: '600' },

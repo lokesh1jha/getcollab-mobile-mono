@@ -78,8 +78,8 @@ function RecommendationsBody({ site, navigation }: { site: GrowthSite; navigatio
         <GrowthEmpty
           icon="list-outline"
           title="No recommendations yet"
-          body="Run a website analysis from Overview. We’ll turn issues into a short to-do list."
-          ctaLabel="Go to Overview"
+          body="Run an analysis from Overview to get a to-do list."
+          ctaLabel="Open Overview"
           onCta={() => navigation?.navigate('Growth')}
         />
       ) : (

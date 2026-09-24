@@ -25,8 +25,8 @@ export function SubscriptionBanner() {
             <View style={styles.bannerContent}>
               <Text style={styles.bannerText}>
                 {urgent
-                  ? `Your workspace trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`
-                  : `Workspace trial · ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`}
+                  ? `Trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`
+                  : `Trial · ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`}
               </Text>
               <Text style={styles.bannerCta}>Manage →</Text>
             </View>
@@ -41,7 +41,7 @@ export function SubscriptionBanner() {
           onPress={openBillingPortal}
         >
           <View style={styles.bannerContent}>
-            <Text style={styles.bannerText}>Trial ended — renew to continue access.</Text>
+            <Text style={styles.bannerText}>Trial ended. Renew to keep access.</Text>
             <Text style={styles.bannerCta}>Manage →</Text>
           </View>
         </Pressable>
@@ -57,7 +57,7 @@ export function SubscriptionBanner() {
           onPress={openBillingPortal}
         >
           <View style={styles.bannerContent}>
-            <Text style={styles.bannerText}>Payment issue. Update billing to continue access.</Text>
+            <Text style={styles.bannerText}>Payment failed. Update billing to keep access.</Text>
             <Text style={styles.bannerCta}>Manage →</Text>
           </View>
         </Pressable>
@@ -73,8 +73,8 @@ export function SubscriptionBanner() {
           onPress={openBillingPortal}
         >
           <View style={styles.bannerContent}>
-            <Text style={styles.bannerText}>Workspace access ended. Manage subscription online.</Text>
-            <Text style={styles.bannerCta}>Continue →</Text>
+            <Text style={styles.bannerText}>Access ended. Renew your plan online.</Text>
+            <Text style={styles.bannerCta}>Renew →</Text>
           </View>
         </Pressable>
       </Animated.View>

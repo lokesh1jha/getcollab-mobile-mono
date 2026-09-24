@@ -35,7 +35,7 @@ export default function CampaignCircleScreen() {
       }))
       setMembers(mapped)
     } catch (err) {
-      handleApiError(err, 'Failed to load circle')
+      handleApiError(err, "Couldn't load circle")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -71,7 +71,7 @@ export default function CampaignCircleScreen() {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -87,7 +87,7 @@ export default function CampaignCircleScreen() {
           ItemSeparatorComponent={() => <View style={styles.divider} />}
           ListHeaderComponent={
             <View style={styles.header}>
-              <Text style={styles.title}>Creator Circle</Text>
+              <Text style={styles.title}>Creator circle</Text>
               <Text style={styles.subtitle}>{members.length} creators in {title || 'this campaign'}</Text>
             </View>
           }
@@ -98,7 +98,7 @@ export default function CampaignCircleScreen() {
               <Text style={styles.emptySub}>Invite creators from the Discover tab.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadCircle() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadCircle() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>

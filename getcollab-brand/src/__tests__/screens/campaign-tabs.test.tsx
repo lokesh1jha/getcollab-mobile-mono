@@ -67,7 +67,7 @@ describe('CampaignEditScreen', () => {
   it('prefills the form from the campaign', async () => {
     renderScreen(CampaignEditScreen)
 
-    expect(await screen.findByText('Edit Campaign')).toBeOnTheScreen()
+    expect(await screen.findByText('Edit campaign')).toBeOnTheScreen()
     expect(screen.getByDisplayValue('Summer Launch')).toBeOnTheScreen()
     expect(screen.getByDisplayValue('50000')).toBeOnTheScreen()
     expect(api.getCampaign).toHaveBeenCalledWith('c1')
@@ -79,7 +79,7 @@ describe('CampaignEditScreen', () => {
     await screen.findByDisplayValue('Summer Launch')
 
     fireEvent.changeText(screen.getByDisplayValue('Summer Launch'), 'Summer Launch v2')
-    fireEvent.press(screen.getByText('Save Changes'))
+    fireEvent.press(screen.getByText('Save'))
 
     await waitFor(() => expect(api.updateCampaign).toHaveBeenCalledTimes(1))
     expect(api.updateCampaign).toHaveBeenCalledWith(
@@ -94,9 +94,9 @@ describe('CampaignEditScreen', () => {
     await screen.findByDisplayValue('Summer Launch')
 
     fireEvent.changeText(screen.getByDisplayValue('Summer Launch'), '   ')
-    fireEvent.press(screen.getByText('Save Changes'))
+    fireEvent.press(screen.getByText('Save'))
 
-    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Title is required')
+    expect(Alert.alert).toHaveBeenCalledWith('Add a title')
     expect(api.updateCampaign).not.toHaveBeenCalled()
   })
 })
@@ -105,7 +105,7 @@ describe('CampaignDiscoverScreen', () => {
   it('scopes discovery to the campaign and shows an empty state', async () => {
     renderScreen(CampaignDiscoverScreen)
 
-    expect(await screen.findByText('Discover Creators')).toBeOnTheScreen()
+    expect(await screen.findByText('Find creators')).toBeOnTheScreen()
     expect(api.discoverCreators).toHaveBeenCalledWith({ campaignId: 'c1', limit: 50 })
   })
 
@@ -117,7 +117,7 @@ describe('CampaignDiscoverScreen', () => {
     renderScreen(CampaignDiscoverScreen)
     await screen.findByText('Riya')
 
-    fireEvent.press(screen.getByText('Invite to Campaign'))
+    fireEvent.press(screen.getByText('Invite'))
 
     await waitFor(() =>
       expect(api.inviteCreatorToCampaign).toHaveBeenCalledWith('c1', 'i1', 'Join our campaign: Summer Launch'),
@@ -132,7 +132,7 @@ describe('CampaignResponsesScreen', () => {
     })
     renderScreen(CampaignResponsesScreen)
 
-    expect(await screen.findByText('Responses')).toBeOnTheScreen()
+    expect(await screen.findByText('Applications')).toBeOnTheScreen()
     expect(screen.getByText('Riya')).toBeOnTheScreen()
     expect(api.getBidsForCampaign).toHaveBeenCalledWith('c1')
   })
@@ -140,7 +140,7 @@ describe('CampaignResponsesScreen', () => {
   it('shows an empty state when nothing has applied', async () => {
     renderScreen(CampaignResponsesScreen)
 
-    expect(await screen.findByText('No responses yet')).toBeOnTheScreen()
+    expect(await screen.findByText('No applications yet')).toBeOnTheScreen()
   })
 
   it('accepts a bid after confirmation', async () => {
@@ -163,7 +163,7 @@ describe('CampaignExecuteScreen', () => {
   it('shows an empty state when the campaign has no collaborations', async () => {
     renderScreen(CampaignExecuteScreen)
 
-    expect(await screen.findByText('Execute')).toBeOnTheScreen()
+    expect(await screen.findByText('Collaborations')).toBeOnTheScreen()
     expect(screen.getByText('No creators yet')).toBeOnTheScreen()
   })
 
@@ -237,7 +237,7 @@ describe('CampaignCircleScreen', () => {
     })
     renderScreen(CampaignCircleScreen)
 
-    expect(await screen.findByText('Creator Circle')).toBeOnTheScreen()
+    expect(await screen.findByText('Creator circle')).toBeOnTheScreen()
     expect(screen.getByText('Riya')).toBeOnTheScreen()
   })
 

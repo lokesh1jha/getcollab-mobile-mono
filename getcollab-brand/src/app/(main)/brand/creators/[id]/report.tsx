@@ -41,12 +41,8 @@ export default function CreatorReportScreen() {
 
   const loadReport = async () => {
     try {
-      const [profileRes, metricsRes] = await Promise.all([
-        apiService.getInfluencer(id),
-        apiService.getProfileWithMetrics().catch(() => null),
-      ])
+      const profileRes = await apiService.getInfluencer(id)
       const profile = profileRes?.influencer || profileRes?.data || profileRes || {}
-      const metrics = metricsRes?.metrics || metricsRes?.data || {}
       setReport({
         name: profile.name || 'Creator',
         handle: profile.instagramHandle || profile.handle,
@@ -61,20 +57,14 @@ export default function CreatorReportScreen() {
         verified: profile.verified,
         collabs: profile.collabCount || 0,
         pastCollabs: profile.pastCollabs || profile.pastCollaborations || [],
-        demographics: profile.demographics || metrics.demographics || {
-          age13_17: 8,
-          age18_24: 32,
-          age25_34: 28,
-          age35_44: 18,
-          age45_54: 9,
-          age55plus: 5,
-        },
-        genderSplit: profile.genderSplit || metrics.genderSplit || { male: 42, female: 55, other: 3 },
-        topLocations: profile.topLocations || metrics.topLocations || ['Mumbai', 'Delhi', 'Bangalore'],
+        // Only real audience data: sections without it are hidden.
+        demographics: profile.demographics || null,
+        genderSplit: profile.genderSplit || null,
+        topLocations: Array.isArray(profile.topLocations) ? profile.topLocations : [],
         contentSamples: profile.contentSamples || profile.recentPosts || [],
       })
     } catch (err) {
-      handleApiError(err, 'Failed to load report')
+      handleApiError(err, "Couldn't load report")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -89,7 +79,7 @@ export default function CreatorReportScreen() {
     return (
       <SafeAreaView style={styles.root}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.neon} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     )
@@ -101,7 +91,7 @@ export default function CreatorReportScreen() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg }}>
           <Text style={{ color: colors.error, fontSize: 16 }}>Report not found</Text>
           <Pressable style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.8 }]} onPress={() => navigation.goBack()}>
-            <Text style={styles.outlinedBtnText}>Go Back</Text>
+            <Text style={styles.outlinedBtnText}>Go back</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -110,15 +100,16 @@ export default function CreatorReportScreen() {
 
   const followers = report.followers
   const followersDisplay = followers >= 1000 ? `${(followers / 1000).toFixed(1)}K` : followers
-  const demo = report.demographics as Record<string, number>
-  const demoMax = Math.max(...Object.values(demo).map((v) => (typeof v === 'number' ? v : 0)))
+  const demo = (report.demographics || {}) as Record<string, number>
+  const demoValues = Object.values(demo).filter((v): v is number => typeof v === 'number')
+  const demoMax = demoValues.length ? Math.max(...demoValues) : 0
   const gender = report.genderSplit
 
   return (
     <SafeAreaView style={styles.root}>
       <ScrollView
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadReport() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadReport() }} tintColor={colors.primary} />}
       >
         <Animated.View entering={FadeInDown.duration(400)}>
           {/* Header */}
@@ -156,33 +147,33 @@ export default function CreatorReportScreen() {
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Performance</Text>
             <View style={styles.detailRow}>
-              <Text style={styles.label}>Avg Likes</Text>
+              <Text style={styles.label}>Avg likes</Text>
               <Text style={styles.value}>{report.avgLikes ? report.avgLikes.toLocaleString() : '—'}</Text>
             </View>
             <View style={styles.detailRow}>
-              <Text style={styles.label}>Avg Views</Text>
+              <Text style={styles.label}>Avg views</Text>
               <Text style={styles.value}>{report.avgViews ? report.avgViews.toLocaleString() : '—'}</Text>
             </View>
             <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
-              <Text style={styles.label}>Avg Comments</Text>
+              <Text style={styles.label}>Avg comments</Text>
               <Text style={styles.value}>{report.avgComments ? report.avgComments.toLocaleString() : '—'}</Text>
             </View>
           </View>
 
           {/* Audience Demographics */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Audience Age</Text>
+          {demoMax > 0 && <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Audience age</Text>
             <MetricBar label="13-17" value={demo.age13_17 || demo['13-17'] || 0} max={demoMax} color={colors.blue} />
             <MetricBar label="18-24" value={demo.age18_24 || demo['18-24'] || 0} max={demoMax} color={colors.blue} />
             <MetricBar label="25-34" value={demo.age25_34 || demo['25-34'] || 0} max={demoMax} color={colors.blue} />
             <MetricBar label="35-44" value={demo.age35_44 || demo['35-44'] || 0} max={demoMax} color={colors.blue} />
             <MetricBar label="45-54" value={demo.age45_54 || demo['45-54'] || 0} max={demoMax} color={colors.blue} />
             <MetricBar label="55+" value={demo.age55plus || demo['55+'] || 0} max={demoMax} color={colors.blue} />
-          </View>
+          </View>}
 
           {/* Gender Split */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Audience Gender</Text>
+          {gender && <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Audience gender</Text>
             <View style={styles.genderRow}>
               <View style={[styles.genderBlock, { backgroundColor: 'rgba(59,130,246,0.14)' }]}>
                 <Text style={[styles.genderValue, { color: colors.blue }]}>{gender.male}%</Text>
@@ -197,11 +188,11 @@ export default function CreatorReportScreen() {
                 <Text style={styles.genderLabel}>Other</Text>
               </View>
             </View>
-          </View>
+          </View>}
 
           {/* Top Locations */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Top Locations</Text>
+          {report.topLocations.length > 0 && <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Top locations</Text>
             <View style={styles.chipRow}>
               {report.topLocations.map((loc: string) => (
                 <View key={loc} style={styles.chip}>
@@ -210,12 +201,12 @@ export default function CreatorReportScreen() {
                 </View>
               ))}
             </View>
-          </View>
+          </View>}
 
           {/* Past Collaborations */}
           {report.pastCollabs.length > 0 && (
             <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Past Collaborations</Text>
+              <Text style={styles.sectionTitle}>Past collaborations</Text>
               {report.pastCollabs.map((c: any, idx: number) => (
                 <View key={idx} style={[styles.collabRow, idx < report.pastCollabs.length - 1 && styles.collabRowBorder]}>
                   <View style={styles.collabDot} />

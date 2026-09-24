@@ -15,7 +15,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
 
   const handleSend = async () => {
     if (!email.trim() || !email.includes('@')) {
-      Alert.alert('Invalid email', 'Please enter a valid email address.')
+      Alert.alert('Invalid email', 'Enter a valid email address.')
       return
     }
     setSending(true)
@@ -33,17 +33,17 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
         <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <Animated.View entering={FadeInDown.duration(400)}>
             <Text style={styles.title}>Forgot password?</Text>
-            <Text style={styles.subtitle}>Enter your email and we'll send you a link to reset your password.</Text>
+            <Text style={styles.subtitle}>We'll email you a reset link.</Text>
 
             {sent ? (
               <View style={styles.successCard}>
-                <Text style={styles.successTitle}>Check your inbox 📬</Text>
+                <Text style={styles.successTitle}>Check your inbox</Text>
                 <Text style={styles.successText}>
-                  If <Text style={styles.successEmail}>{email}</Text> matches an account, you'll receive a reset
-                  link shortly. The link expires in 30 minutes.
+                  If <Text style={styles.successEmail}>{email}</Text> has an account, a reset link is on its way.
+                  It expires in 30 minutes.
                 </Text>
                 <Pressable style={({ pressed }) => [styles.blueBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation?.navigate('SignIn') }}>
-                  <Text style={styles.blueBtnText}>Back to Sign In</Text>
+                  <Text style={styles.blueBtnText}>Back to sign in</Text>
                 </Pressable>
                 <Pressable style={({ pressed }) => [styles.ghostBtn, pressed && { opacity: 0.7 }]} onPress={() => { setSent(false); handleSend() }}>
                   <Text style={styles.ghostBtnText}>Resend</Text>
@@ -56,7 +56,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                   <TextInput
                     value={email}
                     onChangeText={setEmail}
-                    placeholder="you@example.com"
+                    placeholder="you@company.com"
                     placeholderTextColor={colors.textSubtle}
                     keyboardType="email-address"
                     autoCapitalize="none"
@@ -69,11 +69,11 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                   onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSend() }}
                   disabled={sending}
                 >
-                  <Text style={styles.primaryBtnText}>{sending ? 'Sending...' : 'Send Reset Link'}</Text>
+                  <Text style={styles.primaryBtnText}>{sending ? 'Sending…' : 'Send reset link'}</Text>
                 </Pressable>
 
                 <Pressable style={({ pressed }) => [styles.ghostBtn, pressed && { opacity: 0.7 }]} onPress={() => navigation?.goBack()}>
-                  <Text style={styles.ghostBtnText}>Back to Sign In</Text>
+                  <Text style={styles.ghostBtnText}>Back to sign in</Text>
                 </Pressable>
               </>
             )}
@@ -99,17 +99,17 @@ const styles = StyleSheet.create({
 
   primaryBtn: {
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 18,
+    backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 18,
     marginTop: spacing.xl,
   },
   primaryBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
 
   blueBtn: {
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.blue, borderRadius: radius.pill, paddingVertical: 14,
+    backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 14,
     marginBottom: spacing.sm, marginTop: spacing.lg,
   },
-  blueBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  blueBtnText: { color: colors.black, fontSize: 14, fontWeight: '700' },
 
   ghostBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.md, marginTop: spacing.sm },
   ghostBtnText: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '500' },

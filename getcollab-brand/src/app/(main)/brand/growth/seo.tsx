@@ -93,8 +93,8 @@ function SeoBody({ site, navigation, initialSeverity }: { site: GrowthSite; navi
 
       {data?.score ? (
         <Text style={[growthStyles.meta, { marginBottom: 12 }]}>
-          Growth Score {data.score.overall} (algorithm {data.score.algorithmVersion}). SEO Health is crawl-based; AI
-          Readiness is markup — not AI assistant rankings.
+          Growth Score {data.score.overall} (algorithm {data.score.algorithmVersion}). Based on your pages and
+          markup, not AI assistant rankings.
         </Text>
       ) : null}
 
@@ -124,8 +124,8 @@ function SeoBody({ site, navigation, initialSeverity }: { site: GrowthSite; navi
           title={severity ? 'Nothing in this filter' : 'No issues found'}
           body={
             severity
-              ? 'Try a different severity filter.'
-              : 'Run an analysis from Overview if this is your first visit.'
+              ? 'Try a different filter.'
+              : 'New here? Run an analysis from Overview.'
           }
         />
       ) : (

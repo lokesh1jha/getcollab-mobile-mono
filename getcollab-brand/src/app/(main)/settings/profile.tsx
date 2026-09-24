@@ -52,7 +52,7 @@ export default function ProfileSettingsScreen() {
         websiteUrl: form.websiteUrl,
         industry: form.industry,
       })
-      Alert.alert('Saved', 'Profile updated successfully.')
+      Alert.alert('Saved', 'Profile updated.')
     } catch (err) {
       handleApiError(err, 'Failed to update profile')
     } finally {
@@ -63,7 +63,7 @@ export default function ProfileSettingsScreen() {
   if (loading) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -76,14 +76,14 @@ export default function ProfileSettingsScreen() {
           <Text style={styles.subtitle}>Your public brand profile</Text>
 
           <View style={styles.card}>
-            <Text style={styles.label}>Brand Name</Text>
+            <Text style={styles.label}>Brand name</Text>
             <TextInput style={styles.input} value={form.name} onChangeText={(v) => setForm({ ...form, name: v })} placeholderTextColor={colors.textSubtle} />
 
             <Text style={styles.label}>Bio</Text>
             <TextInput style={[styles.input, { minHeight: 100 }]} multiline value={form.bio} onChangeText={(v) => setForm({ ...form, bio: v })} placeholderTextColor={colors.textSubtle} />
 
             <Text style={styles.label}>Website</Text>
-            <TextInput style={styles.input} value={form.websiteUrl} onChangeText={(v) => setForm({ ...form, websiteUrl: v })} placeholder="https://..." placeholderTextColor={colors.textSubtle} autoCapitalize="none" />
+            <TextInput style={styles.input} value={form.websiteUrl} onChangeText={(v) => setForm({ ...form, websiteUrl: v })} placeholder="https://yourbrand.com" placeholderTextColor={colors.textSubtle} autoCapitalize="none" />
 
             <Text style={styles.label}>Industry</Text>
             <TextInput style={styles.input} value={form.industry} onChangeText={(v) => setForm({ ...form, industry: v })} placeholderTextColor={colors.textSubtle} />
@@ -93,7 +93,7 @@ export default function ProfileSettingsScreen() {
           </View>
 
           <Pressable style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSave() }} disabled={saving}>
-            <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Changes'}</Text>
+            <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
           </Pressable>
         </Animated.View>
       </ScrollView>
@@ -108,6 +108,6 @@ const styles = StyleSheet.create({
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
   label: { color: colors.textMuted, fontSize: 12, fontWeight: '600', letterSpacing: 0.4 },
   input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 12, color: '#fff', fontSize: 14, backgroundColor: colors.bg },
-  saveBtn: { backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
+  saveBtn: { backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
   saveBtnText: { color: '#000', fontSize: 14, fontWeight: '700' },
 })

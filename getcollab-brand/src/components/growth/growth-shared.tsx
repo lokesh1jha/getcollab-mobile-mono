@@ -143,7 +143,7 @@ export function GrowthGate({
   if (loading) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -156,7 +156,7 @@ export function GrowthGate({
             <GrowthEmpty
               icon="globe-outline"
               title="Add your website"
-              body="Growth needs a website to analyse. Add one to see scores, issues, and creator opportunities."
+              body="Add a website to see scores, issues and creator opportunities."
               ctaLabel="Set up Growth"
               onCta={() => navigation?.navigate('GrowthSetup')}
             />
@@ -249,7 +249,7 @@ export function GrowthScreen({
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xxxl }}
           refreshControl={
             onRefresh ? (
-              <RefreshControl refreshing={!!refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />
+              <RefreshControl refreshing={!!refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />
             ) : undefined
           }
         >
@@ -306,7 +306,7 @@ export const growthStyles = StyleSheet.create({
 
   scoreValue: { color: '#fff', fontSize: 40, fontWeight: '700', letterSpacing: -1 },
 
-  primaryBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 12, paddingHorizontal: 20 },
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 12, paddingHorizontal: 20 },
   primaryBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
   outlinedBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.borderStrong, borderRadius: radius.pill, paddingVertical: 12, paddingHorizontal: 20 },
   outlinedBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
@@ -335,6 +335,6 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { color: '#fff', fontSize: 15, fontWeight: '700', marginTop: spacing.sm },
   emptySub: { color: colors.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 19 },
-  emptyCta: { backgroundColor: colors.neon, paddingHorizontal: 20, paddingVertical: 12, borderRadius: radius.pill, marginTop: spacing.md },
+  emptyCta: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: radius.pill, marginTop: spacing.md },
   emptyCtaText: { color: '#000', fontSize: 13, fontWeight: '700' },
 })

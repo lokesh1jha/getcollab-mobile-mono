@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, overline } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useSubscriptionStore } from '../../../stores/subscription-store'
 import type { Invoice } from '@shared/types'
@@ -42,7 +42,7 @@ export default function BillingSettingsScreen() {
       if (url) {
         Linking.openURL(url)
       } else {
-        handleApiError(new Error('No download URL'), 'Download unavailable')
+        handleApiError(new Error("This invoice isn't ready to download."), 'Download unavailable')
       }
     } catch (err) {
       handleApiError(err, 'Failed to download invoice')
@@ -67,7 +67,7 @@ export default function BillingSettingsScreen() {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -89,11 +89,11 @@ export default function BillingSettingsScreen() {
               </View>
 
               <View style={styles.planCard}>
-                <Text style={styles.planLabel}>Current Plan</Text>
-                <Text style={styles.planValue}>{subscription?.plan || 'Free'}</Text>
-                <Text style={styles.planStatus}>{subscription?.status || 'Active'}</Text>
+                <Text style={styles.planLabel}>Current plan</Text>
+                <Text style={styles.planValue}>{subscription?.plan || 'No plan'}</Text>
+                {subscription?.status ? <Text style={styles.planStatus}>{subscription.status}</Text> : null}
                 <Pressable style={({ pressed }) => [styles.manageBtn, pressed && { opacity: 0.85 }]} onPress={() => useSubscriptionStore.getState().openBillingPortal()}>
-                  <Text style={styles.manageBtnText}>Manage Subscription</Text>
+                  <Text style={styles.manageBtnText}>Manage plan</Text>
                 </Pressable>
               </View>
 
@@ -106,7 +106,7 @@ export default function BillingSettingsScreen() {
               <Text style={styles.emptySub}>Invoices appear after your first payment.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadBilling() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadBilling() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>
@@ -123,10 +123,10 @@ const styles = StyleSheet.create({
   planLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   planValue: { color: '#fff', fontSize: 20, fontWeight: '700', marginTop: 4 },
   planStatus: { color: colors.textSubtle, fontSize: 13, marginTop: 2 },
-  manageBtn: { backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 12, alignItems: 'center', marginTop: spacing.md },
+  manageBtn: { backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 12, alignItems: 'center', marginTop: spacing.md },
   manageBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
 
-  sectionLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: spacing.sm },
+  sectionLabel: { ...overline, marginBottom: spacing.sm },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   invoiceTitle: { color: '#fff', fontSize: 15, fontWeight: '600' },

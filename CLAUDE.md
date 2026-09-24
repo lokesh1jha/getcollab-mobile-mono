@@ -68,7 +68,7 @@ Non-negotiables (the rest is in the skills): import colors from `@/src/theme` ne
 - All calls go through `@shared/services/api` (SecureStore tokens, refresh retry, `X-Device-Id`, network banner)
 
 ### Mock / hardcoded data (must strip before manual testing / prod)
-- **None remaining.** Dashboard mock data was removed earlier; the only stub (social Google/Facebook/Instagram sign-in buttons with a TODO in signin/signup) was removed on Sep 4 2026 — the backend's native Google endpoint (`POST /auth/google/token`, ID-token → session) exists, so re-add real buttons wired to `CompleteGoogleIDToken` once Google Sign-In SDK + client IDs are configured in the app.
+- **None remaining** (the creator report's invented audience fallbacks were removed Sep 24 2026 — sections now hide when there is no real data). Dashboard mock data was removed earlier; the only stub (social Google/Facebook/Instagram sign-in buttons with a TODO in signin/signup) was removed on Sep 4 2026 — the backend's native Google endpoint (`POST /auth/google/token`, ID-token → session) exists, so re-add real buttons wired to `CompleteGoogleIDToken` once Google Sign-In SDK + client IDs are configured in the app.
 
 ### Missing vs getcollab web (gap list for prod readiness)
 - **Subscriptions/billing**: **Brand-only** — the Go backend (`getcollab-go/internal/billing/service.go` `Status()`) hardcodes influencer accounts as `{"plan": "INFLUENCER", "status": "active", "isActive": true}`; all quota/entitlement/checkout logic (campaign limits, marketplace search, influencer reports, seats, AI insights) applies to brand orgs via Razorpay. Influencer app needs NO paywall/checkout UI — at most a read-only plan row in Settings. The `apiService` subscription methods exist but are for brand-app use.
@@ -78,7 +78,19 @@ Non-negotiables (the rest is in the skills): import colors from `@/src/theme` ne
 - `getMarketplace` / `discoverCreators` unused — acceptable for the creator app.
 ## E2E Tests (Maestro)
 
-Both apps have `.maestro/` with YAML flow files for auth, campaigns, chat, subscriptions. Run with the Maestro CLI after a dev build.
+Each app has `.maestro/` flows (landing, sign-up validation, sign in, wrong password,
+forgot password) that run against the real local getcollab-go stack — no mocks.
+
+```bash
+pnpm maestro:brand        # or: pnpm maestro:influencer
+```
+
+`scripts/maestro.sh` first runs `scripts/maestro-seed.mjs`, which idempotently creates the
+two onboarded test accounts (`maestro.brand@test.local`, `maestro.creator@test.local`,
+password `Passw0rd!23`) via the API, reading email OTPs from Postgres. Needs: the app
+installed on the booted simulator, its Metro on :8081, the API on :4000, Maestro CLI
+(`~/.maestro/bin/maestro`). Flows start with `clearKeychain` because SecureStore tokens
+survive `clearState` on iOS.
 
 ## Environment
 

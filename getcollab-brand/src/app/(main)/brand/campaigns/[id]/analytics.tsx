@@ -41,7 +41,7 @@ export default function CampaignAnalyticsScreen() {
       setTimeseries(Array.isArray(ts) ? ts : [])
       const inf = infRes?.data || infRes?.influencers || infRes
       setTopInfluencers(Array.isArray(inf) ? inf.slice(0, 5) : [])
-    } catch (err: any) { setError(err?.message || 'Failed to load analytics'); handleApiError(err, 'Failed to load analytics') }
+    } catch (err: any) { setError(err?.message || "Couldn't load analytics"); handleApiError(err, "Couldn't load analytics") }
     finally { setLoading(false); setRefreshing(false) }
   }, [campaignId])
 
@@ -53,7 +53,7 @@ export default function CampaignAnalyticsScreen() {
   const onRefresh = () => { setRefreshing(true); loadAnalytics() }
 
   if (loading) {
-    return <SafeAreaView style={styles.root}><View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={colors.neon} /></View></SafeAreaView>
+    return <SafeAreaView style={styles.root}><View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={colors.primary} /></View></SafeAreaView>
   }
 
   if (error && !metrics) {
@@ -62,7 +62,7 @@ export default function CampaignAnalyticsScreen() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg, gap: spacing.md }}>
           <Text style={{ color: colors.error, fontSize: 16, textAlign: 'center' }}>{error}</Text>
           <Pressable style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.8 }]} onPress={() => navigation.goBack()}>
-            <Text style={styles.outlinedBtnText}>Go Back</Text>
+            <Text style={styles.outlinedBtnText}>Go back</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -75,10 +75,10 @@ export default function CampaignAnalyticsScreen() {
   return (
     <TrialGuard feature="analytics:premium">
       <SafeAreaView style={styles.root}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}>
+        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}>
           <Animated.View entering={FadeInDown.duration(400)}>
             <View style={styles.header}>
-              <Text style={styles.title}>{title || 'Campaign Analytics'}</Text>
+              <Text style={styles.title}>{title || 'Analytics'}</Text>
               {metrics?.campaignStatus && (
                 <View style={styles.statusBadge}><Text style={styles.statusText}>{metrics.campaignStatus}</Text></View>
               )}
@@ -87,37 +87,37 @@ export default function CampaignAnalyticsScreen() {
             {metrics && (
               <>
                 <View style={styles.statsGrid}>
-                  <StatCard label="Total Budget" value={`₹${metrics.totalBudget.toLocaleString()}`} />
+                  <StatCard label="Budget" value={`₹${metrics.totalBudget.toLocaleString()}`} />
                   <StatCard label="Spent" value={`₹${metrics.totalSpent.toLocaleString()}`} accent />
                   <StatCard label="Remaining" value={`₹${metrics.remainingBudget.toLocaleString()}`} />
-                  <StatCard label="Total Bids" value={String(metrics.totalBids)} />
+                  <StatCard label="Applications" value={String(metrics.totalBids)} />
                   <StatCard label="Accepted" value={String(metrics.acceptedBids)} />
                   <StatCard label="Messages" value={String(metrics.totalMessages)} />
                 </View>
 
                 <View style={styles.card}>
-                  <Text style={styles.sectionTitle}>Performance Summary</Text>
-                  <PercentRow label="Acceptance Rate" value={acceptanceRate} color={colors.success} />
-                  <PercentRow label="Budget Used" value={budgetUsedPct} color={colors.warning} />
+                  <Text style={styles.sectionTitle}>Performance</Text>
+                  <PercentRow label="Acceptance rate" value={acceptanceRate} color={colors.success} />
+                  <PercentRow label="Budget used" value={budgetUsedPct} color={colors.warning} />
                 </View>
               </>
             )}
 
             {timeseries.length > 0 && (
               <View style={styles.card}>
-                <Text style={styles.sectionTitle}>Last 30 Days</Text>
-                <Text style={styles.chartTitle}>Bids</Text>
+                <Text style={styles.sectionTitle}>Last 30 days</Text>
+                <Text style={styles.chartTitle}>Applications</Text>
                 <BarChart data={timeseries.map((t) => t.bids)} color={colors.blue} />
                 <Text style={styles.chartCaption}>Total: {timeseries.reduce((s, t) => s + t.bids, 0)}</Text>
                 <Text style={[styles.chartTitle, { marginTop: spacing.lg }]}>Spending</Text>
-                <BarChart data={timeseries.map((t) => t.spending)} color={colors.neon} />
+                <BarChart data={timeseries.map((t) => t.spending)} color={colors.primary} />
                 <Text style={styles.chartCaption}>Total: ₹{timeseries.reduce((s, t) => s + t.spending, 0).toLocaleString()}</Text>
               </View>
             )}
 
             {topInfluencers.length > 0 && (
               <View style={styles.card}>
-                <Text style={styles.sectionTitle}>Top Performing Creators</Text>
+                <Text style={styles.sectionTitle}>Top creators</Text>
                 {topInfluencers.map((inf, idx) => (
                   <View key={inf.influencerId || idx} style={styles.infRow}>
                     <View style={styles.infRank}><Text style={styles.infRankText}>{idx + 1}</Text></View>
@@ -131,7 +131,7 @@ export default function CampaignAnalyticsScreen() {
             )}
 
             {metrics && metrics.totalBids === 0 && (
-              <View style={styles.card}><Text style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center' }}>No bids yet on this campaign.</Text></View>
+              <View style={styles.card}><Text style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center' }}>No applications yet.</Text></View>
             )}
           </Animated.View>
         </ScrollView>

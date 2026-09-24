@@ -41,9 +41,9 @@ export default function InvitesScreen({ navigation }: Props) {
 
   const handleCancel = async (invite: BrandInvite) => {
     Alert.alert('Cancel invite?', `Cancel invite to ${invite.influencerName || 'this creator'}?`, [
-      { text: 'No', style: 'cancel' },
+      { text: 'Keep', style: 'cancel' },
       {
-        text: 'Cancel Invite',
+        text: 'Cancel invite',
         style: 'destructive',
         onPress: async () => {
           setCancellingId(invite.id)
@@ -84,7 +84,7 @@ export default function InvitesScreen({ navigation }: Props) {
             onPress={() => handleCancel(item)}
             disabled={isCancelling}
           >
-            <Text style={styles.cancelBtnText}>{isCancelling ? 'Cancelling…' : 'Cancel Invite'}</Text>
+            <Text style={styles.cancelBtnText}>{isCancelling ? 'Cancelling…' : 'Cancel invite'}</Text>
           </Pressable>
         )}
       </Animated.View>
@@ -94,7 +94,7 @@ export default function InvitesScreen({ navigation }: Props) {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -111,7 +111,7 @@ export default function InvitesScreen({ navigation }: Props) {
           ListHeaderComponent={
             <View style={styles.header}>
               <Text style={styles.title}>Invites</Text>
-              <Text style={styles.subtitle}>Campaign invites sent to creators</Text>
+              <Text style={styles.subtitle}>Campaign invites you've sent</Text>
             </View>
           }
           ListEmptyComponent={
@@ -120,10 +120,10 @@ export default function InvitesScreen({ navigation }: Props) {
                 <Ionicons name="mail-outline" size={26} color={colors.textMuted} />
               </View>
               <Text style={styles.emptyTitle}>No invites yet</Text>
-              <Text style={styles.emptySub}>Invite creators to your campaigns from the Creators tab.</Text>
+              <Text style={styles.emptySub}>Invite creators from the Creators tab.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadInvites() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadInvites() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>

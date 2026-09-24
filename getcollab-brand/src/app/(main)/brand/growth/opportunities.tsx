@@ -37,7 +37,7 @@ function OpportunitiesBody({ site, navigation }: { site: GrowthSite; navigation?
   return (
     <GrowthScreen
       title="Opportunities"
-      subtitle="Searches you already show up for but could win more"
+      subtitle="Searches you could win more of"
       active="GrowthOpportunities"
       navigation={navigation}
       host={site.host}
@@ -51,7 +51,7 @@ function OpportunitiesBody({ site, navigation }: { site: GrowthSite; navigation?
         <GrowthEmpty
           icon="trending-up-outline"
           title="No opportunities yet"
-          body="Connect Search Console and sync. We look for queries you’re close to winning, plus topics with a creator angle."
+          body="Connect Search Console to find searches you’re close to winning."
           ctaLabel="Open Search Console"
           onCta={() => navigation?.navigate('GrowthSearchConsole')}
         />

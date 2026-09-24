@@ -20,14 +20,14 @@ export function SubscriptionExpiredModal({ visible, onClose }: SubscriptionExpir
             <Text style={styles.icon}>🔒</Text>
           </View>
 
-          <Text style={styles.title}>Your workspace trial has ended.</Text>
+          <Text style={styles.title}>Your trial has ended</Text>
 
           <Text style={styles.description}>
-            Continue collaborating with influencers by managing your workspace subscription securely on the web dashboard.
+            Renew your plan on the web to keep working with creators.
           </Text>
 
           <View style={styles.features}>
-            <Text style={styles.featureTitle}>You can still:</Text>
+            <Text style={styles.featureTitle}>You can still</Text>
             <Text style={styles.featureItem}>View existing chats</Text>
             <Text style={styles.featureItem}>Access current campaigns</Text>
             <Text style={styles.featureItem}>Manage your profile</Text>
@@ -40,17 +40,17 @@ export function SubscriptionExpiredModal({ visible, onClose }: SubscriptionExpir
               openBillingPortal()
             }}
           >
-            <Text style={styles.primaryBtnText}>Open Billing Portal</Text>
+            <Text style={styles.primaryBtnText}>Manage billing</Text>
           </Pressable>
 
           <Pressable
             style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.7 }]}
             onPress={onClose}
           >
-            <Text style={styles.outlinedBtnText}>Maybe Later</Text>
+            <Text style={styles.outlinedBtnText}>Not now</Text>
           </Pressable>
 
-          <Text style={styles.footer}>Subscription management is handled securely on our website.</Text>
+          <Text style={styles.footer}>Billing is managed securely on our website.</Text>
         </View>
       </View>
     </RNModal>
@@ -127,13 +127,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.blue,
+    backgroundColor: colors.primary,
     borderRadius: radius.pill,
     paddingVertical: 14,
     marginBottom: spacing.sm,
   },
   primaryBtnText: {
-    color: '#fff',
+    color: colors.black,
     fontSize: 14,
     fontWeight: '700',
   },

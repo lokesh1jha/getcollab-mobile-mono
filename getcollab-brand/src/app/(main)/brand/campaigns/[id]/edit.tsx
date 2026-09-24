@@ -45,14 +45,14 @@ export default function CampaignEditScreen() {
           status: c.status || 'draft',
         })
       })
-      .catch((err) => handleApiError(err, 'Failed to load campaign'))
+      .catch((err) => handleApiError(err, "Couldn't load campaign"))
       .finally(() => setLoading(false))
   }, [id])
 
   const handleSave = async () => {
-    if (!form.title.trim()) { Alert.alert('Error', 'Title is required'); return }
+    if (!form.title.trim()) { Alert.alert('Add a title'); return }
     const budgetNum = parseFloat(form.budget)
-    if (Number.isNaN(budgetNum) || budgetNum <= 0) { Alert.alert('Error', 'Enter a valid budget'); return }
+    if (Number.isNaN(budgetNum) || budgetNum <= 0) { Alert.alert('Invalid budget', 'Enter a valid budget'); return }
 
     setSaving(true)
     try {
@@ -66,10 +66,10 @@ export default function CampaignEditScreen() {
       if (form.endDate) payload.endDate = new Date(form.endDate).toISOString()
 
       await apiService.updateCampaign(id, payload)
-      Alert.alert('Saved', 'Campaign updated successfully.')
+      Alert.alert('Saved', 'Campaign updated.')
       navigation.goBack()
     } catch (err) {
-      handleApiError(err, 'Failed to save campaign')
+      handleApiError(err, "Couldn't save campaign")
     } finally {
       setSaving(false)
     }
@@ -79,7 +79,7 @@ export default function CampaignEditScreen() {
     return (
       <SafeAreaView style={styles.root}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.neon} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     )
@@ -89,7 +89,7 @@ export default function CampaignEditScreen() {
     <SafeAreaView style={styles.root}>
       <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
         <Animated.View entering={FadeInDown.duration(400)}>
-          <Text style={styles.title}>Edit Campaign</Text>
+          <Text style={styles.title}>Edit campaign</Text>
           <Text style={styles.subtitle}>{campaign?.title}</Text>
 
           <View style={styles.card}>
@@ -102,10 +102,10 @@ export default function CampaignEditScreen() {
             <Text style={styles.label}>Budget (₹) *</Text>
             <TextInput style={styles.input} keyboardType="decimal-pad" value={form.budget} onChangeText={(v) => setForm({ ...form, budget: v })} placeholderTextColor={colors.textSubtle} />
 
-            <Text style={styles.label}>Start Date</Text>
+            <Text style={styles.label}>Start date</Text>
             <TextInput style={styles.input} value={form.startDate} onChangeText={(v) => setForm({ ...form, startDate: v })} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textSubtle} />
 
-            <Text style={styles.label}>End Date</Text>
+            <Text style={styles.label}>End date</Text>
             <TextInput style={styles.input} value={form.endDate} onChangeText={(v) => setForm({ ...form, endDate: v })} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textSubtle} />
 
             <Text style={styles.label}>Status</Text>
@@ -124,7 +124,7 @@ export default function CampaignEditScreen() {
           </View>
 
           <Pressable style={({ pressed }) => [styles.saveBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSave() }} disabled={saving}>
-            <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Changes'}</Text>
+            <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
           </Pressable>
         </Animated.View>
       </ScrollView>
@@ -143,6 +143,6 @@ const styles = StyleSheet.create({
   statusChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusChipText: { fontSize: 12, fontWeight: '600' },
-  saveBtn: { backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
+  saveBtn: { backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
   saveBtnText: { color: '#000', fontSize: 14, fontWeight: '700' },
 })

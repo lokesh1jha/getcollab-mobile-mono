@@ -30,7 +30,7 @@ export default function CampaignResponsesScreen() {
       const list = res?.data || res?.bids || (Array.isArray(res) ? res : [])
       setBids(Array.isArray(list) ? list : [])
     } catch (err) {
-      handleApiError(err, 'Failed to load responses')
+      handleApiError(err, "Couldn't load applications")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -48,9 +48,9 @@ export default function CampaignResponsesScreen() {
       await apiService.updateBidStatus(bid.id, newStatus)
       setBids((prev) => prev.map((b) => (b.id === bid.id ? { ...b, status: newStatus } : b)))
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      Alert.alert('Success', `Bid ${newStatus} successfully.`)
+      Alert.alert('Done', `Application ${newStatus}.`)
     } catch (err) {
-      handleApiError(err, `Failed to ${action} bid`)
+      handleApiError(err, `Couldn't ${action} application`)
     } finally {
       setActioningId(null)
       setConfirmModal(null)
@@ -59,13 +59,13 @@ export default function CampaignResponsesScreen() {
 
   const messageCreator = async (bid: Bid) => {
     const influencerId = bid.influencer?.id
-    if (!influencerId) { Alert.alert('Unavailable', 'Creator info missing'); return }
+    if (!influencerId) { Alert.alert("Can't message", 'Creator details are missing.'); return }
     try {
       const room = await apiService.createDirectChat(influencerId, campaignId)
       const roomId = room?.id || room?.data?.id
       if (roomId) (navigation as any).navigate('ChatDetail', { roomId, id: roomId })
     } catch (err) {
-      handleApiError(err, 'Failed to open chat')
+      handleApiError(err, "Couldn't open chat")
     }
   }
 
@@ -98,7 +98,7 @@ export default function CampaignResponsesScreen() {
         )}
         {item.status === 'accepted' && (
           <Pressable style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.8 }]} onPress={() => messageCreator(item)}>
-            <Text style={styles.outlinedBtnText}>Message Creator</Text>
+            <Text style={styles.outlinedBtnText}>Message</Text>
           </Pressable>
         )}
       </Animated.View>
@@ -108,7 +108,7 @@ export default function CampaignResponsesScreen() {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -124,26 +124,26 @@ export default function CampaignResponsesScreen() {
           ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
           ListHeaderComponent={
             <View style={styles.header}>
-              <Text style={styles.title}>Responses</Text>
+              <Text style={styles.title}>Applications</Text>
               <Text style={styles.subtitle}>{bids.length} applications for {title || 'this campaign'}</Text>
             </View>
           }
           ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="document-text-outline" size={26} color={colors.textMuted} /></View>
-              <Text style={styles.emptyTitle}>No responses yet</Text>
-              <Text style={styles.emptySub}>Applications will appear here when creators apply.</Text>
+              <Text style={styles.emptyTitle}>No applications yet</Text>
+              <Text style={styles.emptySub}>Creators who apply will show up here.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadBids() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadBids() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
 
       <Modal visible={!!confirmModal} transparent animationType="fade" onRequestClose={() => setConfirmModal(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{confirmModal?.action === 'accept' ? 'Accept Bid' : 'Reject Bid'}</Text>
-            <Text style={styles.modalBody}>{confirmModal?.action === 'accept' ? `Accept ${confirmModal?.bid.influencer?.name || 'this creator'}'s bid?` : 'Reject this bid? The creator will be notified.'}</Text>
+            <Text style={styles.modalTitle}>{confirmModal?.action === 'accept' ? 'Accept application?' : 'Reject application?'}</Text>
+            <Text style={styles.modalBody}>{confirmModal?.action === 'accept' ? `Accept ${confirmModal?.bid.influencer?.name || 'this creator'}'s application?` : 'The creator will be notified.'}</Text>
             <View style={styles.modalActions}>
               <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setConfirmModal(null)}>
                 <Text style={styles.outlinedBtnText}>Cancel</Text>

@@ -50,7 +50,7 @@ export default function DealReviewScreen() {
       ])
       setDetail(d)
       setEvents(ev?.events ?? [])
-    } catch (e) { handleApiError(e, 'Failed to load collaboration') }
+    } catch (e) { handleApiError(e, "Couldn't load collaboration") }
     finally { setLoading(false); setRefreshing(false) }
   }, [id])
 
@@ -58,14 +58,14 @@ export default function DealReviewScreen() {
 
   const run = async (fn: () => Promise<unknown>, done?: string) => {
     setBusy(true)
-    try { await fn(); if (done) Alert.alert('Done', done); await load() } catch (e) { handleApiError(e, 'Action failed') }
+    try { await fn(); if (done) Alert.alert('Done', done); await load() } catch (e) { handleApiError(e, 'Something went wrong. Try again.') }
     finally { setBusy(false) }
   }
 
   if (loading || !detail) {
     return (
       <View style={[styles.root, styles.center]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -81,7 +81,7 @@ export default function DealReviewScreen() {
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.primary} />}
         >
           <Animated.View entering={FadeInDown.duration(320)} style={{ gap: spacing.xs }}>
             <Text style={styles.title}>{title || 'Collaboration'}</Text>
@@ -118,8 +118,8 @@ export default function DealReviewScreen() {
               {paid
                 ? 'Payment released.'
                 : releasable
-                  ? 'Every deliverable is approved. Payment releases on the next payout run, or release it now.'
-                  : `Payment releases once every deliverable is approved (${progress.filter((p) => p.done).length} of ${progress.length} so far).`}
+                  ? 'All work approved. Release now or wait for the next payout run.'
+                  : `Releases once all deliverables are approved (${progress.filter((p) => p.done).length} of ${progress.length} done).`}
             </Text>
             {!paid && deal.payment_status === 'held' && (
               <Button label="Release payment" disabled={busy || !releasable} onPress={() => run(() => apiService.releaseDealPayment(id), 'Payment released.')} />
@@ -129,14 +129,14 @@ export default function DealReviewScreen() {
                 <TextInput
                   value={disputeReason}
                   onChangeText={setDisputeReason}
-                  placeholder="Something wrong? Describe it to raise a dispute."
+                  placeholder="Describe the problem"
                   placeholderTextColor={colors.textSubtle}
                   multiline
                   style={styles.input}
                   accessibilityLabel="Dispute reason"
                 />
                 <Button
-                  label="Raise a dispute"
+                  label="Raise dispute"
                   outline
                   disabled={busy || !disputeReason.trim()}
                   onPress={() => run(async () => {
@@ -151,7 +151,7 @@ export default function DealReviewScreen() {
           <View style={styles.card}>
             <Text style={styles.section}>Timeline</Text>
             {events.length === 0 ? (
-              <Text style={styles.muted}>Nothing has happened yet.</Text>
+              <Text style={styles.muted}>No activity yet.</Text>
             ) : events.map((e, i) => (
               <View key={e.id} style={[styles.eventRow, i < events.length - 1 && styles.eventSep]}>
                 <Text style={styles.eventText}>
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   eventSep: { borderBottomWidth: 1, borderBottomColor: colors.border },
   eventText: { color: colors.text, fontSize: 13 },
   eventTime: { color: colors.textSubtle, fontSize: 11 },
-  primary: { alignSelf: 'flex-start', backgroundColor: colors.neon, borderRadius: 999, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  primary: { alignSelf: 'flex-start', backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   primaryText: { color: '#000', fontWeight: '800' },
   secondary: { alignSelf: 'flex-start', borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   secondaryText: { color: colors.text, fontWeight: '700' },

@@ -4,7 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, RouteProp } from '@react-navigation/native'
-import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS, overline } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import * as Haptics from 'expo-haptics'
 
@@ -53,7 +53,7 @@ export default function CampaignEscrowScreen() {
         items,
       })
     } catch (err) {
-      handleApiError(err, 'Failed to load escrow')
+      handleApiError(err, "Couldn't load escrow")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -67,7 +67,7 @@ export default function CampaignEscrowScreen() {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -76,7 +76,7 @@ export default function CampaignEscrowScreen() {
     <SafeAreaView style={styles.root}>
       <ScrollView
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadEscrow() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadEscrow() }} tintColor={colors.primary} />}
       >
         <Animated.View entering={FadeInDown.duration(400)}>
           <Text style={styles.title}>Escrow</Text>
@@ -84,7 +84,7 @@ export default function CampaignEscrowScreen() {
 
           <View style={styles.metricsRow}>
             <View style={styles.metricCard}>
-              <Text style={styles.metricLabel}>Total Budget</Text>
+              <Text style={styles.metricLabel}>Total budget</Text>
               <Text style={styles.metricValue}>₹{(escrow?.totalBudget ?? 0).toLocaleString()}</Text>
             </View>
             <View style={styles.metricCard}>
@@ -95,7 +95,7 @@ export default function CampaignEscrowScreen() {
 
           {escrow && escrow.items.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Escrow</Text>
+              <Text style={styles.sectionTitle}>Breakdown</Text>
               <View style={styles.listCard}>
                 {escrow.items.map((item, idx) => {
                   const s = STATUS_COLORS[item.status] || STATUS_COLORS.pending
@@ -122,7 +122,7 @@ export default function CampaignEscrowScreen() {
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="cash-outline" size={26} color={colors.textMuted} /></View>
               <Text style={styles.emptyTitle}>Nothing in escrow yet</Text>
-              <Text style={styles.emptySub}>Funds appear here once you fund the campaign or a creator&apos;s collaboration.</Text>
+              <Text style={styles.emptySub}>Funds show here once you fund a collaboration.</Text>
             </View>
           )}
         </Animated.View>
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   metricValue: { color: '#fff', fontSize: 20, fontWeight: '700', marginTop: 6 },
 
   section: { marginBottom: spacing.lg },
-  sectionTitle: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: spacing.sm },
+  sectionTitle: { ...overline, marginBottom: spacing.sm },
 
   listCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden' },
   listRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },

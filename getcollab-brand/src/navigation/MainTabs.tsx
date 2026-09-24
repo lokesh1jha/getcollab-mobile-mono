@@ -379,7 +379,7 @@ function BrandStackInner() {
       <Stack.Screen
         name="ProfilePreview"
         component={ProfilePreviewScreen}
-        options={{ ...stackHeaderOptions, headerTitle: 'Public Profile' }}
+        options={{ ...stackHeaderOptions, headerTitle: 'Public profile' }}
       />
       <Stack.Screen
         name="Wallet"
@@ -429,7 +429,7 @@ function BrandStackInner() {
       <Stack.Screen
         name="CreatorReport"
         component={CreatorReport}
-        options={{ ...stackHeaderOptions, headerTitle: 'Creator Report' }}
+        options={{ ...stackHeaderOptions, headerTitle: 'Creator report' }}
       />
       <Stack.Screen
         name="Growth"

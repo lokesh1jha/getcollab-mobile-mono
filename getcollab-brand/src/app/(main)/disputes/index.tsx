@@ -73,7 +73,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
 
   const handleSubmitDispute = async () => {
     if (!formData.dealId || !formData.reason.trim() || !formData.description.trim()) {
-      Alert.alert('Error', 'Choose the collaboration and fill in reason and description.')
+      Alert.alert('Missing details', 'Pick a collaboration and add a reason and description.')
       return
     }
     // Evidence photos were uploaded to /profile/upload, which does not exist,
@@ -88,11 +88,11 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
         dealId: formData.dealId,
         reason: `${formData.reason.trim()}: ${descriptionWithEvidence}`,
       })
-      Alert.alert('Success', 'Dispute filed successfully. Our team will review it.')
+      Alert.alert('Dispute filed', 'Our team will review it.')
       resetForm()
       fetchDisputes()
     } catch (err: any) {
-      handleApiError(err, 'Failed to submit dispute. Please try again.')
+      handleApiError(err, "Couldn't file dispute. Try again.")
     } finally {
       setSubmitting(false)
     }
@@ -163,8 +163,8 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyIcon}>📋</Text>
-      <Text style={styles.emptyTitle}>No disputes found</Text>
-      <Text style={styles.emptySubtext}>You haven't filed any disputes yet</Text>
+      <Text style={styles.emptyTitle}>No disputes yet</Text>
+      <Text style={styles.emptySubtext}>Report an issue if a collaboration goes wrong.</Text>
     </View>
   )
 
@@ -172,7 +172,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.neon} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     )
@@ -209,7 +209,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
               </View>
   
               <Button
-                title={showForm ? 'Close Form' : 'Report an Issue'}
+                title={showForm ? 'Close' : 'Report issue'}
                 variant={showForm ? 'outline' : 'primary'}
                 onPress={() => setShowForm(!showForm)}
                 style={styles.reportButton}
@@ -217,7 +217,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
   
               {showForm && (
                 <Card style={styles.formCard}>
-                  <Text style={styles.formTitle}>File a New Dispute</Text>
+                  <Text style={styles.formTitle}>New dispute</Text>
   
                   <Text style={styles.fieldLabel}>Reason *</Text>
                   <TextInput
@@ -240,11 +240,11 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
                           accessibilityRole="radio"
                           accessibilityState={{ selected: on }}
                           style={({ pressed }) => [
-                            { borderWidth: 1, borderColor: on ? colors.neon : colors.border, borderRadius: 999, paddingHorizontal: spacing.md, paddingVertical: 6 },
+                            { borderWidth: 1, borderColor: on ? colors.primary : colors.border, borderRadius: 999, paddingHorizontal: spacing.md, paddingVertical: 6 },
                             pressed && { opacity: 0.85 },
                           ]}
                         >
-                          <Text style={{ color: on ? colors.neon : colors.text, fontSize: 12, fontWeight: '600' }}>
+                          <Text style={{ color: on ? colors.primary : colors.text, fontSize: 12, fontWeight: '600' }}>
                             {new Date(d.created_at).toLocaleDateString()} · {d.status}
                           </Text>
                         </Pressable>
@@ -255,7 +255,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
                   <Text style={styles.fieldLabel}>Description *</Text>
                   <TextInput
                     style={[styles.input, styles.textArea]}
-                    placeholder="Describe the issue in detail (min 10 chars)..."
+                    placeholder="What happened? (10+ characters)"
                     placeholderTextColor={colors.textMuted}
                     value={formData.description}
                     onChangeText={(text) => setFormData({ ...formData, description: text })}
@@ -271,7 +271,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
                       style={styles.cancelButton}
                     />
                     <Button
-                      title={submitting ? 'Submitting...' : 'Submit'}
+                      title={submitting ? 'Submitting…' : 'Submit'}
                       onPress={handleSubmitDispute}
                       disabled={submitting}
                       loading={submitting}
@@ -285,7 +285,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
             </View>
           }
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleRefresh() }} tintColor={colors.neon} />
+            <RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleRefresh() }} tintColor={colors.primary} />
           }
           showsVerticalScrollIndicator={false}
           initialNumToRender={10}
@@ -336,8 +336,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   filterButtonActive: {
-    backgroundColor: colors.neon,
-    borderColor: colors.neon,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   filterText: {
     fontSize: 14,
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   },
   disputeCampaign: {
     fontSize: 14,
-    color: colors.neon,
+    color: colors.primary,
   },
   statusBadge: {
     paddingHorizontal: spacing.sm,

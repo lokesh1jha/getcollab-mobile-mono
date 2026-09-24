@@ -31,7 +31,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
 
   const handleSubmit = async () => {
     if (!current) {
-      Alert.alert('Missing', 'Enter your current password.')
+      Alert.alert('Current password needed', 'Enter your current password.')
       return
     }
     const err = validatePassword(next)
@@ -40,17 +40,17 @@ export default function ChangePasswordScreen({ navigation }: Props) {
       return
     }
     if (next !== confirm) {
-      Alert.alert('Mismatch', 'New passwords do not match.')
+      Alert.alert("Passwords don't match", 'Re-enter your new password.')
       return
     }
     setSubmitting(true)
     try {
       await apiService.changePassword(current, next)
-      Alert.alert('Password updated', 'Your password has been changed.', [
+      Alert.alert('Password updated', 'Use it next time you sign in.', [
         { text: 'OK', onPress: () => navigation?.goBack() },
       ])
     } catch (e) {
-      handleApiError(e, 'Failed to change password')
+      handleApiError(e, "Couldn't change your password. Try again.")
     } finally {
       setSubmitting(false)
     }
@@ -60,18 +60,18 @@ export default function ChangePasswordScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
         <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-          <Text style={styles.title}>Change Password</Text>
-          <Text style={styles.subtitle}>Update the password on your account.</Text>
+          <Text style={styles.title}>Change password</Text>
+          <Text style={styles.subtitle}>Pick a new password for your account.</Text>
   
           <Input
-            label="Current Password"
+            label="Current password"
             value={current}
             onChangeText={setCurrent}
             secureTextEntry
             style={styles.input}
           />
           <Input
-            label="New Password"
+            label="New password"
             value={next}
             onChangeText={setNext}
             secureTextEntry
@@ -79,7 +79,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
             style={styles.input}
           />
           <Input
-            label="Confirm New Password"
+            label="Confirm new password"
             value={confirm}
             onChangeText={setConfirm}
             secureTextEntry
@@ -100,7 +100,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
           </View>
   
           <Button
-            title={submitting ? 'Updating...' : 'Update Password'}
+            title={submitting ? 'Updating…' : 'Update password'}
             onPress={handleSubmit}
             disabled={submitting}
             loading={submitting}

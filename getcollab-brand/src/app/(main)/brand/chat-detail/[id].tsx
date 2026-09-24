@@ -39,17 +39,17 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
   const handleSend = async () => {
     if (!input.trim() || !roomId) return
     const text = input.trim(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setInput(''); setTyping(roomId, false)
-    try { await sendMessage(roomId, text) } catch (err) { handleApiError(err, 'Failed to send') }
+    try { await sendMessage(roomId, text) } catch (err) { handleApiError(err, "Couldn't send message") }
   }
 
   const handleAttach = async () => {
     const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') { Alert.alert('Permission Denied', 'Enable photo library access in settings.'); return }
+    if (status !== 'granted') { Alert.alert('Photo access needed', 'Allow photo access in Settings.'); return }
     try {
       const result = await ImagePickerLib.launchImageLibraryAsync({ mediaTypes: ImagePickerLib.MediaTypeOptions.Images, quality: 0.7, base64: true })
       if (result.canceled || !result.assets[0]?.base64) return
       await sendImage(roomId, `data:image/jpeg;base64,${result.assets[0].base64}`)
-    } catch (err) { handleApiError(err, 'Image send failed') }
+    } catch (err) { handleApiError(err, "Couldn't send image") }
   }
 
   const handleInputChange = (text: string) => {
@@ -92,7 +92,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
   }
 
   if (isLoading && messages.length === 0) {
-    return <SafeAreaView style={styles.root}><View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={colors.neon} /></View></SafeAreaView>
+    return <SafeAreaView style={styles.root}><View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={colors.primary} /></View></SafeAreaView>
   }
 
   return (
@@ -120,7 +120,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
 
           {searchMode && (
             <View style={styles.searchBar}>
-              <TextInput style={styles.searchInput} placeholder="Search this conversation…" placeholderTextColor={colors.textSubtle} value={searchQuery} onChangeText={setSearchQuery} autoFocus />
+              <TextInput style={styles.searchInput} placeholder="Search messages" placeholderTextColor={colors.textSubtle} value={searchQuery} onChangeText={setSearchQuery} autoFocus />
             </View>
           )}
 
@@ -187,5 +187,5 @@ const styles = StyleSheet.create({
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, paddingBottom: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg },
   attachBtn: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   composerInput: { flex: 1, color: '#fff', fontSize: 14, lineHeight: 19, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 22, paddingHorizontal: spacing.md, paddingVertical: 10, maxHeight: 110 },
-  sendBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center' },
+  sendBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
 })

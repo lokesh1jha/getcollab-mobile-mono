@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { View, Text, StyleSheet, Alert, ScrollView, TextInput, Pressable, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Animated, { FadeInDown } from 'react-native-reanimated'
-import { colors, spacing, radius } from '@/src/theme'
+import { colors, spacing, radius, overline } from '@/src/theme'
 import apiService, { handleApiError } from '@shared/services/api'
 import * as Haptics from 'expo-haptics'
 
@@ -29,7 +29,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
 
   const handleSubmit = async () => {
     if (!current) {
-      Alert.alert('Missing', 'Enter your current password.')
+      Alert.alert('Missing password', 'Enter your current password.')
       return
     }
     const err = validatePassword(next)
@@ -38,7 +38,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
       return
     }
     if (next !== confirm) {
-      Alert.alert('Mismatch', 'New passwords do not match.')
+      Alert.alert("Passwords don't match", 'Re-enter your new password.')
       return
     }
     setSubmitting(true)
@@ -59,23 +59,23 @@ export default function ChangePasswordScreen({ navigation }: Props) {
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
           <Animated.View entering={FadeInDown.duration(400)}>
-            <Text style={styles.title}>Change Password</Text>
-            <Text style={styles.subtitle}>Update the password on your account.</Text>
+            <Text style={styles.title}>Change password</Text>
+            <Text style={styles.subtitle}>Set a new password for your account.</Text>
           </Animated.View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Current Password</Text>
+            <Text style={styles.label}>Current password</Text>
             <TextInput style={styles.input} value={current} onChangeText={setCurrent} secureTextEntry placeholderTextColor={colors.textSubtle} />
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>New Password</Text>
+            <Text style={styles.label}>New password</Text>
             <TextInput style={[styles.input, nextErr && { borderColor: colors.error }]} value={next} onChangeText={setNext} secureTextEntry placeholderTextColor={colors.textSubtle} />
             {nextErr ? <Text style={styles.errorText}>{nextErr}</Text> : null}
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Confirm New Password</Text>
+            <Text style={styles.label}>Confirm new password</Text>
             <TextInput style={styles.input} value={confirm} onChangeText={setConfirm} secureTextEntry placeholderTextColor={colors.textSubtle} />
           </View>
 
@@ -93,7 +93,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
           </View>
 
           <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSubmit() }} disabled={submitting}>
-            {submitting ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.primaryBtnText}>Update Password</Text>}
+            {submitting ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.primaryBtnText}>Update password</Text>}
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -110,8 +110,8 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 12, color: colors.text, fontSize: 14, backgroundColor: colors.bg },
   errorText: { color: colors.error, fontSize: 12, marginTop: spacing.xs },
   requirements: { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg },
-  reqTitle: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.sm },
+  reqTitle: { ...overline, marginBottom: spacing.sm },
   reqText: { fontSize: 13, color: colors.textMuted, paddingVertical: 2 },
-  primaryBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 14 },
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 14 },
   primaryBtnText: { color: '#000', fontSize: 14, fontWeight: '700' },
 })

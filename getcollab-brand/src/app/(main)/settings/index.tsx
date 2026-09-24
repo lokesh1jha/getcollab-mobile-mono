@@ -3,15 +3,15 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-nati
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, overline } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 
 const SETTINGS_SECTIONS = [
   { id: 'profile', icon: 'person-outline', label: 'Profile', description: 'Public brand info' },
-  { id: 'account', icon: 'card-outline', label: 'Account', description: 'Login and contact' },
+  { id: 'account', icon: 'card-outline', label: 'Account', description: 'Sign-in and contact' },
   { id: 'security', icon: 'shield-checkmark-outline', label: 'Security', description: 'Password and 2FA' },
-  { id: 'notifications', icon: 'notifications-outline', label: 'Notifications', description: 'Email and push prefs' },
+  { id: 'notifications', icon: 'notifications-outline', label: 'Notifications', description: 'Email and push' },
   { id: 'team', icon: 'people-outline', label: 'Team', description: 'Members and invites' },
   { id: 'billing', icon: 'wallet-outline', label: 'Billing', description: 'Plan and invoices' },
 ] as const
@@ -23,12 +23,12 @@ export default function SettingsShellScreen({ navigation }: Props) {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Delete Account',
-      'This action is permanent. All your data, campaigns, and earnings history will be deleted.',
+      'Delete account?',
+      'This is permanent. All your data, campaigns and earnings history will be deleted.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete Account',
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try { await apiService.deleteAccount(); await signOut() }
@@ -70,13 +70,13 @@ export default function SettingsShellScreen({ navigation }: Props) {
             </View>
   
             {/* Danger Zone */}
-            <Text style={styles.dangerHeader}>Danger Zone</Text>
+            <Text style={styles.dangerHeader}>Danger zone</Text>
             <View style={styles.listCard}>
               <Pressable onPress={handleDeleteAccount} style={({ pressed }) => [styles.dangerRow, pressed && { opacity: 0.85 }]}>
                 <View style={[styles.rowIcon, { backgroundColor: colors.errorSoft }]}>
                   <Ionicons name="trash-outline" size={18} color={colors.error} />
                 </View>
-                <Text style={styles.dangerText}>Delete Account</Text>
+                <Text style={styles.dangerText}>Delete account</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   rowIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
   rowLabel: { color: '#fff', fontSize: 15, fontWeight: '600' },
   rowDescription: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
-  dangerHeader: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.sm },
+  dangerHeader: { ...overline, marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.sm },
   dangerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: 14 },
   dangerText: { color: colors.error, fontSize: 15, fontWeight: '600' },
 })

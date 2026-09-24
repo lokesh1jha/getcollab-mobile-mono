@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     overflow: "hidden",
     marginTop: spacing.xxl,
-    backgroundColor: colors.neon,
+    backgroundColor: colors.primary,
   },
 
   fullWidth: {

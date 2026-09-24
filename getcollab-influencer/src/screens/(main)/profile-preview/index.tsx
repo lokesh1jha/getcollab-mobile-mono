@@ -66,9 +66,9 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
-        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />} contentContainerStyle={styles.content}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />} contentContainerStyle={styles.content}>
           <View style={styles.previewBadge}>
-            <Text style={styles.previewBadgeText}>👁  Preview as a brand sees you</Text>
+            <Text style={styles.previewBadgeText}>How brands see your profile</Text>
           </View>
   
           {profile?.coverImage ? (
@@ -104,7 +104,7 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
   
           {socials.length > 0 && (
             <Card style={styles.section}>
-              <Text style={styles.sectionTitle}>Social Reach</Text>
+              <Text style={styles.sectionTitle}>Social reach</Text>
               {socials.map((s) => (
                 <View key={s.name} style={[styles.socialRow, { borderLeftColor: s.color }]}>
                   <Text style={[styles.socialName, { color: s.color }]}>{s.name}</Text>
@@ -131,11 +131,11 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
           {(profile?.pricePerPost || profile?.pricePerReel || profile?.pricePerCampaign) && (
             <Card style={styles.section}>
               <Text style={styles.sectionTitle}>Pricing</Text>
-              {profile.pricePerPost ? <PriceRow label="Per Post" value={profile.pricePerPost} /> : null}
-              {profile.pricePerReel ? <PriceRow label="Per Reel" value={profile.pricePerReel} /> : null}
-              {profile.pricePerStory ? <PriceRow label="Per Story" value={profile.pricePerStory} /> : null}
-              {profile.pricePerVideo ? <PriceRow label="Per Video" value={profile.pricePerVideo} /> : null}
-              {profile.pricePerCampaign ? <PriceRow label="Full Campaign" value={profile.pricePerCampaign} /> : null}
+              {profile.pricePerPost ? <PriceRow label="Per post" value={profile.pricePerPost} /> : null}
+              {profile.pricePerReel ? <PriceRow label="Per reel" value={profile.pricePerReel} /> : null}
+              {profile.pricePerStory ? <PriceRow label="Per story" value={profile.pricePerStory} /> : null}
+              {profile.pricePerVideo ? <PriceRow label="Per video" value={profile.pricePerVideo} /> : null}
+              {profile.pricePerCampaign ? <PriceRow label="Full campaign" value={profile.pricePerCampaign} /> : null}
             </Card>
           )}
         </ScrollView>

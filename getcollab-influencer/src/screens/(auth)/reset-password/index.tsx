@@ -42,17 +42,17 @@ export default function ResetPasswordScreen({ navigation }: ResetPasswordScreenP
       return
     }
     if (password !== confirm) {
-      Alert.alert('Mismatch', 'Passwords do not match.')
+      Alert.alert("Passwords don't match", 'Enter the same password twice.')
       return
     }
     setSubmitting(true)
     try {
       await apiService.resetPassword(token.trim(), password)
-      Alert.alert('Password reset', 'You can now sign in with your new password.', [
-        { text: 'Sign In', onPress: () => navigation?.navigate('SignIn') },
+      Alert.alert('Password reset', 'Sign in with your new password.', [
+        { text: 'Sign in', onPress: () => navigation?.navigate('SignIn') },
       ])
     } catch (e) {
-      handleApiError(e, 'Failed to reset password')
+      handleApiError(e, "Couldn't reset your password. Try again.")
     } finally {
       setSubmitting(false)
     }
@@ -64,11 +64,11 @@ export default function ResetPasswordScreen({ navigation }: ResetPasswordScreenP
         <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <Text style={styles.title}>Reset your password</Text>
           <Text style={styles.subtitle}>
-            Paste the token from your email and choose a new password.
+            Paste the token from your email, then pick a new password.
           </Text>
   
           <Input
-            label="Reset Token"
+            label="Reset token"
             value={token}
             onChangeText={setToken}
             placeholder="Paste reset token"
@@ -76,16 +76,16 @@ export default function ResetPasswordScreen({ navigation }: ResetPasswordScreenP
           />
   
           <Input
-            label="New Password"
+            label="New password"
             value={password}
             onChangeText={setPassword}
-            placeholder="At least 8 chars, mix of cases, number, symbol"
+            placeholder="At least 8 characters"
             secureTextEntry
             style={styles.input}
           />
   
           <Input
-            label="Confirm Password"
+            label="Confirm password"
             value={confirm}
             onChangeText={setConfirm}
             placeholder="Repeat password"
@@ -94,7 +94,7 @@ export default function ResetPasswordScreen({ navigation }: ResetPasswordScreenP
           />
   
           <Button
-            title={submitting ? 'Resetting...' : 'Reset Password'}
+            title={submitting ? 'Resetting…' : 'Reset password'}
             onPress={handleSubmit}
             disabled={submitting}
             loading={submitting}
@@ -103,7 +103,7 @@ export default function ResetPasswordScreen({ navigation }: ResetPasswordScreenP
           />
   
           <Button
-            title="Back to Sign In"
+            title="Back to sign in"
             variant="ghost"
             onPress={() => navigation?.navigate('SignIn')}
             fullWidth

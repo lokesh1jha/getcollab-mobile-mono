@@ -48,7 +48,7 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
       setDeals(list)
       const target = deepLinkId && list.find((d: any) => String(d.id) === deepLinkId)
       if (target) open(target)
-    } catch (e) { handleApiError(e, 'Failed to load collaborations') }
+    } catch (e) { handleApiError(e, "Couldn't load collaborations") }
     finally { setLoading(false); setRefreshing(false) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepLinkId])
@@ -57,7 +57,7 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
 
   const run = async (key: string, fn: () => Promise<void>) => {
     setBusy(key)
-    try { await fn() } catch (e: any) { handleApiError(e, 'Action failed') }
+    try { await fn() } catch (e: any) { handleApiError(e, "Couldn't complete that. Try again.") }
     finally { setBusy(null) }
   }
 
@@ -75,7 +75,7 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
       setDocuments(docs?.documents || docs?.data || [])
       setShipping(ship?.shipping || ship?.data || ship || null)
       setDetail(d)
-    } catch (e) { handleApiError(e, 'Failed to load collaboration') }
+    } catch (e) { handleApiError(e, "Couldn't load this collaboration") }
   }
 
   const refreshDocs = async () => {
@@ -85,7 +85,7 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
   }
 
   const sign = (doc: any) => run(`sign-${doc.id}`, async () => {
-    if (!name.trim()) { Alert.alert('Name required', 'Enter your full legal name before signing.'); return }
+    if (!name.trim()) { Alert.alert('Name required', 'Enter your full legal name to sign.'); return }
     await apiService.signDocument(doc.id, name.trim())
     setName('')
     await refreshDocs()
@@ -94,25 +94,25 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
   const openPdf = (doc: any) => run(`pdf-${doc.id}`, async () => {
     const r = await apiService.getDocumentPdf(doc.id)
     const url = r?.url || r?.data?.url
-    if (!url) throw new Error('PDF not available yet')
+    if (!url) throw new Error('PDF not ready yet')
     Linking.openURL(url)
   })
 
   const acceptContract = () => run('contract', async () => {
     await apiService.acceptDealContract(selected.id)
-    Alert.alert('Done', 'Contract accepted.')
+    Alert.alert('Agreement accepted', 'Waiting for the brand to sign.')
     open(selected)
   })
 
   const start = () => run('start', async () => {
     await apiService.startDeal(selected.id)
-    Alert.alert('Done', 'Collaboration started.')
+    Alert.alert('Work started', 'Submit your deliverables when ready.')
     open(selected)
   })
 
   if (loading) return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.center}><ActivityIndicator color={colors.neon} /></View>
+      <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>
     </SafeAreaView>
   )
 
@@ -122,7 +122,7 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
         <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           <Pressable onPress={() => setSelected(null)} style={({ pressed }) => [styles.backRow, pressed && { opacity: 0.85 }]}>
             <Ionicons name="chevron-back" size={20} color={colors.blue} />
-            <Text style={styles.back}>Back to collaborations</Text>
+            <Text style={styles.back}>Collaborations</Text>
           </Pressable>
 
           <Text style={styles.heading}>{selected.campaignTitle || selected.campaign?.title || 'Collaboration'}</Text>
@@ -146,7 +146,7 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
             {detail?.contract?.status === 'active' && detail?.deal?.stage === 'CONTRACT' && (
               detail.deal.payment_status === 'held'
                 ? <Action label={busy === 'start' ? 'Saving…' : 'Start work'} busy={!!busy} onPress={start} />
-                : <Text style={styles.meta}>Work starts once the brand funds escrow. Don’t start before your payment is secured.</Text>
+                : <Text style={styles.meta}>Wait until the brand funds escrow before starting.</Text>
             )}
           </View>
 
@@ -173,16 +173,16 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Tracking</Text>
-                  <Text style={styles.infoValue}>{shipping.trackingNumber || shipping.tracking_number || 'No tracking number'}</Text>
+                  <Text style={styles.infoValue}>{shipping.trackingNumber || shipping.tracking_number || 'None yet'}</Text>
                 </View>
               </View>
             </View>
           ) : null}
 
           <Text style={styles.section}>Documents</Text>
-          <TextInput value={name} onChangeText={setName} placeholder="Full name for signing" placeholderTextColor={colors.textSubtle} style={styles.input} />
+          <TextInput value={name} onChangeText={setName} placeholder="Full legal name" placeholderTextColor={colors.textSubtle} style={styles.input} />
 
-          {documents.length === 0 && <Text style={styles.empty}>No documents have been generated yet.</Text>}
+          {documents.length === 0 && <Text style={styles.empty}>No documents yet.</Text>}
           {documents.map((doc) => (
             <View key={doc.id} style={styles.docCard}>
               <View style={{ flex: 1 }}>
@@ -204,18 +204,18 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.listHeader}>
         <Text style={styles.listTitle}>Collaborations</Text>
-        <Text style={styles.listSub}>Track all active and completed collaborations</Text>
+        <Text style={styles.listSub}>Your active and completed collaborations.</Text>
       </View>
       <FlatList automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.primary} />}
         data={deals}
         keyExtractor={(x) => String(x.id)}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <View style={styles.emptyIconBox}><Ionicons name="people-outline" size={26} color={colors.textMuted} /></View>
             <Text style={styles.emptyTitle}>No collaborations yet</Text>
-            <Text style={styles.emptySub}>Start a collaboration from a relationship or accepted bid.</Text>
+            <Text style={styles.emptySub}>Apply to campaigns. Accepted ones appear here.</Text>
           </View>
         }
         renderItem={({ item, index }) => (
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   docCard: { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.md },
   docTitle: { color: colors.text, fontWeight: '700' },
   docMeta: { color: colors.textMuted, fontSize: 13, marginTop: 2, marginBottom: spacing.sm },
-  primary: { alignSelf: 'flex-start', backgroundColor: colors.neon, borderRadius: radius.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, marginTop: spacing.sm },
+  primary: { alignSelf: 'flex-start', backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, marginTop: spacing.sm },
   primaryText: { color: '#000', fontWeight: '800' },
   secondary: { alignSelf: 'flex-start', borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, marginTop: spacing.sm },
   secondaryText: { color: colors.text, fontWeight: '700' },

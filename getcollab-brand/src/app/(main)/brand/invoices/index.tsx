@@ -40,7 +40,7 @@ export default function InvoicesScreen({ navigation }: any) {
       if (url) {
         Linking.openURL(url)
       } else {
-        handleApiError(new Error('No download URL'), 'Download unavailable')
+        handleApiError(new Error("This invoice isn't ready to download."), 'Download unavailable')
       }
     } catch (err) {
       handleApiError(err, 'Failed to download invoice')
@@ -71,7 +71,7 @@ export default function InvoicesScreen({ navigation }: any) {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -100,7 +100,7 @@ export default function InvoicesScreen({ navigation }: any) {
               <Text style={styles.emptySub}>Invoices appear after your first payment.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadInvoices() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadInvoices() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>

@@ -29,7 +29,7 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
       const response = initialCampaignId ? await apiService.getBidsForCampaign(initialCampaignId) : await apiService.getBids()
       const list: Bid[] = response?.data || response?.bids || (Array.isArray(response) ? response : [])
       setBids(Array.isArray(list) ? list : [])
-    } catch (error) { handleApiError(error, 'Failed to load bids') }
+    } catch (error) { handleApiError(error, "Couldn't load applications") }
     finally { setLoading(false) }
   }, [initialCampaignId])
 
@@ -43,25 +43,25 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
       await apiService.updateBidStatus(bid.id, newStatus)
       setBids((prev) => prev.map((b) => (b.id === bid.id ? { ...b, status: newStatus } : b)))
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      Alert.alert('Success', `Bid ${newStatus} successfully.`)
-    } catch (error) { handleApiError(error, `Failed to ${action} bid`) }
+      Alert.alert('Done', `Application ${newStatus}.`)
+    } catch (error) { handleApiError(error, `Couldn't ${action} application`) }
     finally { setActioningId(null); setConfirmModal(null) }
   }
 
   const messageInfluencer = async (bid: Bid) => {
     const influencerId = bid.influencer?.id
-    if (!influencerId) { Alert.alert('Unavailable', 'Influencer is missing from this bid.'); return }
+    if (!influencerId) { Alert.alert("Can't message", 'Creator details are missing.'); return }
     try {
       const room = await apiService.createDirectChat(influencerId, bid.campaign?.id || bid.campaignId)
       const roomId = room?.id || room?.data?.id
       if (roomId) navigation?.navigate('ChatDetail', { roomId, id: roomId })
-    } catch (error) { handleApiError(error, 'Failed to open chat') }
+    } catch (error) { handleApiError(error, "Couldn't open chat") }
   }
 
   const filteredBids = filter === 'all' ? bids : bids.filter((bid) => bid.status === filter)
 
   if (loading && !refreshing) {
-    return <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}><ActivityIndicator size="large" color={colors.neon} /></View>
+    return <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}><ActivityIndicator size="large" color={colors.primary} /></View>
   }
 
   return (
@@ -76,8 +76,8 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
             ListHeaderComponent={
               <View>
                 <View style={styles.header}>
-                  <Text style={styles.title}>Bids</Text>
-                  <Text style={styles.subtitle}>Manage applications to your campaigns</Text>
+                  <Text style={styles.title}>Applications</Text>
+                  <Text style={styles.subtitle}>Review creators who applied to your campaigns</Text>
                 </View>
 
                 <View style={styles.filterRow}>
@@ -97,13 +97,13 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
             ListEmptyComponent={
               <View style={styles.empty}>
                 <View style={styles.emptyIcon}><Ionicons name="document-text-outline" size={26} color={colors.textMuted} /></View>
-                <Text style={styles.emptyTitle}>No bids yet</Text>
-                <Text style={styles.emptySub}>When creators apply to your campaigns, their bids will appear here.</Text>
+                <Text style={styles.emptyTitle}>No applications yet</Text>
+                <Text style={styles.emptySub}>Creators who apply to your campaigns show up here.</Text>
               </View>
             }
             renderItem={({ item, index }) => {
               const s = STATUS_COLORS[item.status] || STATUS_COLORS.pending
-              const influencerName = item.influencer?.name || item.influencerName || 'Influencer'
+              const influencerName = item.influencer?.name || item.influencerName || 'Creator'
               const campaignTitle = item.campaign?.title || item.campaignTitle || 'Campaign'
               const amount = item.proposedAmount ?? item.amount ?? 0
               const message = item.pitch || item.message || ''
@@ -123,7 +123,7 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
                   </View>
 
                   <View style={styles.amountRow}>
-                    <Text style={styles.amountLabel}>Proposed Amount</Text>
+                    <Text style={styles.amountLabel}>Price</Text>
                     <Text style={styles.amountValue}>₹{Number(amount).toLocaleString()}</Text>
                   </View>
 
@@ -134,7 +134,7 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
                   {item.status === 'pending' && (
                     <View style={styles.actionsRow}>
                       <Pressable style={({ pressed }) => [styles.acceptBtn, pressed && { opacity: 0.85 }]} disabled={isActing} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setConfirmModal({ bid: item, action: 'accept' }) }}>
-                        <Text style={styles.acceptBtnText}>{isActing ? '...' : 'Accept'}</Text>
+                        <Text style={styles.acceptBtnText}>{isActing ? '…' : 'Accept'}</Text>
                       </Pressable>
                       <Pressable style={({ pressed }) => [styles.rejectBtn, pressed && { opacity: 0.8 }]} disabled={isActing} onPress={() => setConfirmModal({ bid: item, action: 'reject' })}>
                         <Text style={styles.rejectBtnText}>Reject</Text>
@@ -144,20 +144,20 @@ export default function BrandBidsScreen({ navigation, route }: Props) {
 
                   {item.status === 'accepted' && (
                     <Pressable style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.8 }]} onPress={() => messageInfluencer(item)}>
-                      <Text style={styles.outlinedBtnText}>Message Creator</Text>
+                      <Text style={styles.outlinedBtnText}>Message</Text>
                     </Pressable>
                   )}
                 </Animated.View>
               )
             }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
           />
 
           <Modal visible={!!confirmModal} transparent animationType="fade" onRequestClose={() => setConfirmModal(null)}>
             <View style={styles.modalOverlay}>
               <View style={styles.modalCard}>
-                <Text style={styles.modalTitle}>{confirmModal?.action === 'accept' ? 'Accept Bid' : 'Reject Bid'}</Text>
-                <Text style={styles.modalBody}>{confirmModal?.action === 'accept' ? `Accept ${confirmModal?.bid.influencer?.name || 'this creator'}'s bid?` : 'Reject this bid? The creator will be notified.'}</Text>
+                <Text style={styles.modalTitle}>{confirmModal?.action === 'accept' ? 'Accept application?' : 'Reject application?'}</Text>
+                <Text style={styles.modalBody}>{confirmModal?.action === 'accept' ? `Accept ${confirmModal?.bid.influencer?.name || 'this creator'}'s application?` : 'The creator will be notified.'}</Text>
                 <View style={styles.modalActions}>
                   <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setConfirmModal(null)}>
                     <Text style={styles.outlinedBtnText}>Cancel</Text>

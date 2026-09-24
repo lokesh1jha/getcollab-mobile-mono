@@ -190,7 +190,7 @@ class ApiService {
     const contentType = response.headers.get('content-type')
 
     if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('API Server is under maintenance. Please try again later.')
+      throw new Error('GetCollab is under maintenance. Try again later.')
     }
 
     let data: any
@@ -198,7 +198,7 @@ class ApiService {
       const text = await response.text()
       data = JSON.parse(text)
     } catch (e) {
-      throw new Error('API Server is under maintenance. Please try again later.')
+      throw new Error('GetCollab is under maintenance. Try again later.')
     }
 
     if (!response.ok) {
@@ -217,7 +217,7 @@ class ApiService {
       }
 
       if (response.status === 429) {
-        const lockoutMessage = data.message || data.error || 'Too many requests. Please try again later.'
+        const lockoutMessage = data.message || data.error || 'Too many attempts. Try again later.'
         throw new Error(lockoutMessage)
       }
 
@@ -588,10 +588,10 @@ class ApiService {
    *  which this used, does not exist; campaigns have their own upload URL. */
   async uploadCampaignCover(dataUri: string, contentType = 'image/jpeg'): Promise<string> {
     const r: any = await this.request(`/campaigns/upload-url?contentType=${encodeURIComponent(contentType)}`)
-    if (!r?.uploadUrl || !r?.publicUrl) throw new Error('Upload URL unavailable')
+    if (!r?.uploadUrl || !r?.publicUrl) throw new Error("Couldn't start the upload. Try again.")
     const blob = await (await fetch(dataUri)).blob()
     const put = await fetch(r.uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: blob as any })
-    if (!put.ok) throw new Error('Cover upload failed')
+    if (!put.ok) throw new Error("Couldn't upload the cover image. Try again.")
     return r.publicUrl
   }
 
@@ -1233,7 +1233,7 @@ class ApiService {
 
   // ------- Subscriptions (App Store compliant) -------
   async getSubscriptionStatus(): Promise<any> {
-    return this.request('/subscriptions/mobile-status')
+    return this.request('/subscriptions/status')
   }
 
   async getSubscriptionPricing(): Promise<any> {
@@ -1370,7 +1370,7 @@ class ApiService {
 
 export const apiService = new ApiService()
 
-export const handleApiError = (error: any, defaultMessage: string = 'An error occurred') => {
+export const handleApiError = (error: any, defaultMessage: string = 'Something went wrong. Try again.') => {
   if (isUnauthorizedError(error?.message)) {
     return 'UNAUTHORIZED'
   }
@@ -1382,7 +1382,7 @@ export const handleApiError = (error: any, defaultMessage: string = 'An error oc
 
 export const showSignInError = (error: any, onSignUp: () => void) => {
   if (isUnauthorizedError(error?.message)) {
-    Alert.alert('Session expired', 'Please sign in again.')
+    Alert.alert('Session expired', 'Sign in again to continue.')
     return
   }
 
@@ -1395,8 +1395,8 @@ export const showSignInError = (error: any, onSignUp: () => void) => {
   }
 
   Alert.alert(
-    'Account not found',
-    'No account exists with this email, or the password is incorrect. Please register first.',
+    "Couldn't sign in",
+    'Check your email and password, or sign up.',
     [
       { text: 'OK', onPress: onSignUp },
     ],
@@ -1419,7 +1419,7 @@ export async function uploadMediaBlob(input: { uri: string; mime: string; sizeBy
   })
   const blobId = started?.blob_id || started?.blobId || started?.id
   const url = started?.url
-  if (!blobId || !url) throw new Error('Upload initialization failed')
+  if (!blobId || !url) throw new Error("Couldn't start the upload. Try again.")
   const fileRes = await fetch(input.uri)
   const blob = await fileRes.blob()
   const putRes = await fetch(url, {
@@ -1427,7 +1427,7 @@ export async function uploadMediaBlob(input: { uri: string; mime: string; sizeBy
     headers: { 'Content-Type': input.mime },
     body: blob as any,
   })
-  if (!putRes.ok) throw new Error('File upload failed')
+  if (!putRes.ok) throw new Error("Couldn't upload the file. Try again.")
   return apiService.completeMediaUpload(String(blobId))
 }
 

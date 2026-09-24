@@ -1,21 +1,27 @@
-appId: in.getcollab.app
+appId: in.getcollab.creator
+name: Sign in with a seeded account leaves the sign-in screen
 ---
+- clearKeychain
 - launchApp:
     clearState: true
-- waitForAnimationToEnd
-- assertVisible: "GetCollab"
+- extendedWaitUntil:
+    visible:
+      id: "landing-signin-btn"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 3000
 - tapOn:
-    text: "Sign In"
-- inputText: "test+brand@getcollab.in"
-    optional: true
+    id: "landing-signin-btn"
+    retryTapIfNoChange: true
 - tapOn:
-    id: "password"
-    optional: true
-- inputText: "TestPass123!"
-    optional: true
+    id: "sign-in-email"
+- inputText: ${EMAIL}
 - tapOn:
-    text: "Sign In"
-- waitForAnimationToEnd
-- assertVisible:
-    text: "Dashboard"
-    timeout: 15000
+    id: "sign-in-password"
+- inputText: ${PASSWORD}
+- tapOn:
+    id: "sign-in-submit-btn"
+- extendedWaitUntil:
+    notVisible:
+      id: "sign-in-screen"
+    timeout: 30000

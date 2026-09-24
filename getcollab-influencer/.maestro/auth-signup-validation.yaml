@@ -1,0 +1,22 @@
+appId: in.getcollab.creator
+name: Sign up stays on the form when it is empty
+---
+- clearKeychain
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "landing-creator-btn"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: "landing-creator-btn"
+    retryTapIfNoChange: true
+- assertVisible:
+    id: "sign-up-screen"
+- assertVisible: "Free forever. No card needed."
+- tapOn:
+    id: "sign-up-submit-btn"
+- assertVisible:
+    id: "sign-up-screen"

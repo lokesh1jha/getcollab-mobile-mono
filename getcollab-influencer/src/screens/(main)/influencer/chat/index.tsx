@@ -97,10 +97,10 @@ export default function InfluencerChat({ navigation }: { navigation: InfluencerN
 
         {isLoading && rooms.length === 0 ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={colors.neon} />
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
-          <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
+          <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
             data={filtered}
             renderItem={renderRoom}
             keyExtractor={r => r.id}
@@ -111,7 +111,7 @@ export default function InfluencerChat({ navigation }: { navigation: InfluencerN
               <View style={styles.empty}>
                 <View style={styles.emptyIcon}><Ionicons name="chatbubbles-outline" size={26} color={colors.textMuted} /></View>
                 <Text style={styles.emptyTitle}>No messages yet</Text>
-                <Text style={styles.emptySub}>Apply to campaigns to start chatting with brands.</Text>
+                <Text style={styles.emptySub}>Apply to a campaign to chat with brands.</Text>
               </View>
             }
           />
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
   title: { color: colors.text, fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
-  unreadCount: { color: colors.neon, fontSize: 12, fontWeight: '600', marginTop: 2 },
+  unreadCount: { color: colors.primary, fontSize: 12, fontWeight: '600', marginTop: 2 },
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: spacing.lg, marginBottom: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: 13, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
   searchInput: { flex: 1, color: colors.text, fontSize: 14, padding: 0 },
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.md },

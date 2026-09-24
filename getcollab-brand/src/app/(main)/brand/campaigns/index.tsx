@@ -29,8 +29,8 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
       await apiService.deleteCampaign(deleteTarget.id)
       setCampaigns((prev) => prev.filter((c) => c.id !== deleteTarget.id))
       setDeleteTarget(null)
-      Alert.alert('Deleted', 'Campaign has been deleted.')
-    } catch (err) { handleApiError(err, 'Failed to delete campaign') }
+      Alert.alert('Campaign deleted', 'The campaign was removed.')
+    } catch (err) { handleApiError(err, "Couldn't delete campaign") }
     finally { setDeleting(false) }
   }
 
@@ -42,7 +42,7 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
       )
       Alert.alert('Published', `"${campaign.title}" is now live.`)
     } catch (err) {
-      handleApiError(err, 'Failed to publish campaign')
+      handleApiError(err, "Couldn't publish campaign")
     }
   }
 
@@ -51,7 +51,7 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
       const response = await apiService.getMyCampaigns()
       const list: Campaign[] = response?.data || response?.campaigns || response || []
       setCampaigns(Array.isArray(list) ? list : [])
-    } catch (error: any) { handleApiError(error, 'Failed to load campaigns') }
+    } catch (error: any) { handleApiError(error, "Couldn't load campaigns") }
     finally { setLoading(false) }
   }, [])
 
@@ -82,7 +82,7 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
           <View style={styles.metricsRow}>
             <View style={styles.metric}>
               <Text style={styles.metricValue}>{item.bidCount || item.applications || 0}</Text>
-              <Text style={styles.metricLabel}>Bids</Text>
+              <Text style={styles.metricLabel}>Applications</Text>
             </View>
             <View style={styles.metricDivider} />
             <View style={styles.metric}>
@@ -99,7 +99,7 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
             </Pressable>
           )}
           <Pressable style={({ pressed }) => [styles.outlinedBtnSmall, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('Bids', { campaignId: item.id })}>
-            <Text style={styles.outlinedBtnSmallText}>View Bids</Text>
+            <Text style={styles.outlinedBtnSmallText}>Applications</Text>
           </Pressable>
           <Pressable style={({ pressed }) => [styles.blueBtnSmall, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('CampaignAnalytics', { id: item.id, title: item.title })}>
             <Text style={styles.blueBtnSmallText}>Analytics</Text>
@@ -115,7 +115,7 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -160,26 +160,26 @@ export default function BrandCampaignsScreen({ navigation }: Props) {
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="rocket-outline" size={26} color={colors.textMuted} /></View>
               <Text style={styles.emptyTitle}>No campaigns yet</Text>
-              <Text style={styles.emptySub}>Create your first campaign to start discovering creators.</Text>
+              <Text style={styles.emptySub}>Create a campaign to start finding creators.</Text>
               <Pressable style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation?.navigate('CreateCampaign') }}>
-                <Text style={styles.emptyCtaText}>Create Campaign</Text>
+                <Text style={styles.emptyCtaText}>Create campaign</Text>
               </Pressable>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
         />
 
         <Modal visible={!!deleteTarget} transparent animationType="fade" onRequestClose={() => setDeleteTarget(null)}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>Delete campaign?</Text>
-              <Text style={styles.modalBody}>"{deleteTarget?.title}" will be permanently deleted. All associated bids will be cancelled. This action cannot be undone.</Text>
+              <Text style={styles.modalBody}>"{deleteTarget?.title}" will be deleted and its applications cancelled. This can't be undone.</Text>
               <View style={styles.modalActions}>
                 <Pressable style={({ pressed }) => [styles.outlinedBtnSmall, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setDeleteTarget(null)} disabled={deleting}>
                   <Text style={styles.outlinedBtnSmallText}>Cancel</Text>
                 </Pressable>
                 <Pressable style={({ pressed }) => [styles.deleteModalBtn, { flex: 1 }, pressed && { opacity: 0.85 }]} onPress={handleDelete} disabled={deleting}>
-                  <Text style={styles.deleteModalBtnText}>{deleting ? 'Deleting...' : 'Delete'}</Text>
+                  <Text style={styles.deleteModalBtnText}>{deleting ? 'Deleting…' : 'Delete'}</Text>
                 </Pressable>
               </View>
             </View>
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: spacing.md, paddingBottom: spacing.sm },
   title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
-  createBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.neon, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999 },
+  createBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999 },
   createBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
 
   chipsRow: { height: 50, justifyContent: 'center' },
@@ -222,15 +222,15 @@ const styles = StyleSheet.create({
   actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   outlinedBtnSmall: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
   outlinedBtnSmallText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  blueBtnSmall: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.blue, alignItems: 'center', justifyContent: 'center' },
-  blueBtnSmallText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  blueBtnSmall: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  blueBtnSmallText: { color: colors.black, fontSize: 12, fontWeight: '700' },
   deleteBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
 
   empty: { alignItems: 'center', paddingTop: spacing.xxxl, gap: spacing.sm },
   emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { color: '#fff', fontSize: 16, fontWeight: '700', marginTop: spacing.sm },
   emptySub: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
-  emptyCta: { backgroundColor: colors.neon, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 999, marginTop: spacing.md },
+  emptyCta: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 999, marginTop: spacing.md },
   emptyCtaText: { color: '#000', fontSize: 13, fontWeight: '700' },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
@@ -241,6 +241,6 @@ const styles = StyleSheet.create({
   deleteModalBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, backgroundColor: colors.error, alignItems: 'center', justifyContent: 'center' },
   deleteModalBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
-  publishBtnSmall: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center' },
+  publishBtnSmall: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   publishBtnSmallText: { color: '#000', fontSize: 12, fontWeight: '700' },
 })

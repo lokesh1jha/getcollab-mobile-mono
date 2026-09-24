@@ -28,12 +28,12 @@ const navigationTheme = {
   dark: true,
   colors: {
     ...DefaultTheme.colors,
-    primary: colors.neon,
+    primary: colors.primary,
     background: colors.bg,
     card: colors.card,
     text: colors.text,
     border: colors.border,
-    notification: colors.neon,
+    notification: colors.primary,
   },
 }
 
@@ -48,8 +48,8 @@ function SplashScreen() {
             <Text style={styles.logoCollab}>Collab</Text>
           </Text>
         </View>
-        <Text style={styles.subtitle}>For Creators</Text>
-        <ActivityIndicator size="large" color={colors.neon} style={styles.loading} />
+        <Text style={styles.subtitle}>For creators</Text>
+        <ActivityIndicator size="large" color={colors.primary} style={styles.loading} />
       </View>
     </SafeAreaView>
   )
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   logoImg: { width: 36, height: 36 },
   logoText: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
   logoGet: { color: colors.text },
-  logoCollab: { color: colors.neon },
+  logoCollab: { color: colors.primary },
   subtitle: { fontSize: 14, color: colors.textMuted },
   loading: { marginTop: spacing.xl },
 })

@@ -28,7 +28,7 @@ export default function CampaignDiscoverScreen() {
       const list = res?.influencers || res?.data || res?.results || []
       setCreators(Array.isArray(list) ? list : [])
     } catch (err) {
-      handleApiError(err, 'Failed to load creators')
+      handleApiError(err, "Couldn't load creators")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -43,9 +43,9 @@ export default function CampaignDiscoverScreen() {
     setInvitingId(creator.id)
     try {
       await apiService.inviteCreatorToCampaign(campaignId, creator.id, `Join our campaign: ${title || ''}`)
-      Alert.alert('Invited', `${creator.name} has been invited.`)
+      Alert.alert('Invite sent', `${creator.name} was invited.`)
     } catch (err) {
-      handleApiError(err, 'Failed to invite creator')
+      handleApiError(err, "Couldn't invite creator")
     } finally {
       setInvitingId(null)
     }
@@ -77,7 +77,7 @@ export default function CampaignDiscoverScreen() {
           onPress={() => handleInvite(item)}
           disabled={invitingId === item.id}
         >
-          <Text style={styles.inviteBtnText}>{invitingId === item.id ? 'Inviting…' : 'Invite to Campaign'}</Text>
+          <Text style={styles.inviteBtnText}>{invitingId === item.id ? 'Inviting…' : 'Invite'}</Text>
         </Pressable>
       </Animated.View>
     )
@@ -86,7 +86,7 @@ export default function CampaignDiscoverScreen() {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -102,18 +102,18 @@ export default function CampaignDiscoverScreen() {
           ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
           ListHeaderComponent={
             <View style={styles.header}>
-              <Text style={styles.title}>Discover Creators</Text>
-              <Text style={styles.subtitle}>Find creators for {title || 'this campaign'}</Text>
+              <Text style={styles.title}>Find creators</Text>
+              <Text style={styles.subtitle}>Suggested for {title || 'this campaign'}</Text>
             </View>
           }
           ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="search" size={26} color={colors.textMuted} /></View>
               <Text style={styles.emptyTitle}>No matches yet</Text>
-              <Text style={styles.emptySub}>Try browsing all creators from the Creators tab.</Text>
+              <Text style={styles.emptySub}>Browse all creators in the Creators tab.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadCreators() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadCreators() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>
@@ -137,8 +137,8 @@ const styles = StyleSheet.create({
   scoreDot: { width: 6, height: 6, borderRadius: 3 },
   scoreText: { fontSize: 13, fontWeight: '700' },
 
-  inviteBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blue, borderRadius: radius.pill, paddingVertical: 12, marginTop: spacing.md },
-  inviteBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  inviteBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 12, marginTop: spacing.md },
+  inviteBtnText: { color: colors.black, fontSize: 13, fontWeight: '700' },
 
   empty: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.sm },
   emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },

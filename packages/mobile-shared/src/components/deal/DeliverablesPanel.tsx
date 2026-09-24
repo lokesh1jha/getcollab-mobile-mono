@@ -27,7 +27,7 @@ export type PanelTheme = {
   text: string
   textMuted: string
   textSubtle: string
-  neon: string
+  primary: string
   blue: string
   success: string
   warning: string
@@ -61,7 +61,7 @@ export function DeliverablesPanel({
 }) {
   const s = styles(theme)
   if (progress.length === 0) {
-    return <Text style={s.muted}>This collaboration has no deliverables yet.</Text>
+    return <Text style={s.muted}>No deliverables yet.</Text>
   }
   const done = progress.filter((p) => p.done).length
   return (
@@ -121,7 +121,7 @@ function DeliverableCard({
       </View>
 
       {p.rejected && (
-        <Text style={s.notice}>The brand rejected this deliverable. Payment is on hold until it is resolved; either side can raise a dispute.</Text>
+        <Text style={s.notice}>This deliverable was rejected. Payment is on hold, and either side can open a dispute.</Text>
       )}
 
       {p.current && (
@@ -157,7 +157,7 @@ function Preview({ dealId, sub, theme }: { dealId: string; sub: DealSubmission; 
     try {
       const r = await apiService.getSubmissionFileUrl(dealId, sub.id)
       if (r?.url) Linking.openURL(r.url)
-    } catch (e) { handleApiError(e, 'File not available yet') }
+    } catch (e) { handleApiError(e, 'File not ready yet') }
   }
   return (
     <View style={{ gap: 6 }}>
@@ -168,7 +168,7 @@ function Preview({ dealId, sub, theme }: { dealId: string; sub: DealSubmission; 
         </Pressable>
       ) : null}
       {sub.live_url && sub.link_verified === false && (
-        <Text style={[s.muted, { color: theme.warning }]}>Not found on the creator’s connected account — check it before approving.</Text>
+        <Text style={[s.muted, { color: theme.warning }]}>Not found on the creator’s account. Check it before approving.</Text>
       )}
       {sub.blob_ids.length > 0 && <Button label="Open file" outline onPress={open} theme={theme} />}
     </View>
@@ -195,7 +195,7 @@ function CurrentStage({
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true)
-    try { await fn(); onChanged() } catch (e) { handleApiError(e, 'Action failed') } finally { setBusy(false) }
+    try { await fn(); onChanged() } catch (e) { handleApiError(e, "Couldn't complete that. Try again.") } finally { setBusy(false) }
   }
 
   if (isBrand) {
@@ -207,7 +207,7 @@ function CurrentStage({
       )
     }
     const confirmReject = () =>
-      Alert.alert('Reject this deliverable?', 'It ends the deliverable and keeps the payment on hold for a dispute.', [
+      Alert.alert('Reject this deliverable?', 'This ends it and holds payment for a dispute.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Reject', style: 'destructive', onPress: () => run(() => apiService.reviewSubmission(dealId, latest.id, { action: 'reject', note: note.trim() })) },
       ])
@@ -218,7 +218,7 @@ function CurrentStage({
         <TextInput
           value={note}
           onChangeText={setNote}
-          placeholder="Notes: hook, product visibility, message, CTA, quality…"
+          placeholder="Notes (hook, product, CTA, quality)"
           placeholderTextColor={theme.textSubtle}
           multiline
           style={s.input}
@@ -246,7 +246,7 @@ function CurrentStage({
   const submit = () => run(async () => {
     if (stage.kind === 'CONTENT') {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
-      if (perm.status !== 'granted') { Alert.alert('Permission needed', 'Enable photo library access to upload.'); return }
+      if (perm.status !== 'granted') { Alert.alert('Permission needed', 'Allow photo access in Settings to upload.'); return }
       const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images', 'videos'], allowsMultipleSelection: true, quality: 0.8 })
       if (picked.canceled || picked.assets.length === 0) return
       const blobIds: string[] = []
@@ -283,7 +283,7 @@ function CurrentStage({
         accessibilityLabel={stage.kind === 'SCRIPT' ? 'Script' : stage.kind === 'LIVE_LINK' ? 'Live post URL' : 'Caption'}
       />
       <Button
-        label={busy ? 'Submitting…' : stage.kind === 'CONTENT' ? `Choose files & submit ${label.toLowerCase()}` : `${stage.state === 'changes_requested' ? 'Submit revised' : 'Submit'} ${label.toLowerCase()}`}
+        label={busy ? 'Submitting…' : stage.kind === 'CONTENT' ? `Upload ${label.toLowerCase()}` : `${stage.state === 'changes_requested' ? 'Submit revised' : 'Submit'} ${label.toLowerCase()}`}
         disabled={busy || (needsText && !text.trim())}
         onPress={submit}
         theme={theme}
@@ -326,7 +326,7 @@ const styles = (t: PanelTheme) =>
     row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     link: { alignSelf: 'flex-start' },
     linkText: { color: t.blue, fontSize: 12, fontWeight: '600' },
-    primary: { alignSelf: 'flex-start', backgroundColor: t.neon, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 },
+    primary: { alignSelf: 'flex-start', backgroundColor: t.primary, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 },
     primaryText: { color: '#000', fontWeight: '800' },
     secondary: { alignSelf: 'flex-start', borderWidth: 1, borderColor: t.border, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 },
     secondaryText: { color: t.text, fontWeight: '700' },

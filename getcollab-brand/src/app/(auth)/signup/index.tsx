@@ -1,13 +1,13 @@
 import React, { useState } from 'react'
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { Image } from 'expo-image'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, overline } from '@/src/theme'
 import { handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import * as Haptics from 'expo-haptics'
+import { BrandLogo } from '@shared/components/BrandLogo'
 
 interface ScreenProps { navigation?: any; route?: any }
 
@@ -22,10 +22,10 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
     let valid = true
     const newErrors = { name: '', email: '', password: '' }
     if (!name || name.length < 2) { newErrors.name = 'Name must be at least 2 characters'; valid = false }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { newErrors.email = 'Please enter a valid email'; valid = false }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { newErrors.email = 'Enter a valid email'; valid = false }
     if (!password || password.length < 8) { newErrors.password = 'Min 8 characters'; valid = false }
     else if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-      newErrors.password = 'Include upper, lower, number, and special character'
+      newErrors.password = 'Use upper and lower case, a number and a symbol'
       valid = false
     }
     setErrors(newErrors)
@@ -39,7 +39,7 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
       await useAuthStore.getState().signUp(name, email, password, 'brand')
       navigation?.navigate('VerifyEmail', { email })
     } catch (error: any) {
-      handleApiError(error, 'Failed to create account. Please try again.')
+      handleApiError(error, "Couldn't create account. Try again.")
     } finally { setLoading(false) }
   }
 
@@ -51,10 +51,7 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
             <Pressable accessibilityRole="button" accessibilityLabel="Go back" testID="sign-up-back-btn" hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
-            <View style={styles.brandRow}>
-              <Image source={require('../../../../assets/getcollab_only_logo.png')} style={styles.logoImg} contentFit="contain" />
-              <Text style={styles.logoText}><Text style={styles.logoGet}>Get</Text><Text style={styles.logoCollab}>Collab</Text></Text>
-            </View>
+            <BrandLogo />
             <View style={{ width: 36 }} />
           </View>
 
@@ -65,13 +62,13 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
           >
             <Animated.View entering={FadeInDown.duration(400)}>
               <Text style={styles.eyebrow}>JOIN GETCOLLAB</Text>
-              <Text style={styles.heading}>Create your{'\n'}brand workspace</Text>
-              <Text style={styles.sub}>Free 14-day trial. No credit card required.</Text>
+              <Text style={styles.heading}>Create your{'\n'}brand account</Text>
+              <Text style={styles.sub}>Free 7-day trial. No card needed.</Text>
 
               <View style={{ gap: spacing.md, marginTop: spacing.xl }}>
                 <Field label="Full name" icon="person-outline" value={name} onChange={setName} error={errors.name} setError={() => setErrors({ ...errors, name: '' })} testID="signup-name" />
                 <Field label="Work email" icon="mail-outline" value={email} onChange={setEmail} error={errors.email} setError={() => setErrors({ ...errors, email: '' })} testID="signup-email" />
-                <Field label="Password" icon="lock-closed-outline" value={password} onChange={setPassword} error={errors.password} setError={() => setErrors({ ...errors, password: '' })} secure placeholder="Min 8 chars + symbol" testID="signup-password" />
+                <Field label="Password" icon="lock-closed-outline" value={password} onChange={setPassword} error={errors.password} setError={() => setErrors({ ...errors, password: '' })} secure placeholder="8+ characters" testID="signup-password" />
               </View>
 
               <View style={styles.terms}>
@@ -88,7 +85,7 @@ export default function SignUpScreen({ navigation }: ScreenProps) {
                 style={({ pressed }) => [styles.primaryBtn, pressed && !loading && { opacity: 0.85 }]}
               >
                 <View style={styles.primaryGradient}>
-                  <Text style={styles.primaryBtnText}>{loading ? 'Creating...' : 'Create account'}</Text>
+                  <Text style={styles.primaryBtnText}>{loading ? 'Creating…' : 'Sign up'}</Text>
                   {!loading && <Ionicons name="arrow-forward" size={18} color="#000" />}
                 </View>
               </Pressable>
@@ -138,12 +135,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm,
   },
   iconBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: '#1f1f1f', alignItems: 'center', justifyContent: 'center' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logoImg: { width: 28, height: 28 },
-  logoText: { fontSize: 18, fontWeight: '800', letterSpacing: -0.4 },
-  logoGet: { color: '#fff' },
-  logoCollab: { color: colors.neon },
-  eyebrow: { color: colors.neon, fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
+  eyebrow: { ...overline },
   heading: { color: '#fff', fontSize: 30, fontWeight: '800', lineHeight: 36, letterSpacing: -1, marginTop: spacing.md },
   sub: { color: 'rgba(255,255,255,0.6)', fontSize: 14, marginTop: spacing.sm },
 
@@ -158,15 +150,15 @@ const styles = StyleSheet.create({
   errorText: { color: colors.error, fontSize: 11, marginTop: 4, marginLeft: 2 },
 
   terms: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: spacing.lg },
-  checkbox: { width: 18, height: 18, borderRadius: 5, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center' },
+  checkbox: { width: 18, height: 18, borderRadius: 5, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   termsText: { color: 'rgba(255,255,255,0.65)', fontSize: 12, flex: 1 },
   termsLink: { color: '#fff', fontWeight: '600' },
 
   primaryBtn: { borderRadius: radius.pill, overflow: 'hidden', marginTop: spacing.xl },
-  primaryGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, backgroundColor: colors.neon },
+  primaryGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, backgroundColor: colors.primary },
   primaryBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
 
   bottomRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xxl },
   bottomText: { color: 'rgba(255,255,255,0.55)', fontSize: 13 },
-  bottomLink: { color: colors.neon, fontSize: 13, fontWeight: '700' },
+  bottomLink: { color: colors.primary, fontSize: 13, fontWeight: '700' },
 })

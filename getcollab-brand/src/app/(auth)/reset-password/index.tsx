@@ -30,12 +30,12 @@ export default function ResetPasswordScreen({ navigation }: Props) {
     if (!token.trim()) { Alert.alert('Missing token', 'Paste the reset token from your email.'); return }
     const err = validatePassword(password)
     if (err) { Alert.alert('Weak password', err); return }
-    if (password !== confirm) { Alert.alert('Mismatch', 'Passwords do not match.'); return }
+    if (password !== confirm) { Alert.alert("Passwords don't match", 'Re-enter your new password.'); return }
     setSubmitting(true)
     try {
       await apiService.resetPassword(token.trim(), password)
-      Alert.alert('Password reset', 'You can now sign in with your new password.', [
-        { text: 'Sign In', onPress: () => navigation?.navigate('SignIn') },
+      Alert.alert('Password reset', 'Sign in with your new password.', [
+        { text: 'Sign in', onPress: () => navigation?.navigate('SignIn') },
       ])
     } catch (e) { handleApiError(e, 'Failed to reset password') }
     finally { setSubmitting(false) }
@@ -46,26 +46,26 @@ export default function ResetPasswordScreen({ navigation }: Props) {
       <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
         <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <Animated.View entering={FadeInDown.duration(400)}>
-            <Text style={styles.title}>Reset your password</Text>
-            <Text style={styles.subtitle}>Paste the token from your email and choose a new password.</Text>
+            <Text style={styles.title}>Reset password</Text>
+            <Text style={styles.subtitle}>Paste the token from your email, then pick a new password.</Text>
 
-            <Text style={styles.fieldLabel}>Reset Token</Text>
+            <Text style={styles.fieldLabel}>Reset token</Text>
             <View style={styles.fieldWrap}>
               <TextInput value={token} onChangeText={setToken} placeholder="Paste reset token" placeholderTextColor={colors.textSubtle} style={styles.fieldInput} />
             </View>
 
             <View style={{ height: spacing.lg }} />
 
-            <Text style={styles.fieldLabel}>New Password</Text>
+            <Text style={styles.fieldLabel}>New password</Text>
             <View style={styles.fieldWrap}>
-              <TextInput value={password} onChangeText={setPassword} secureTextEntry placeholder="At least 8 chars" placeholderTextColor={colors.textSubtle} style={styles.fieldInput} />
+              <TextInput value={password} onChangeText={setPassword} secureTextEntry placeholder="8+ characters" placeholderTextColor={colors.textSubtle} style={styles.fieldInput} />
             </View>
 
             <View style={{ height: spacing.lg }} />
 
-            <Text style={styles.fieldLabel}>Confirm Password</Text>
+            <Text style={styles.fieldLabel}>Confirm password</Text>
             <View style={styles.fieldWrap}>
-              <TextInput value={confirm} onChangeText={setConfirm} secureTextEntry placeholder="Repeat password" placeholderTextColor={colors.textSubtle} style={styles.fieldInput} />
+              <TextInput value={confirm} onChangeText={setConfirm} secureTextEntry placeholder="Re-enter password" placeholderTextColor={colors.textSubtle} style={styles.fieldInput} />
             </View>
 
             <View style={styles.requirements}>
@@ -80,11 +80,11 @@ export default function ResetPasswordScreen({ navigation }: Props) {
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSubmit() }}
               disabled={submitting}
             >
-              <Text style={styles.primaryBtnText}>{submitting ? 'Resetting...' : 'Reset Password'}</Text>
+              <Text style={styles.primaryBtnText}>{submitting ? 'Resetting…' : 'Reset password'}</Text>
             </Pressable>
 
             <Pressable style={({ pressed }) => [styles.ghostBtn, pressed && { opacity: 0.7 }]} onPress={() => navigation?.navigate('SignIn')}>
-              <Text style={styles.ghostBtnText}>Back to Sign In</Text>
+              <Text style={styles.ghostBtnText}>Back to sign in</Text>
             </Pressable>
           </Animated.View>
         </ScrollView>
@@ -113,8 +113,8 @@ const styles = StyleSheet.create({
   reqTitle: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: spacing.sm },
   reqText: { color: colors.textMuted, fontSize: 13, paddingVertical: 2 },
 
-  primaryBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blue, borderRadius: radius.pill, paddingVertical: 18 },
-  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 18 },
+  primaryBtnText: { color: colors.black, fontSize: 16, fontWeight: '700' },
 
   ghostBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.md, marginTop: spacing.md },
   ghostBtnText: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '500' },

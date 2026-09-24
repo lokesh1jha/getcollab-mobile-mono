@@ -125,7 +125,7 @@ export default function AnalyticsScreen() {
         setPlatforms(stats)
     } catch (err: any) {
       setFailed(true)
-      handleApiError(err, 'Failed to load analytics')
+      handleApiError(err, "Couldn't load analytics")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -150,7 +150,7 @@ export default function AnalyticsScreen() {
   if (loading) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -161,7 +161,7 @@ export default function AnalyticsScreen() {
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
         >
           {/* Performance hero */}
           <Animated.View entering={FadeInDown.delay(0).duration(320)} style={styles.statsRow}>
@@ -169,9 +169,9 @@ export default function AnalyticsScreen() {
               <Text style={styles.statValue}>{totalBids}</Text>
               <Text style={styles.statLabel}>Applications</Text>
             </View>
-            <View style={[styles.statCard, winRate > 0 && { borderColor: colors.neonSoft }]}>
-              <Text style={[styles.statValue, winRate > 0 && { color: colors.neon }]}>{winRate}%</Text>
-              <Text style={styles.statLabel}>Win rate</Text>
+            <View style={[styles.statCard, winRate > 0 && { borderColor: colors.primarySoft }]}>
+              <Text style={[styles.statValue, winRate > 0 && { color: colors.primary }]}>{winRate}%</Text>
+              <Text style={styles.statLabel}>Acceptance rate</Text>
             </View>
           </Animated.View>
 
@@ -199,7 +199,7 @@ export default function AnalyticsScreen() {
 
           {/* Bid status breakdown */}
           <Animated.View entering={FadeInDown.delay(80).duration(320)}>
-            <Text style={styles.sectionTitle}>Bid status</Text>
+            <Text style={styles.sectionTitle}>Application status</Text>
             <View style={styles.listCard}>
               {statusRows.map((row, i) => {
                 const s = statusColor(row.status)
@@ -219,15 +219,15 @@ export default function AnalyticsScreen() {
           {/* Bid value */}
           {bidAmounts.total > 0 && (
             <Animated.View entering={FadeInDown.delay(140).duration(320)}>
-              <Text style={styles.sectionTitle}>Bid value</Text>
+              <Text style={styles.sectionTitle}>Application value</Text>
               <View style={styles.statsRow}>
                 <View style={styles.statCard}>
                   <Text style={styles.statValue}>{money(bidAmounts.total)}</Text>
-                  <Text style={styles.statLabel}>Total bid</Text>
+                  <Text style={styles.statLabel}>Total asked</Text>
                 </View>
                 <View style={styles.statCard}>
                   <Text style={[styles.statValue, { color: colors.success }]}>{money(bidAmounts.accepted)}</Text>
-                  <Text style={styles.statLabel}>Won</Text>
+                  <Text style={styles.statLabel}>Accepted</Text>
                 </View>
               </View>
             </Animated.View>
@@ -244,7 +244,7 @@ export default function AnalyticsScreen() {
                       <View style={[styles.statusDot, { backgroundColor: c.accepted ? colors.success : colors.blue }]} />
                       <View style={{ flex: 1 }}>
                         <Text style={styles.listLabel} numberOfLines={1}>{c.title}</Text>
-                        <Text style={styles.campaignSub}>{c.count} bid{c.count === 1 ? '' : 's'} · {money(c.amount)}</Text>
+                        <Text style={styles.campaignSub}>{c.count} application{c.count === 1 ? '' : 's'} · {money(c.amount)}</Text>
                       </View>
                     </View>
                     {c.accepted && <Ionicons name="checkmark-circle" size={16} color={colors.success} />}
@@ -300,7 +300,7 @@ export default function AnalyticsScreen() {
                   <Ionicons name="people-outline" size={26} color={colors.textMuted} />
                 </View>
                 <Text style={styles.emptyTitle}>No audience data</Text>
-                <Text style={styles.emptySub}>Connect your social accounts to see follower stats.</Text>
+                <Text style={styles.emptySub}>Connect your social accounts to see followers.</Text>
               </View>
             )}
           </Animated.View>

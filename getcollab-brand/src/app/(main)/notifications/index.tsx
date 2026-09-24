@@ -92,7 +92,7 @@ export default function NotificationsScreen() {
         <Ionicons name="notifications-outline" size={32} color={colors.textMuted} />
       </View>
       <Text style={styles.emptyTitle}>No notifications yet</Text>
-      <Text style={styles.emptySubtext}>You'll see updates about your campaigns, bids, and messages here</Text>
+      <Text style={styles.emptySubtext}>Campaign, application and message updates show up here.</Text>
     </View>
   )
 
@@ -101,7 +101,7 @@ export default function NotificationsScreen() {
       <View style={styles.root}>
         <SafeAreaView style={{ flex: 1 }} edges={['top']}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.neon} />
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
         </SafeAreaView>
       </View>
@@ -125,7 +125,7 @@ export default function NotificationsScreen() {
           )}
         </View>
 
-        <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.neon} />}
+        <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
           data={notifications}
           renderItem={({ item, index }) => (
             <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>

@@ -44,14 +44,14 @@ export default function CampaignOutreachScreen() {
         mapped.push({
           id: `deal-${d.id}`,
           creatorName: d.influencer?.name || d.influencerName || 'Creator',
-          channel: 'Deal',
+          channel: 'Collaboration',
           status: d.status === 'active' ? 'replied' : d.status === 'pending' ? 'sent' : 'delivered',
           sentAt: d.createdAt,
         })
       })
       setItems(mapped)
     } catch (err) {
-      handleApiError(err, 'Failed to load outreach')
+      handleApiError(err, "Couldn't load outreach")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -83,7 +83,7 @@ export default function CampaignOutreachScreen() {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -100,7 +100,7 @@ export default function CampaignOutreachScreen() {
           ListHeaderComponent={
             <View style={styles.header}>
               <Text style={styles.title}>Outreach</Text>
-              <Text style={styles.subtitle}>Invites and messages for {title || 'this campaign'}</Text>
+              <Text style={styles.subtitle}>Invites and collaborations for {title || 'this campaign'}</Text>
             </View>
           }
           ListEmptyComponent={
@@ -110,7 +110,7 @@ export default function CampaignOutreachScreen() {
               <Text style={styles.emptySub}>Invite creators from the Discover tab.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadOutreach() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadOutreach() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>

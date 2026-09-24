@@ -72,7 +72,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
 
   const handleSubmitDispute = async () => {
     if (!formData.dealId || !formData.reason.trim() || !formData.description.trim()) {
-      Alert.alert('Error', 'Choose the collaboration and fill in reason and description.')
+      Alert.alert('Missing details', 'Pick a collaboration and add a reason and description.')
       return
     }
 
@@ -83,11 +83,11 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
         dealId: formData.dealId,
         reason: `${formData.reason.trim()}: ${formData.description.trim()}`,
       })
-      Alert.alert('Success', 'Dispute filed successfully. Our team will review it.')
+      Alert.alert('Dispute filed', 'Our team will review it.')
       resetForm()
       fetchDisputes()
     } catch (err: any) {
-      handleApiError(err, 'Failed to submit dispute. Please try again.')
+      handleApiError(err, "Couldn't file the dispute. Try again.")
     } finally {
       setSubmitting(false)
     }
@@ -128,7 +128,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
       <View style={styles.disputeHeader}>
         <View style={styles.disputeInfo}>
           <Text style={styles.disputeReason}>{item.reason}</Text>
-          <Text style={styles.disputeCampaign}>{item.campaign?.title || 'General Dispute'}</Text>
+          <Text style={styles.disputeCampaign}>{item.campaign?.title || 'General dispute'}</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
           <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
@@ -158,8 +158,8 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyIcon}>📋</Text>
-      <Text style={styles.emptyTitle}>No disputes found</Text>
-      <Text style={styles.emptySubtext}>You haven't filed any disputes yet</Text>
+      <Text style={styles.emptyTitle}>No disputes yet</Text>
+      <Text style={styles.emptySubtext}>Report an issue if a collaboration goes wrong.</Text>
     </View>
   )
 
@@ -186,7 +186,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
             <View>
               <View style={styles.header}>
                 <Text style={styles.headerTitle}>Disputes</Text>
-                <Text style={styles.headerSubtitle}>Report and track issues</Text>
+                <Text style={styles.headerSubtitle}>Report and track issues.</Text>
               </View>
   
               <View style={styles.filterContainer}>
@@ -204,7 +204,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
               </View>
   
               <Button
-                title={showForm ? 'Close Form' : 'Report an Issue'}
+                title={showForm ? 'Close' : 'Report issue'}
                 variant={showForm ? 'outline' : 'primary'}
                 onPress={() => setShowForm(!showForm)}
                 style={styles.reportButton}
@@ -212,7 +212,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
   
               {showForm && (
                 <Card style={styles.formCard}>
-                  <Text style={styles.formTitle}>File a New Dispute</Text>
+                  <Text style={styles.formTitle}>New dispute</Text>
   
                   <Text style={styles.fieldLabel}>Reason *</Text>
                   <TextInput
@@ -247,7 +247,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
                   <Text style={styles.fieldLabel}>Description *</Text>
                   <TextInput
                     style={[styles.input, styles.textArea]}
-                    placeholder="Describe the issue in detail (min 10 chars)..."
+                    placeholder="What happened? (10+ characters)"
                     placeholderTextColor={colors.textMuted}
                     value={formData.description}
                     onChangeText={(text) => setFormData({ ...formData, description: text })}
@@ -263,7 +263,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
                       style={styles.cancelButton}
                     />
                     <Button
-                      title={submitting ? 'Submitting...' : 'Submit'}
+                      title={submitting ? 'Submitting…' : 'Submit'}
                       onPress={handleSubmitDispute}
                       disabled={submitting}
                       loading={submitting}
@@ -277,7 +277,7 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
             </View>
           }
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleRefresh() }} tintColor={colors.neon} />
+            <RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleRefresh() }} tintColor={colors.primary} />
           }
           showsVerticalScrollIndicator={false}
           initialNumToRender={10}
@@ -292,9 +292,9 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
 const styles = StyleSheet.create({
   dealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   dealChip: { borderWidth: 1, borderColor: colors.border, borderRadius: 999, paddingHorizontal: spacing.md, paddingVertical: 6 },
-  dealChipOn: { borderColor: colors.neon },
+  dealChipOn: { borderColor: colors.primary },
   dealChipText: { color: colors.text, fontSize: 12, fontWeight: '600' },
-  dealChipTextOn: { color: colors.neon },
+  dealChipTextOn: { color: colors.primary },
   container: {
     flex: 1,
     backgroundColor: colors.background,

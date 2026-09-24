@@ -29,7 +29,7 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
       return
     }
     if (!email) {
-      Alert.alert('Missing email', 'Email address is missing.')
+      Alert.alert('No email address', 'Go back and sign up again.')
       return
     }
     setSubmitting(true)
@@ -37,16 +37,16 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
       await apiService.verifyEmail(email, token.trim())
       if (user) {
         await fetchCurrentUser()
-        Alert.alert('Verified', 'Your email is now verified.', [
+        Alert.alert('Email verified', 'You have full access now.', [
           { text: 'OK', onPress: () => navigation?.goBack() },
         ])
       } else {
-        Alert.alert('Verified', 'Your email is now verified. Please sign in.', [
+        Alert.alert('Email verified', 'Sign in to continue.', [
           { text: 'OK', onPress: () => navigation?.navigate('SignIn', { email }) },
         ])
       }
     } catch (err) {
-      handleApiError(err, 'Verification failed')
+      handleApiError(err, "Couldn't verify. Check the code and try again.")
     } finally {
       setSubmitting(false)
     }
@@ -54,15 +54,15 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
 
   const handleResend = async () => {
     if (!email) {
-      Alert.alert('Missing email', 'Email address is missing.')
+      Alert.alert('No email address', 'Go back and sign up again.')
       return
     }
     setResending(true)
     try {
       await apiService.resendEmailOtp(email)
-      Alert.alert('Email sent', `A new verification code was sent to ${email}.`)
+      Alert.alert('Email sent', `We sent a new code to ${email}.`)
     } catch (err) {
-      handleApiError(err, 'Failed to resend')
+      handleApiError(err, "Couldn't resend the code. Try again.")
     } finally {
       setResending(false)
     }
@@ -74,20 +74,19 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
         <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <Text style={styles.title}>Verify your email</Text>
           <Text style={styles.subtitle}>
-            We sent a verification code to <Text style={styles.email}>{email}</Text>.
-            Please enter the code below.
+            Enter the code we sent to <Text style={styles.email}>{email}</Text>.
           </Text>
   
           <Input
-            label="Verification Code"
+            label="Verification code"
             value={token}
             onChangeText={setToken}
-            placeholder="Enter 6-digit code"
+            placeholder="6-digit code"
             style={styles.input}
           />
   
           <Button
-            title={submitting ? 'Verifying...' : 'Verify'}
+            title={submitting ? 'Verifying…' : 'Verify'}
             onPress={handleVerify}
             loading={submitting}
             disabled={submitting}
@@ -96,7 +95,7 @@ export default function VerifyEmailScreen({ navigation, route }: Props) {
           />
   
           <Button
-            title={resending ? 'Sending...' : 'Resend Email'}
+            title={resending ? 'Sending…' : 'Resend code'}
             variant="outline"
             onPress={handleResend}
             loading={resending}

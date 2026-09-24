@@ -25,7 +25,7 @@ export default function RelationshipsScreen() {
     try {
       const r = await apiService.getRelationships()
       setItems(r?.relationships || r?.data || [])
-    } catch (e) { handleApiError(e, 'Failed to load relationships') }
+    } catch (e) { handleApiError(e, "Couldn't load brand relationships") }
     finally { setLoading(false); setRefreshing(false) }
   }, [])
 
@@ -33,7 +33,7 @@ export default function RelationshipsScreen() {
 
   if (loading) return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.center}><ActivityIndicator color={colors.neon} /></View>
+      <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>
     </SafeAreaView>
   )
 
@@ -42,20 +42,20 @@ export default function RelationshipsScreen() {
       <FlatList
         style={styles.root}
         contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.primary} />}
         data={items}
         keyExtractor={(x) => String(x.id)}
         ListHeaderComponent={
           <View style={{ marginBottom: spacing.md }}>
-            <Text style={styles.heading}>Brand Relationships</Text>
-            <Text style={styles.subheading}>Track your ongoing brand partnerships</Text>
+            <Text style={styles.heading}>Brands</Text>
+            <Text style={styles.subheading}>Brands you've worked with.</Text>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <View style={styles.emptyIcon}><Ionicons name="people-outline" size={26} color={colors.textMuted} /></View>
             <Text style={styles.emptyTitle}>No relationships yet</Text>
-            <Text style={styles.emptySub}>Your brand relationships will appear here after accepted collaborations.</Text>
+            <Text style={styles.emptySub}>Brands appear here after an accepted collaboration.</Text>
           </View>
         }
         renderItem={({ item, index }) => (

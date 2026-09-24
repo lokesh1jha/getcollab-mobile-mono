@@ -20,7 +20,7 @@ export function EmailVerificationBanner() {
       await apiService.resendEmailOtp(user.email)
       navigation.navigate('VerifyEmail', { email: user.email })
     } catch (err) {
-      handleApiError(err, 'Failed to resend verification email')
+      handleApiError(err, "Couldn't resend the email. Try again.")
     } finally {
       setSending(false)
     }
@@ -31,7 +31,7 @@ export function EmailVerificationBanner() {
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>Verify your email</Text>
         <Text style={styles.body} numberOfLines={2}>
-          Confirm <Text style={styles.email}>{user.email}</Text> to unlock all features.
+          Confirm <Text style={styles.email}>{user.email}</Text> to use every feature.
         </Text>
       </View>
       <View style={styles.actions}>

@@ -71,7 +71,8 @@
         }
       ],
       "expo-font",
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "../plugins/with-min-pod-deployment-target"
     ]
   }
 }

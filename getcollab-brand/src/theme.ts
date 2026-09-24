@@ -18,8 +18,11 @@ export const colors = {
   blueSoft: 'rgba(59,130,246,0.12)',
 
   black: '#000000',
-  neon: '#D9FF00',
-  neonSoft: 'rgba(217,255,0,0.15)',
+  // Monochrome primary: white CTAs with black text on the black canvas.
+  primary: '#FFFFFF',
+  primarySoft: 'rgba(255,255,255,0.10)',
+  // Wordmark accent, matches the web logo ("Get" white, "Collab" blue).
+  logoAccent: '#27BEFF',
 
   success: '#22C55E',
   warning: '#F59E0B',
@@ -28,6 +31,16 @@ export const colors = {
   warningSoft: 'rgba(245,158,11,0.14)',
   errorSoft: 'rgba(239,68,68,0.14)',
 } as const;
+
+// Small section label / eyebrow. Source text stays sentence case; this renders it
+// as muted uppercase so every overline in the app looks the same.
+export const overline = {
+  color: colors.textMuted,
+  fontSize: 11,
+  fontWeight: '700' as const,
+  letterSpacing: 1,
+  textTransform: 'uppercase' as const,
+}
 
 export const spacing = {
   xs: 4,

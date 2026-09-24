@@ -38,7 +38,7 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
   )
 
   const handleCreate = async () => {
-    if (!newName.trim()) { Alert.alert('Error', 'Enter a program name'); return }
+    if (!newName.trim()) { Alert.alert('Name needed', 'Enter a program name.'); return }
     setCreating(true)
     try {
       await apiService.createAffiliateProgram({
@@ -109,7 +109,7 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -128,7 +128,7 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
               <View style={styles.header}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.title}>Affiliate</Text>
-                  <Text style={styles.subtitle}>Manage affiliate programs</Text>
+                  <Text style={styles.subtitle}>Your affiliate programs</Text>
                 </View>
                 <Pressable style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.85 }]} onPress={() => setDialogOpen(true)}>
                   <Ionicons name="add" size={16} color="#000" />
@@ -141,10 +141,10 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="link-outline" size={26} color={colors.textMuted} /></View>
               <Text style={styles.emptyTitle}>No programs yet</Text>
-              <Text style={styles.emptySub}>Create your first affiliate program to start tracking referrals.</Text>
+              <Text style={styles.emptySub}>Create a program to start tracking referrals.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadPrograms() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadPrograms() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
 
@@ -152,8 +152,8 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
       {dialogOpen && (
         <Pressable style={styles.modalOverlay} onPress={() => setDialogOpen(false)}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>New Program</Text>
-            <Text style={styles.modalBody}>Give your affiliate program a name.</Text>
+            <Text style={styles.modalTitle}>New program</Text>
+            <Text style={styles.modalBody}>Name your affiliate program.</Text>
             <TextInput style={styles.input} value={newName} onChangeText={setNewName} placeholder="Program name" placeholderTextColor={colors.textSubtle} />
             <View style={styles.modalActions}>
               <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setDialogOpen(false)}>
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: spacing.md, marginBottom: spacing.md },
   title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
-  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.neon, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.pill },
+  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.pill },
   addBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
 
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg },
@@ -205,6 +205,6 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
   outlinedBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong },
   outlinedBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, backgroundColor: colors.neon },
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, backgroundColor: colors.primary },
   primaryBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
 })

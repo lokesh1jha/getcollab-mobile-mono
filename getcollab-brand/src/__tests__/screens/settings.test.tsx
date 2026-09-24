@@ -94,7 +94,7 @@ describe('ProfileSettingsScreen', () => {
     await screen.findByDisplayValue('Acme Brand')
 
     fireEvent.changeText(screen.getByDisplayValue('Acme Brand'), 'Acme Ltd')
-    fireEvent.press(screen.getByText('Save Changes'))
+    fireEvent.press(screen.getByText('Save'))
 
     await waitFor(() => expect(api.updateGeneralProfile).toHaveBeenCalledTimes(1))
     expect(mockUpdateProfile).toHaveBeenCalledWith(expect.objectContaining({ name: 'Acme Ltd' }))
@@ -108,7 +108,7 @@ describe('AccountSettingsScreen', () => {
 
     expect(await screen.findByDisplayValue('ops@acme.test')).toBeOnTheScreen()
     fireEvent.changeText(screen.getByDisplayValue('9999999999'), '8888888888')
-    fireEvent.press(screen.getByText('Save Changes'))
+    fireEvent.press(screen.getByText('Save'))
 
     await waitFor(() =>
       expect(api.updateSettings).toHaveBeenCalledWith({ phoneNumbers: ['8888888888'] }),
@@ -124,9 +124,9 @@ describe('SecuritySettingsScreen', () => {
     fireEvent.changeText(inputs[0], 'old-password')
     fireEvent.changeText(inputs[1], 'new-password-1')
     fireEvent.changeText(inputs[2], 'new-password-2')
-    fireEvent.press(screen.getByText('Update Password'))
+    fireEvent.press(screen.getByText('Update password'))
 
-    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Passwords do not match')
+    expect(Alert.alert).toHaveBeenCalledWith("Passwords don't match", 'Re-enter your new password.')
     expect(api.changePassword).not.toHaveBeenCalled()
   })
 
@@ -138,7 +138,7 @@ describe('SecuritySettingsScreen', () => {
     fireEvent.changeText(inputs[0], 'old-password')
     fireEvent.changeText(inputs[1], 'new-password-1')
     fireEvent.changeText(inputs[2], 'new-password-1')
-    fireEvent.press(screen.getByText('Update Password'))
+    fireEvent.press(screen.getByText('Update password'))
 
     await waitFor(() => expect(api.changePassword).toHaveBeenCalledWith('old-password', 'new-password-1'))
   })
@@ -190,7 +190,7 @@ describe('NotificationsSettingsScreen', () => {
     renderScreen(NotificationsSettingsScreen)
 
     expect(await screen.findByText('Email and push preferences')).toBeOnTheScreen()
-    expect(screen.getAllByText('Campaign Updates')).toHaveLength(2)
+    expect(screen.getAllByText('Campaign updates')).toHaveLength(2)
     // 4 email toggles + 3 push toggles
     // Six: the weekly digest had no backend and was removed.
     expect(screen.UNSAFE_getAllByType(Switch)).toHaveLength(6)
