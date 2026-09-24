@@ -40,7 +40,7 @@ describe('InvitesScreen', () => {
   it('offers cancellation for a pending invite', async () => {
     renderScreen(InvitesScreen)
 
-    expect(await screen.findByText('Cancel Invite')).toBeOnTheScreen()
+    expect(await screen.findByText('Cancel invite')).toBeOnTheScreen()
   })
 
   it('does not offer cancellation once the invite is accepted', async () => {
@@ -48,15 +48,15 @@ describe('InvitesScreen', () => {
     renderScreen(InvitesScreen)
 
     expect(await screen.findByText('Accepted')).toBeOnTheScreen()
-    expect(screen.queryByText('Cancel Invite')).not.toBeOnTheScreen()
+    expect(screen.queryByText('Cancel invite')).not.toBeOnTheScreen()
   })
 
   it('cancels the invite and reflects the new status locally', async () => {
     api.cancelBrandInvite.mockResolvedValue({ success: true })
     renderScreen(InvitesScreen)
-    await screen.findByText('Cancel Invite')
+    await screen.findByText('Cancel invite')
 
-    fireEvent.press(screen.getByText('Cancel Invite'))
+    fireEvent.press(screen.getByText('Cancel invite'))
 
     await waitFor(() => expect(api.cancelBrandInvite).toHaveBeenCalledWith('i1'))
     expect(await screen.findByText('Cancelled')).toBeOnTheScreen()

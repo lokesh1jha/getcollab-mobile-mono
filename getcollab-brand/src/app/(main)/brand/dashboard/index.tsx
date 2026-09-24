@@ -2,29 +2,25 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, Pressable, Dimensions } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { apiService } from '@shared/services/api'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { useCampaignStore } from '@shared/stores/campaign-store'
 import { useInfluencerStore } from '@shared/stores/influencer-store'
 import { useAuthStore } from '@shared/stores/auth-store'
+import { useNotificationStore } from '@shared/stores/notification-store'
 import { useSubscriptionStore } from '../../../../stores/subscription-store'
 import { SubscriptionBanner } from '../../../../components/SubscriptionBanner'
 import { SubscriptionExpiredModal } from '../../../../components/SubscriptionExpiredModal'
 import { EmailVerificationBanner } from '@shared/components/EmailVerificationBanner'
 import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 const { width } = Dimensions.get('window')
 const CARD_W = width * 0.42
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string; dot: string }> = {
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)', dot: '#22C55E' },
-  draft: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)', dot: '#A1A1AA' },
-  completed: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)', dot: '#3B82F6' },
-  paused: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)', dot: '#F59E0B' },
-  cancelled: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)', dot: '#EF4444' },
-}
 
 function getGreeting(name?: string): { greeting: string; subtitle: string } {
   const hour = new Date().getHours()
@@ -43,23 +39,32 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [showExpiredModal, setShowExpiredModal] = useState(false)
+  const [walletFunded, setWalletFunded] = useState(false)
 
   const { myCampaigns, fetchMyCampaigns } = useCampaignStore()
   const { influencers, fetchInfluencers } = useInfluencerStore()
   const subscription = useSubscriptionStore((s) => s.subscription)
   const { user } = useAuthStore()
+  const unreadCount = useNotificationStore((s) => s.unreadCount)
+  const fetchNotifications = useNotificationStore((s) => s.fetchNotifications)
 
   const loadDashboardData = useCallback(async () => {
     setLoadError(null)
     try {
-      setLoading(true)
-      await Promise.all([fetchMyCampaigns(), fetchInfluencers()])
+      const [, , wallet] = await Promise.all([
+        fetchMyCampaigns(),
+        fetchInfluencers(),
+        apiService.fetchWalletSummary().catch(() => null),
+        fetchNotifications().catch(() => undefined),
+      ])
+      const w = (wallet as any)?.summary ?? wallet
+      setWalletFunded(((w?.available_minor ?? 0) + (w?.reserved_minor ?? 0)) > 0)
     } catch (error: any) {
-      const message = error?.message || 'Failed to load dashboard data'
+      const message = error?.message || "Couldn't load dashboard"
       setLoadError(message)
       logger.error(message, error)
     } finally { setLoading(false) }
-  }, [fetchMyCampaigns, fetchInfluencers])
+  }, [fetchMyCampaigns, fetchInfluencers, fetchNotifications])
 
   useFocusEffect(useCallback(() => { loadDashboardData() }, [loadDashboardData]))
 
@@ -79,7 +84,9 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
 
   const onboardingComplete = !!(user?.onboardingComplete || user?.companyName)
   const hasCampaigns = myCampaigns.length > 0
-  const hasPaymentMethod = false // TODO: wire when backend exposes payment method flag
+  // Brands pay creators from their wallet (escrow draws from it), so the
+  // step is done once the wallet holds money.
+  const hasPaymentMethod = walletFunded
 
   const checklist = [
     {
@@ -92,18 +99,18 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
     },
     {
       id: 'payment',
-      title: 'Add a way to pay creators',
-      sub: 'UPI or bank account — nothing charged today',
+      title: 'Fund your wallet',
+      sub: 'Your wallet funds creator payments',
       done: hasPaymentMethod,
-      action: 'Add payment',
-      route: 'Billing',
+      action: 'Add funds',
+      route: 'Wallet',
     },
     {
       id: 'campaign',
-      title: 'Write your first brief',
+      title: 'Create your first campaign',
       sub: 'Tell creators the product, budget and deadline',
       done: hasCampaigns,
-      action: hasCampaigns ? 'View briefs' : 'Create brief',
+      action: hasCampaigns ? 'View campaigns' : 'Create campaign',
       route: hasCampaigns ? 'Campaigns' : 'CreateCampaign',
     },
   ]
@@ -111,28 +118,16 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
   const nextTask = checklist.find((t) => !t.done)
 
   const kpiCards = [
-    {
-      id: 'active', label: 'Active Campaigns', value: activeCampaignsCount,
-      delta: myCampaigns.length > 0 ? { text: `${myCampaigns.length} total`, trend: 'up' as const } : undefined,
-    },
-    {
-      id: 'bids', label: 'Total Bids', value: totalBidsCount,
-      delta: totalBidsCount > 0 ? { text: `${activeCampaignsCount} campaigns`, trend: 'up' as const } : undefined,
-    },
-    {
-      id: 'creators', label: 'Creators', value: influencers.length,
-      delta: influencers.length > 0 ? { text: 'Available', trend: 'up' as const } : undefined,
-    },
-    {
-      id: 'campaigns', label: 'Campaigns', value: myCampaigns.length,
-      delta: activeCampaignsCount > 0 ? { text: `${activeCampaignsCount} live`, trend: 'up' as const } : undefined,
-    },
+    { id: 'active', label: 'Active campaigns', value: activeCampaignsCount, meta: myCampaigns.length > 0 ? `of ${myCampaigns.length} total` : undefined },
+    { id: 'bids', label: 'Applications', value: totalBidsCount },
+    { id: 'creators', label: 'Creators', value: influencers.length },
+    { id: 'campaigns', label: 'Campaigns', value: myCampaigns.length },
   ]
 
   if (loading) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -142,7 +137,7 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center', padding: spacing.lg }]}>
         <View style={[styles.kpiCard, { width: '100%', maxWidth: 400, alignItems: 'center', padding: spacing.xl }]}>
           <Text style={{ color: colors.error, fontSize: 16, textAlign: 'center', lineHeight: 22 }}>{loadError}</Text>
-          <Pressable style={({ pressed }) => [styles.blueBtn, { marginTop: spacing.lg }, pressed && { opacity: 0.85 }]} onPress={loadDashboardData}>
+          <Pressable style={({ pressed }) => [styles.blueBtn, { marginTop: spacing.lg }, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); loadDashboardData() }}>
             <Text style={styles.blueBtnText}>Retry</Text>
           </Pressable>
         </View>
@@ -156,7 +151,7 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
         <ScrollView
           contentContainerStyle={{ paddingBottom: spacing.xxxl }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleRefresh() }} tintColor={colors.primary} />}
         >
           <EmailVerificationBanner />
           <SubscriptionBanner />
@@ -166,24 +161,19 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
               <Text style={styles.greeting}>{greeting}</Text>
               <Text style={styles.subtitle}>{subtitle}</Text>
             </View>
-            <Pressable testID="dashboard-notif-btn" style={styles.bellBtn} hitSlop={10} onPress={() => navigation?.navigate('Notifications')}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Notifications" testID="dashboard-notif-btn" style={({ pressed }) => [styles.bellBtn, pressed && { opacity: 0.85 }]} hitSlop={10} onPress={() => navigation?.navigate('Notifications')}>
               <Ionicons name="notifications-outline" size={20} color="#fff" />
-              <View style={styles.bellDot} />
+              {unreadCount > 0 && <View style={styles.bellDot} />}
             </Pressable>
           </View>
 
           {/* KPI Cards */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.md, paddingVertical: spacing.sm }} style={{ marginTop: spacing.sm }}>
             {kpiCards.map((k, i) => (
-              <Animated.View key={k.id} entering={FadeInDown.delay(80 * i).duration(320)} style={[styles.kpiCard, { width: CARD_W }]}>
+              <Animated.View key={k.id} entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)} style={[styles.kpiCard, { width: CARD_W }]}>
                 <Text style={styles.kpiLabel}>{k.label}</Text>
                 <Text style={styles.kpiValue}>{k.value}</Text>
-                {k.delta && (
-                  <View style={[styles.deltaPill, { backgroundColor: k.delta.trend === 'up' ? colors.successSoft : colors.errorSoft }]}>
-                    <Ionicons name={k.delta.trend === 'up' ? 'trending-up' : 'trending-down'} size={11} color={k.delta.trend === 'up' ? colors.success : colors.error} />
-                    <Text style={[styles.deltaText, { color: k.delta.trend === 'up' ? colors.success : colors.error }]}>{k.delta.text}</Text>
-                  </View>
-                )}
+                {k.meta ? <Text style={styles.kpiMeta}>{k.meta}</Text> : null}
               </Animated.View>
             ))}
           </ScrollView>
@@ -194,20 +184,19 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
               <LinearGradient colors={['rgba(59,130,246,0.20)', 'rgba(59,130,246,0.02)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFillObject} />
               <View style={styles.aiTopRow}>
                 <View style={styles.aiBadge}>
-                  <Ionicons name="sparkles" size={12} color={colors.blue} />
-                  <Text style={styles.aiBadgeText}>AI INSIGHTS</Text>
+                  <Ionicons name="search" size={12} color={colors.blue} />
+                  <Text style={styles.aiBadgeText}>Discover</Text>
                 </View>
-                <Ionicons name="ellipsis-horizontal" size={18} color={colors.textMuted} />
               </View>
-              <Text style={styles.aiHeading}>Discover creators that match your brand</Text>
-              <Text style={styles.aiSub}>AI-powered matching across categories, audience, and engagement metrics.</Text>
+              <Text style={styles.aiHeading}>Find creators that fit your brand</Text>
+              <Text style={styles.aiSub}>Search creators by name, niche or category.</Text>
               <Pressable
                 testID="ai-review-matches-btn"
                 onPress={() => navigation?.navigate('Creators')}
                 style={({ pressed }) => [styles.aiCta, pressed && { opacity: 0.85 }]}
               >
-                <Text style={styles.aiCtaText}>Browse Creators</Text>
-                <Ionicons name="arrow-forward" size={16} color="#fff" />
+                <Text style={styles.aiCtaText}>Browse creators</Text>
+                <Ionicons name="arrow-forward" size={16} color={colors.black} />
               </Pressable>
             </Animated.View>
           </View>
@@ -256,9 +245,9 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
           {/* Recent Campaigns */}
           <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.xl }}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent Campaigns</Text>
+              <Text style={styles.sectionTitle}>Recent campaigns</Text>
               {myCampaigns.length > 0 && (
-                <Pressable onPress={() => navigation?.navigate('Campaigns')}>
+                <Pressable onPress={() => navigation?.navigate('Campaigns')} style={({ pressed }) => pressed && { opacity: 0.85 }}>
                   <Text style={styles.sectionLink}>View all</Text>
                 </Pressable>
               )}
@@ -295,19 +284,19 @@ export default function BrandDashboardScreen({ navigation }: ScreenProps) {
             ) : (
               <View style={styles.emptyCard}>
                 <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700', textAlign: 'center' }}>No campaigns yet</Text>
-                <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center', marginTop: spacing.xs }}>Create your first campaign to get started</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center', marginTop: spacing.xs }}>Create a campaign to get started.</Text>
               </View>
             )}
           </View>
 
           {/* Quick Actions */}
           <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.xl }}>
-            <Text style={[styles.sectionTitle, { marginBottom: spacing.md }]}>Quick Actions</Text>
+            <Text style={[styles.sectionTitle, { marginBottom: spacing.md }]}>Quick actions</Text>
             <View style={styles.actionGrid}>
-              <ActionCard icon="search" label="Find Creators" onPress={() => navigation?.navigate('Creators')} />
-              <ActionCard icon="add-circle" label="Create Campaign" onPress={() => navigation?.navigate('CreateCampaign')} />
+              <ActionCard icon="search" label="Find creators" onPress={() => navigation?.navigate('Creators')} />
+              <ActionCard icon="add-circle" label="Create campaign" onPress={() => navigation?.navigate('CreateCampaign')} />
               <ActionCard icon="person-add" label="Messages" onPress={() => navigation?.navigate('Chat')} />
-              <ActionCard icon="document-text" label="View Bids" onPress={() => navigation?.navigate('Bids')} />
+              <ActionCard icon="document-text" label="Applications" onPress={() => navigation?.navigate('Bids')} />
               <ActionCard icon="wallet-outline" label="Wallet" onPress={() => navigation?.navigate('Wallet')} />
               <ActionCard icon="people-outline" label="Relationships" onPress={() => navigation?.navigate('Relationships')} />
               <ActionCard icon="stats-chart" label="Analytics" onPress={() => navigation?.navigate('Analytics')} />
@@ -348,13 +337,12 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border,
     alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card,
   },
-  bellDot: { position: 'absolute', top: 10, right: 11, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.neon, borderWidth: 2, borderColor: colors.card },
+  bellDot: { position: 'absolute', top: 10, right: 11, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.card },
 
   kpiCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg, gap: 6 },
   kpiLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '500' },
   kpiValue: { color: '#fff', fontSize: 26, fontWeight: '700', letterSpacing: -0.8, marginTop: 2 },
-  deltaPill: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, marginTop: 4 },
-  deltaText: { fontSize: 11, fontWeight: '700' },
+  kpiMeta: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
 
   aiCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: 'rgba(59,130,246,0.35)', borderRadius: radius.lg, padding: spacing.lg, overflow: 'hidden' },
   aiTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -362,8 +350,8 @@ const styles = StyleSheet.create({
   aiBadgeText: { color: colors.blue, fontSize: 10, fontWeight: '700', letterSpacing: 1 },
   aiHeading: { color: '#fff', fontSize: 18, fontWeight: '700', lineHeight: 24, letterSpacing: -0.4, marginTop: spacing.md },
   aiSub: { color: colors.textMuted, fontSize: 13, lineHeight: 19, marginTop: spacing.sm },
-  aiCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.blue, borderRadius: radius.pill, paddingVertical: 12, marginTop: spacing.lg },
-  aiCtaText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  aiCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 12, marginTop: spacing.lg },
+  aiCtaText: { color: colors.black, fontSize: 14, fontWeight: '700' },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   sectionTitle: { color: '#fff', fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
@@ -380,8 +368,8 @@ const styles = StyleSheet.create({
   metaText: { color: colors.textMuted, fontSize: 12 },
   metaDot: { color: colors.textSubtle, fontSize: 12 },
 
-  blueBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.blue, borderRadius: radius.pill, paddingVertical: 12 },
-  blueBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  blueBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 12 },
+  blueBtnText: { color: colors.black, fontSize: 14, fontWeight: '700' },
 
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   actionCard: {
@@ -399,9 +387,9 @@ const styles = StyleSheet.create({
   checklistTitle: { color: '#fff', fontSize: 15, fontWeight: '700' },
   checklistMeta: { color: colors.textMuted, fontSize: 12 },
   checklistBarBg: { height: 4, backgroundColor: colors.elevated, borderRadius: 2, marginBottom: spacing.md },
-  checklistBarFill: { height: 4, backgroundColor: colors.neon, borderRadius: 2 },
+  checklistBarFill: { height: 4, backgroundColor: colors.primary, borderRadius: 2 },
   checklistNext: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.elevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md },
-  checklistCircle: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center' },
+  checklistCircle: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   checklistNum: { color: '#000', fontSize: 12, fontWeight: '700' },
   checklistNextTitle: { color: '#fff', fontSize: 14, fontWeight: '600' },
   checklistNextSub: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
@@ -409,7 +397,7 @@ const styles = StyleSheet.create({
   checklistList: { gap: spacing.sm },
   checklistRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   checklistDot: { width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  checklistDotDone: { backgroundColor: colors.neon, borderColor: colors.neon },
+  checklistDotDone: { backgroundColor: colors.primary, borderColor: colors.primary },
   checklistRowText: { color: colors.textMuted, fontSize: 13 },
   checklistRowTextDone: { textDecorationLine: 'line-through', opacity: 0.6 },
 })

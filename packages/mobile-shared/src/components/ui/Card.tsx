@@ -1,6 +1,6 @@
 import React from 'react'
-import { View, Text, StyleSheet, ViewStyle, StyleProp, TouchableOpacity } from 'react-native'
-import { colors, spacing, borderRadius } from '../../constants'
+import { View, Text, StyleSheet, ViewStyle, StyleProp, Pressable } from 'react-native'
+import { colors, spacing, radius } from '@/src/theme'
 
 interface CardProps {
   children: React.ReactNode
@@ -11,9 +11,9 @@ interface CardProps {
 export const Card: React.FC<CardProps> = ({ children, style, onPress }) => {
   if (onPress) {
     return (
-      <TouchableOpacity style={[styles.card, style]} onPress={onPress} activeOpacity={0.8}>
+      <Pressable style={({ pressed }) => [styles.card, style, pressed && { opacity: 0.85 }]} onPress={onPress}>
         {children}
-      </TouchableOpacity>
+      </Pressable>
     )
   }
 
@@ -47,8 +47,8 @@ export const CardContent: React.FC<CardContentProps> = ({ children, style }) => 
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    padding: spacing.md,
+    padding: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -75,9 +75,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   headerRight: {
-    marginLeft: spacing.md,
+    marginLeft: spacing.lg,
   },
   content: {
-    padding: spacing.md,
+    padding: spacing.lg,
   },
 })

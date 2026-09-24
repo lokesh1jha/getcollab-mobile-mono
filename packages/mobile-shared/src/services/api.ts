@@ -1,9 +1,22 @@
+import { rowsForToggle, toggleStates, type PrefRow } from '../lib/notification-prefs'
 import { Alert } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
-import { resolveApiBaseUrl } from '../utils/api-url'
+import { apiBaseUrlFromEnv } from '../utils/api-url'
 import { logger } from './logger'
+import * as Haptics from 'expo-haptics'
 
-const API_BASE_URL = resolveApiBaseUrl(process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api/v1')
+const API_BASE_URL = apiBaseUrlFromEnv(process.env.EXPO_PUBLIC_API_URL)
+const REQUEST_TIMEOUT_MS = 10000
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
 const TOKEN_KEY = 'getcollab_auth_token'
 const REFRESH_TOKEN_KEY = 'getcollab_refresh_token'
 const DEVICE_ID_KEY = 'getcollab_device_id'
@@ -177,7 +190,7 @@ class ApiService {
     const contentType = response.headers.get('content-type')
 
     if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('API Server is under maintenance. Please try again later.')
+      throw new Error('GetCollab is under maintenance. Try again later.')
     }
 
     let data: any
@@ -185,7 +198,7 @@ class ApiService {
       const text = await response.text()
       data = JSON.parse(text)
     } catch (e) {
-      throw new Error('API Server is under maintenance. Please try again later.')
+      throw new Error('GetCollab is under maintenance. Try again later.')
     }
 
     if (!response.ok) {
@@ -204,7 +217,7 @@ class ApiService {
       }
 
       if (response.status === 429) {
-        const lockoutMessage = data.message || data.error || 'Too many requests. Please try again later.'
+        const lockoutMessage = data.message || data.error || 'Too many attempts. Try again later.'
         throw new Error(lockoutMessage)
       }
 
@@ -263,7 +276,7 @@ class ApiService {
 
     let response: Response
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000)
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
     try {
       response = await fetch(url, { ...config, signal: controller.signal })
       try {
@@ -287,7 +300,7 @@ class ApiService {
           const newToken = await this.refreshAccessToken()
           if (newToken) {
             headers['Authorization'] = `Bearer ${newToken}`
-            const retryResponse = await fetch(url, { ...config, headers })
+            const retryResponse = await fetchWithTimeout(url, { ...config, headers })
             // Intercept retry 401 here — prevents handleResponse from clearing tokens
             // while other concurrent retries are still in-flight with the new token.
             if (retryResponse.status === 401) {
@@ -311,7 +324,7 @@ class ApiService {
       return await this.handleResponse<T>(response)
     } catch (error) {
       if (error instanceof Error && !isUnauthorizedError(error.message)) {
-        logger.error(`API ${options.method || 'GET'} ${endpoint}`, error, { url })
+        logger.error(`API ${options.method || 'GET'} ${endpoint.split('?')[0]}`, error)
       }
       throw error
     }
@@ -429,10 +442,16 @@ class ApiService {
     return this.request(`/chat/messages?${queryParams.toString()}`)
   }
 
+  async markChatRoomRead(roomId: string): Promise<any> {
+    return this.request(`/chat/rooms/${encodeURIComponent(roomId)}/read`, { method: 'POST', body: JSON.stringify({}) })
+  }
+
   async sendChatMessage(roomId: string, content: string, type: string = 'text'): Promise<any> {
+    // The API reads `message`; this sent `content`, so every mobile message
+    // was saved with an empty body.
     return this.request('/chat/messages', {
       method: 'POST',
-      body: JSON.stringify({ roomId, content, type }),
+      body: JSON.stringify({ roomId, message: content, type }),
     })
   }
 
@@ -446,21 +465,24 @@ class ApiService {
     })
   }
 
-  async sendChatMessageWithAttachments(
-    roomId: string,
-    message: string,
-    attachments: { s3Key: string; fileName: string; mimeType: string; fileSize: number }[],
-  ): Promise<any> {
+  /** blobIds come from presignChatAttachments (uploads[].blobId). */
+  async sendChatMessageWithAttachments(roomId: string, message: string, blobIds: string[]): Promise<any> {
     return this.request('/chat/messages', {
       method: 'POST',
-      body: JSON.stringify({ roomId, message, attachments }),
+      body: JSON.stringify({ roomId, message, type: 'file', blob_ids: blobIds }),
     })
   }
 
+  /** Opens (or reuses) the brand's room with a creator. /chat/direct does not
+   *  exist; rooms are opened with POST /chat/rooms for the caller's brand
+   *  org. influencerId may be the creator's profile or user id. */
   async createDirectChat(influencerId: string, campaignId?: string): Promise<any> {
-    return this.request('/chat/direct', {
+    const me: any = await this.request('/auth/me')
+    const brandOrgId = me?.tenant_id || me?.memberships?.[0]?.org_id
+    if (!brandOrgId) throw new Error('Messaging a creator needs a brand workspace')
+    return this.request('/chat/rooms', {
       method: 'POST',
-      body: JSON.stringify({ influencerId, campaignId }),
+      body: JSON.stringify({ brand_org_id: brandOrgId, influencer_id: influencerId, campaign_id: campaignId ?? '' }),
     })
   }
 
@@ -530,10 +552,7 @@ class ApiService {
   }
 
   async updateGeneralProfile(data: { name?: string; websiteUrl?: string; industry?: string; phoneNumbers?: string[] }): Promise<any> {
-    return this.request('/settings/profile', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+    return this.updateAccount(data)
   }
 
   async updateRole(role: 'brand' | 'influencer'): Promise<any> {
@@ -565,11 +584,15 @@ class ApiService {
     })
   }
 
-  async uploadImage(base64Image: string): Promise<any> {
-    return this.request('/profile/upload', {
-      method: 'POST',
-      body: JSON.stringify({ image: base64Image }),
-    })
+  /** Uploads a campaign cover and returns its public URL. /profile/upload,
+   *  which this used, does not exist; campaigns have their own upload URL. */
+  async uploadCampaignCover(dataUri: string, contentType = 'image/jpeg'): Promise<string> {
+    const r: any = await this.request(`/campaigns/upload-url?contentType=${encodeURIComponent(contentType)}`)
+    if (!r?.uploadUrl || !r?.publicUrl) throw new Error("Couldn't start the upload. Try again.")
+    const blob = await (await fetch(dataUri)).blob()
+    const put = await fetch(r.uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: blob as any })
+    if (!put.ok) throw new Error("Couldn't upload the cover image. Try again.")
+    return r.publicUrl
   }
 
   async updatePricing(data: any): Promise<any> {
@@ -591,22 +614,76 @@ class ApiService {
     return this.request('/reference-data/all')
   }
 
+  // /v1/settings (GET/PUT), /settings/notifications and /settings/profile do
+  // not exist on the Go API, so every settings screen loaded defaults and
+  // every save failed. These keep the screens' shape and compose it from the
+  // real endpoints: /auth/me + PATCH /auth/account (name, phone, brand
+  // website/industry), /profile (bio, location, website), and
+  // /notifications/preferences (per event type, mapped from the toggles).
+
+  private async getPreferenceRows(): Promise<PrefRow[]> {
+    const res: any = await this.request('/notifications/preferences')
+    return (res?.preferences ?? []).map((p: any) => ({
+      event_type: p.eventType, in_app: !!p.inApp, email: !!p.email, web_push: !!p.webPush, mobile_push: !!p.mobilePush,
+    }))
+  }
+
   async getSettings(): Promise<any> {
-    return this.request('/settings')
+    const [meRes, profile, rows] = await Promise.all([
+      this.request('/auth/me') as Promise<any>,
+      (this.request('/profile') as Promise<any>).catch(() => null),
+      this.getPreferenceRows().catch(() => null),
+    ])
+    const me = meRes?.user ?? meRes
+    const prof = profile?.profile ?? profile ?? {}
+    return {
+      name: me?.name ?? '',
+      email: me?.email ?? '',
+      phoneNumbers: me?.phoneNumbers ?? [],
+      image: me?.image,
+      bio: prof.bio ?? '',
+      location: [prof.city, prof.state].filter(Boolean).join(', '),
+      websiteUrl: prof.website ?? '',
+      industry: prof.industries?.[0] ?? '',
+      // Flags a failed read, so callers never treat fallbacks as saved values.
+      profileLoaded: profile != null,
+      isBrand: Array.isArray(me?.memberships) && me.memberships.length > 0,
+      // null (not all-on defaults) when preferences couldn't be read.
+      notifications: rows ? toggleStates(rows) : null,
+    }
   }
 
-  async updateSettings(data: any): Promise<any> {
-    return this.request('/settings', {
-      method: 'PUT',
-      body: JSON.stringify(data),
+  /** PATCH /auth/account replaces name, phone and (brands) website/industry
+   *  together, so unchanged fields are read back first rather than cleared. */
+  async updateAccount(changes: { name?: string; phoneNumbers?: string[]; websiteUrl?: string; industry?: string }): Promise<any> {
+    const cur = await this.getSettings()
+    // A brand's website/industry would be sent blank and overwrite the saved ones.
+    if (cur.isBrand && !cur.profileLoaded && (changes.websiteUrl === undefined || changes.industry === undefined)) {
+      throw new Error("Couldn't load your current profile. Try again.")
+    }
+    return this.request('/auth/account', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        name: changes.name ?? cur.name,
+        phoneNumbers: changes.phoneNumbers ?? cur.phoneNumbers,
+        websiteUrl: changes.websiteUrl ?? cur.websiteUrl,
+        industry: changes.industry ?? cur.industry,
+      }),
     })
   }
 
-  async updateNotificationSettings(data: any): Promise<any> {
-    return this.request('/settings/notifications', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+  async updateSettings(data: { phoneNumbers?: string[]; name?: string }): Promise<any> {
+    return this.updateAccount(data)
+  }
+
+  /** Accepts the screens' toggle keys, e.g. { emailBidAlerts: false }. */
+  async updateNotificationSettings(data: Record<string, boolean>): Promise<any> {
+    const rows = await this.getPreferenceRows()
+    for (const [key, value] of Object.entries(data)) {
+      for (const row of rowsForToggle(rows, key, value)) {
+        await this.request('/notifications/preferences', { method: 'PUT', body: JSON.stringify(row) })
+      }
+    }
   }
 
   // ------- Notifications -------
@@ -685,7 +762,9 @@ class ApiService {
     return this.request('/disputes')
   }
 
-  async createDispute(data: { campaignId?: string; reason: string; description: string; respondentId?: string }): Promise<any> {
+  /** Disputes are filed against a deal. This sent campaignId/description,
+   *  which the API does not read, so no dispute could be filed. */
+  async createDispute(data: { dealId: string; reason: string }): Promise<any> {
     return this.request('/disputes', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -696,6 +775,28 @@ class ApiService {
   async getDeals(params?: Record<string, any>): Promise<any> {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
     return this.request(`/collabs${queryString}`)
+  }
+
+  /** Every collaboration visible to the caller, following cursor pages
+   *  (GET /collabs caps a page at 100). campaignId is filtered server-side. */
+  async getAllDeals(filter: { campaignId?: string } = {}): Promise<any[]> {
+    const all: any[] = []
+    const seen = new Set<string>()
+    let cursor: string | undefined
+    do {
+      const res: any = await this.getDeals({
+        limit: '100',
+        ...(filter.campaignId ? { campaign_id: filter.campaignId } : {}),
+        ...(cursor ? { cursor } : {}),
+      })
+      const list = res?.deals || res?.collabs || res?.data || []
+      if (Array.isArray(list)) all.push(...list)
+      cursor = res?.pagination?.hasNext ? res.pagination.nextCursor ?? undefined : undefined
+      // A repeated cursor would loop forever; stop instead.
+      if (cursor && seen.has(cursor)) break
+      if (cursor) seen.add(cursor)
+    } while (cursor)
+    return all
   }
 
   async getDeal(id: string): Promise<any> {
@@ -724,6 +825,57 @@ class ApiService {
 
   async submitDealProof(id: string, payload: Record<string, any>): Promise<any> {
     return this.request(`/collabs/${encodeURIComponent(id)}/proof/submit`, { method: 'POST', body: JSON.stringify(payload) })
+  }
+
+  /** Hand in a script, content or live post link for one deliverable. */
+  async submitDeliverableWork(
+    dealId: string,
+    milestoneId: string,
+    body: { kind: 'SCRIPT' | 'CONTENT' | 'LIVE_LINK'; bodyText?: string; blobIds?: string[]; caption?: string; liveUrl?: string },
+  ): Promise<any> {
+    return this.request(
+      `/collabs/${encodeURIComponent(dealId)}/deliverables/${encodeURIComponent(milestoneId)}/submissions`,
+      { method: 'POST', body: JSON.stringify(body) },
+    )
+  }
+
+  /** Brand review of one submission. A note is required to request changes or reject. */
+  async reviewSubmission(
+    dealId: string,
+    submissionId: string,
+    body: { action: 'approve' | 'request_changes' | 'reject'; note?: string },
+  ): Promise<any> {
+    return this.request(
+      `/collabs/${encodeURIComponent(dealId)}/submissions/${encodeURIComponent(submissionId)}/review`,
+      { method: 'POST', body: JSON.stringify(body) },
+    )
+  }
+
+  /** Signed URL for a submission's upload (scan-gated for the brand). */
+  async getSubmissionFileUrl(dealId: string, submissionId: string, download = false): Promise<any> {
+    return this.request(
+      `/collabs/${encodeURIComponent(dealId)}/assets/${encodeURIComponent(submissionId)}/url?download=${download ? 1 : 0}`,
+    )
+  }
+
+  /** The campaign's escrow pool (404 until the brand funds it). */
+  async getCampaignPool(campaignId: string): Promise<any> {
+    return this.request(`/escrow/campaigns/${encodeURIComponent(campaignId)}/pool`)
+  }
+
+  async getDealEvents(dealId: string): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(dealId)}/events`)
+  }
+
+  async fundDeal(dealId: string): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(dealId)}/fund`, {
+      method: 'POST',
+      body: JSON.stringify({ idempotencyKey: `fund-${dealId}` }),
+    })
+  }
+
+  async releaseDealPayment(dealId: string): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(dealId)}/mark-paid`, { method: 'POST', body: JSON.stringify({}) })
   }
 
   async getDealShipping(id: string): Promise<any> {
@@ -1112,7 +1264,7 @@ class ApiService {
 
   // ------- Subscriptions (App Store compliant) -------
   async getSubscriptionStatus(): Promise<any> {
-    return this.request('/subscriptions/mobile-status')
+    return this.request('/subscriptions/status')
   }
 
   async getSubscriptionPricing(): Promise<any> {
@@ -1186,10 +1338,12 @@ class ApiService {
     })
   }
 
+  /** influencerId is the creator's profile id. /campaigns/{id}/invite does
+   *  not exist; invites live under /deals. */
   async inviteCreatorToCampaign(campaignId: string, influencerId: string, message?: string): Promise<any> {
-    return this.request(`/campaigns/${campaignId}/invite`, {
+    return this.request('/deals/invites', {
       method: 'POST',
-      body: JSON.stringify({ influencerId, message }),
+      body: JSON.stringify({ influencerId, campaignId, message: message ?? '' }),
     })
   }
 
@@ -1208,7 +1362,7 @@ class ApiService {
       if (!refreshToken) return null
 
       const deviceId = await getOrCreateDeviceId()
-      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+      const response = await fetchWithTimeout(`${this.baseUrl}/auth/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1247,21 +1401,23 @@ class ApiService {
 
 export const apiService = new ApiService()
 
-export const handleApiError = (error: any, defaultMessage: string = 'An error occurred') => {
+export const handleApiError = (error: any, defaultMessage: string = 'Something went wrong. Try again.') => {
   if (isUnauthorizedError(error?.message)) {
     return 'UNAUTHORIZED'
   }
   const message = error?.message || defaultMessage
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
   Alert.alert('Error', message)
   return message
 }
 
 export const showSignInError = (error: any, onSignUp: () => void) => {
   if (isUnauthorizedError(error?.message)) {
-    Alert.alert('Session expired', 'Please sign in again.')
+    Alert.alert('Session expired', 'Sign in again to continue.')
     return
   }
 
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
   const message = error?.message || ''
   const isLockout = message.toLowerCase().includes('too many') || message.toLowerCase().includes('locked')
   if (isLockout) {
@@ -1270,8 +1426,8 @@ export const showSignInError = (error: any, onSignUp: () => void) => {
   }
 
   Alert.alert(
-    'Account not found',
-    'No account exists with this email, or the password is incorrect. Please register first.',
+    "Couldn't sign in",
+    'Check your email and password, or sign up.',
     [
       { text: 'OK', onPress: onSignUp },
     ],
@@ -1294,7 +1450,7 @@ export async function uploadMediaBlob(input: { uri: string; mime: string; sizeBy
   })
   const blobId = started?.blob_id || started?.blobId || started?.id
   const url = started?.url
-  if (!blobId || !url) throw new Error('Upload initialization failed')
+  if (!blobId || !url) throw new Error("Couldn't start the upload. Try again.")
   const fileRes = await fetch(input.uri)
   const blob = await fileRes.blob()
   const putRes = await fetch(url, {
@@ -1302,7 +1458,7 @@ export async function uploadMediaBlob(input: { uri: string; mime: string; sizeBy
     headers: { 'Content-Type': input.mime },
     body: blob as any,
   })
-  if (!putRes.ok) throw new Error('File upload failed')
+  if (!putRes.ok) throw new Error("Couldn't upload the file. Try again.")
   return apiService.completeMediaUpload(String(blobId))
 }
 

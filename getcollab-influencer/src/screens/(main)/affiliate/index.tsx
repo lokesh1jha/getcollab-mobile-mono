@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 export default function AffiliateScreen() {
   const [programs, setPrograms] = useState<any[]>([])
@@ -25,25 +26,25 @@ export default function AffiliateScreen() {
       setPrograms(p?.programs || p?.data || [])
       setLinks(l?.links || l?.data || [])
       setRewards(r?.rewards || r?.data || [])
-    } catch (e) { handleApiError(e, 'Failed to load affiliate data') }
+    } catch (e) { handleApiError(e, "Couldn't load affiliate programs") }
     finally { setLoading(false); setRefreshing(false) }
   }, [])
 
-  useFocusEffect(useCallback(() => { setLoading(true); load() }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
   const apply = async (id: string) => {
     setBusy(id)
     try {
       await apiService.applyToAffiliateProgram(id)
-      Alert.alert('Submitted', 'Your application was submitted.')
+      Alert.alert('Application sent', 'The program will review it.')
       load()
-    } catch (e) { handleApiError(e, 'Failed to apply') }
+    } catch (e) { handleApiError(e, "Couldn't apply. Try again.") }
     finally { setBusy(null) }
   }
 
   if (loading) return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.center}><ActivityIndicator color={colors.neon} /></View>
+      <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>
     </SafeAreaView>
   )
 
@@ -52,7 +53,7 @@ export default function AffiliateScreen() {
       <FlatList
         style={styles.root}
         contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.primary} />}
         data={programs}
         keyExtractor={(x) => String(x.id)}
         ListHeaderComponent={
@@ -61,14 +62,14 @@ export default function AffiliateScreen() {
             {programs.length === 0 && (
               <View style={styles.emptyWrap}>
                 <Ionicons name="link-outline" size={26} color={colors.textMuted} />
-                <Text style={styles.emptyTitle}>No affiliate programs available</Text>
+                <Text style={styles.emptyTitle}>No affiliate programs yet</Text>
               </View>
             )}
           </View>
         }
         ListFooterComponent={
           <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
-            <Text style={styles.heading}>My Links</Text>
+            <Text style={styles.heading}>My links</Text>
             {links.length === 0 && <Text style={styles.muted}>No active links.</Text>}
             {links.map((x) => (
               <View key={x.id} style={styles.row}>
@@ -87,12 +88,12 @@ export default function AffiliateScreen() {
           </View>
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(index * 40).duration(300)}>
+          <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
             <View style={styles.card}>
               <Text style={styles.title}>{item.name || item.title || 'Affiliate program'}</Text>
-              <Text style={styles.meta}>{item.description || item.rewardRule || 'Earn commissions by sharing your creator link.'}</Text>
+              <Text style={styles.meta}>{item.description || item.rewardRule || 'Earn commission by sharing your link.'}</Text>
               <Pressable disabled={!!busy} onPress={() => apply(item.id)} style={({ pressed }) => [styles.primary, pressed && { opacity: 0.85 }, busy === item.id && { opacity: 0.5 }]}>
-                <Text style={styles.primaryText}>{busy === item.id ? 'Applying...' : 'Apply'}</Text>
+                <Text style={styles.primaryText}>{busy === item.id ? 'Applying…' : 'Apply'}</Text>
               </Pressable>
             </View>
           </Animated.View>
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
   row: { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, padding: spacing.md },
   title: { color: colors.text, fontWeight: '700' },
   meta: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
-  primary: { alignSelf: 'flex-start', backgroundColor: colors.neon, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill, marginTop: spacing.sm },
+  primary: { alignSelf: 'flex-start', backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill, marginTop: spacing.sm },
   primaryText: { color: '#000', fontWeight: '800' },
   emptyWrap: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm },
   emptyTitle: { color: colors.textMuted, fontSize: 14 },

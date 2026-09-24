@@ -32,8 +32,10 @@ jest.mock('@shared/services/api', () => {
     updateBidStatus: jest.fn(),
     createDirectChat: jest.fn(),
     getDeals: jest.fn(),
+    getAllDeals: jest.fn(),
     getBrandInvites: jest.fn(),
     fetchWalletSummary: jest.fn(),
+    getCampaignPool: jest.fn(),
   }
   return { __esModule: true, apiService: api, default: api, handleApiError: jest.fn() }
 })
@@ -57,6 +59,7 @@ beforeEach(() => {
   api.discoverCreators.mockResolvedValue({ influencers: [] })
   api.getBidsForCampaign.mockResolvedValue({ data: [] })
   api.getDeals.mockResolvedValue({ deals: [] })
+  api.getAllDeals.mockResolvedValue([])
   api.getBrandInvites.mockResolvedValue({ invites: [] })
   api.fetchWalletSummary.mockResolvedValue({})
   jest.spyOn(Alert, 'alert').mockImplementation(() => undefined)
@@ -66,7 +69,7 @@ describe('CampaignEditScreen', () => {
   it('prefills the form from the campaign', async () => {
     renderScreen(CampaignEditScreen)
 
-    expect(await screen.findByText('Edit Campaign')).toBeOnTheScreen()
+    expect(await screen.findByText('Edit campaign')).toBeOnTheScreen()
     expect(screen.getByDisplayValue('Summer Launch')).toBeOnTheScreen()
     expect(screen.getByDisplayValue('50000')).toBeOnTheScreen()
     expect(api.getCampaign).toHaveBeenCalledWith('c1')
@@ -78,7 +81,7 @@ describe('CampaignEditScreen', () => {
     await screen.findByDisplayValue('Summer Launch')
 
     fireEvent.changeText(screen.getByDisplayValue('Summer Launch'), 'Summer Launch v2')
-    fireEvent.press(screen.getByText('Save Changes'))
+    fireEvent.press(screen.getByText('Save'))
 
     await waitFor(() => expect(api.updateCampaign).toHaveBeenCalledTimes(1))
     expect(api.updateCampaign).toHaveBeenCalledWith(
@@ -93,9 +96,9 @@ describe('CampaignEditScreen', () => {
     await screen.findByDisplayValue('Summer Launch')
 
     fireEvent.changeText(screen.getByDisplayValue('Summer Launch'), '   ')
-    fireEvent.press(screen.getByText('Save Changes'))
+    fireEvent.press(screen.getByText('Save'))
 
-    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Title is required')
+    expect(Alert.alert).toHaveBeenCalledWith('Add a title')
     expect(api.updateCampaign).not.toHaveBeenCalled()
   })
 })
@@ -104,7 +107,7 @@ describe('CampaignDiscoverScreen', () => {
   it('scopes discovery to the campaign and shows an empty state', async () => {
     renderScreen(CampaignDiscoverScreen)
 
-    expect(await screen.findByText('Discover Creators')).toBeOnTheScreen()
+    expect(await screen.findByText('Find creators')).toBeOnTheScreen()
     expect(api.discoverCreators).toHaveBeenCalledWith({ campaignId: 'c1', limit: 50 })
   })
 
@@ -116,7 +119,7 @@ describe('CampaignDiscoverScreen', () => {
     renderScreen(CampaignDiscoverScreen)
     await screen.findByText('Riya')
 
-    fireEvent.press(screen.getByText('Invite to Campaign'))
+    fireEvent.press(screen.getByText('Invite'))
 
     await waitFor(() =>
       expect(api.inviteCreatorToCampaign).toHaveBeenCalledWith('c1', 'i1', 'Join our campaign: Summer Launch'),
@@ -131,7 +134,7 @@ describe('CampaignResponsesScreen', () => {
     })
     renderScreen(CampaignResponsesScreen)
 
-    expect(await screen.findByText('Responses')).toBeOnTheScreen()
+    expect(await screen.findByText('Applications')).toBeOnTheScreen()
     expect(screen.getByText('Riya')).toBeOnTheScreen()
     expect(api.getBidsForCampaign).toHaveBeenCalledWith('c1')
   })
@@ -139,7 +142,7 @@ describe('CampaignResponsesScreen', () => {
   it('shows an empty state when nothing has applied', async () => {
     renderScreen(CampaignResponsesScreen)
 
-    expect(await screen.findByText('No responses yet')).toBeOnTheScreen()
+    expect(await screen.findByText('No applications yet')).toBeOnTheScreen()
   })
 
   it('accepts a bid after confirmation', async () => {
@@ -159,24 +162,28 @@ describe('CampaignResponsesScreen', () => {
 })
 
 describe('CampaignExecuteScreen', () => {
-  it('flattens deal deliverables and shows an empty state when there are none', async () => {
+  it('shows an empty state when the campaign has no collaborations', async () => {
     renderScreen(CampaignExecuteScreen)
 
-    expect(await screen.findByText('Execute')).toBeOnTheScreen()
-    expect(screen.getByText('No deliverables yet')).toBeOnTheScreen()
-    expect(api.getDeals).toHaveBeenCalledWith({ campaignId: 'c1' })
+    expect(await screen.findByText('Collaborations')).toBeOnTheScreen()
+    expect(screen.getByText('No creators yet')).toBeOnTheScreen()
   })
 
-  it('renders one row per deliverable across deals', async () => {
-    api.getDeals.mockResolvedValue({
-      deals: [
-        { id: 'd1', status: 'in_progress', influencer: { name: 'Riya' }, deliverables: ['Reel', { title: 'Story set' }] },
-      ],
-    })
+  it('lists this campaign\'s collaborations by creator and opens the review screen', async () => {
+    // getAllDeals does the paging and campaign filter (tested in api-service-reads); names come from bids.
+    api.getAllDeals.mockResolvedValue([
+      { id: 'd1', campaign_id: 'c1', bid_id: 'b1', status: 'in_progress', stage: 'PRODUCTION', payment_status: 'held' },
+    ])
+    api.getBidsForCampaign.mockResolvedValue({ bids: [{ id: 'b1', influencer: { name: 'Riya' } }] })
     renderScreen(CampaignExecuteScreen)
 
-    expect(await screen.findByText('Reel')).toBeOnTheScreen()
-    expect(screen.getByText('Story set')).toBeOnTheScreen()
+    expect(await screen.findByText('Riya')).toBeOnTheScreen()
+    expect(api.getAllDeals).toHaveBeenCalledWith({ campaignId: 'c1' })
+    expect(screen.getByText('In production')).toBeOnTheScreen()
+    expect(screen.queryAllByText('Creator')).toHaveLength(0)
+
+    fireEvent.press(screen.getByText('Riya'))
+    expect(navigation.navigate).toHaveBeenCalledWith('DealReview', { id: 'd1', title: 'Summer Launch · Riya' })
   })
 })
 
@@ -200,32 +207,37 @@ describe('CampaignOutreachScreen', () => {
 })
 
 describe('CampaignEscrowScreen', () => {
-  it('derives escrow rows from the campaign budget and wallet', async () => {
-    api.fetchWalletSummary.mockResolvedValue({ reserved_minor: 200000 })
+  it('shows the campaign pool, not the budget or the org wallet', async () => {
+    api.fetchWalletSummary.mockResolvedValue({ reserved_minor: 999900 })
+    api.getCampaignPool.mockResolvedValue({
+      budgetMinor: 5000000, fundedMinor: 3000000, reservedMinor: 1200000, releasedMinor: 0, paidMinor: 400000,
+      refundedMinor: 0, availableMinor: 1800000,
+    })
     renderScreen(CampaignEscrowScreen)
 
-    expect(await screen.findByText('Escrow')).toBeOnTheScreen()
-    expect(screen.getByText('Campaign budget')).toBeOnTheScreen()
-    expect(screen.getByText('Reserved from wallet')).toBeOnTheScreen()
+    expect(await screen.findByText('Funded into escrow')).toBeOnTheScreen()
+    expect(screen.getByText('Reserved for creators')).toBeOnTheScreen()
+    expect(screen.getByText('Released to creators')).toBeOnTheScreen()
+    expect(api.getCampaignPool).toHaveBeenCalledWith('c1')
+    expect(screen.queryByText('Reserved from wallet')).toBeNull()
   })
 
-  it('shows an empty state when nothing is funded', async () => {
-    api.getCampaign.mockResolvedValue({ campaign: { ...CAMPAIGN, budget: 0 } })
+  it('shows an empty state when the campaign has no pool yet', async () => {
+    api.getCampaignPool.mockRejectedValue(Object.assign(new Error('not found'), { code: 'not_found' }))
     renderScreen(CampaignEscrowScreen)
 
-    expect(await screen.findByText('No escrow activity')).toBeOnTheScreen()
+    expect(await screen.findByText('Nothing in escrow yet')).toBeOnTheScreen()
   })
 })
 
 describe('CampaignCircleScreen', () => {
   it('maps deals into the creator circle', async () => {
-    api.getDeals.mockResolvedValue({
-      deals: [{ id: 'd1', status: 'active', influencer: { name: 'Riya', instagramHandle: '@riya' } }],
-    })
+    api.getAllDeals.mockResolvedValue([{ id: 'd1', campaign_id: 'c1', status: 'active', influencer: { name: 'Riya', instagramHandle: '@riya' } }])
     renderScreen(CampaignCircleScreen)
 
-    expect(await screen.findByText('Creator Circle')).toBeOnTheScreen()
+    expect(await screen.findByText('Creator circle')).toBeOnTheScreen()
     expect(screen.getByText('Riya')).toBeOnTheScreen()
+    expect(api.getAllDeals).toHaveBeenCalledWith({ campaignId: 'c1' })
   })
 
   it('shows an empty state with no creators', async () => {

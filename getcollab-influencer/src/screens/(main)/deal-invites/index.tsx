@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { ActivityIndicator, Alert, FlatList, Modal, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, RefreshControl, StyleSheet, Text, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 interface Invite {
   id: string
@@ -30,18 +31,18 @@ export default function DealInvitesScreen({ navigation }: { navigation: Influenc
     try {
       const res = await apiService.getDealInvites({ status: 'pending' })
       setItems(res?.invites || res?.data || [])
-    } catch (e) { handleApiError(e, 'Failed to load invites') }
+    } catch (e) { handleApiError(e, "Couldn't load invites") }
     finally { setLoading(false); setRefreshing(false) }
   }, [])
 
-  useFocusEffect(useCallback(() => { setLoading(true); load() }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
   const accept = async (id: string) => {
     setBusy(id)
     try {
       await apiService.acceptDealInvite(id)
       setItems((x) => x.filter((i) => i.id !== id))
-    } catch (e) { handleApiError(e, 'Failed to accept invite') }
+    } catch (e) { handleApiError(e, "Couldn't accept the invite. Try again.") }
     finally { setBusy(null) }
   }
 
@@ -53,36 +54,36 @@ export default function DealInvitesScreen({ navigation }: { navigation: Influenc
       setItems((x) => x.filter((i) => i.id !== decliningId))
       setDecliningId(null)
       setDeclineReason('')
-    } catch (e) { handleApiError(e, 'Failed to decline invite') }
+    } catch (e) { handleApiError(e, "Couldn't decline the invite. Try again.") }
     finally { setBusy(null) }
   }
 
   if (loading) return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.center}><ActivityIndicator color={colors.neon} /></View>
+      <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>
     </SafeAreaView>
   )
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Campaign Invites</Text>
-        <Text style={styles.subtitle}>Invitations from brands to collaborate</Text>
+        <Text style={styles.title}>Invites</Text>
+        <Text style={styles.subtitle}>Brands that want to work with you.</Text>
       </View>
       <FlatList
         data={items}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.primary} />}
         contentContainerStyle={styles.list}
         keyExtractor={(i) => String(i.id)}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <View style={styles.emptyIcon}><Ionicons name="mail-outline" size={26} color={colors.textMuted} /></View>
-            <Text style={styles.emptyTitle}>No pending invites</Text>
-            <Text style={styles.emptySub}>When a brand invites you to a campaign, it will show up here.</Text>
+            <Text style={styles.emptyTitle}>No invites yet</Text>
+            <Text style={styles.emptySub}>Complete your profile so brands can find you.</Text>
           </View>
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(index * 40).duration(300)}>
+          <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
             <View style={styles.card}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
                 <View style={styles.inviteIcon}>
@@ -90,7 +91,7 @@ export default function DealInvitesScreen({ navigation }: { navigation: Influenc
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardTitle}>{item.campaignTitle || item.campaign?.title || 'Campaign invitation'}</Text>
-                  <Text style={styles.cardMeta}>{item.message || 'A brand invited you to collaborate.'}</Text>
+                  <Text style={styles.cardMeta}>{item.message || 'A brand invited you to this campaign.'}</Text>
                   {item.createdAt || item.created_at ? (
                     <Text style={styles.cardDate}>{new Date(item.createdAt || item.created_at!).toLocaleDateString()}</Text>
                   ) : null}
@@ -127,32 +128,34 @@ export default function DealInvitesScreen({ navigation }: { navigation: Influenc
 
       {/* Decline Modal */}
       <Modal visible={decliningId !== null} transparent animationType="slide">
-        <Pressable style={styles.overlay} onPress={() => { setDecliningId(null); setDeclineReason('') }} />
-        <View style={styles.sheet}>
-          <View style={styles.sheetHandle} />
-          <Text style={styles.sheetTitle}>Decline invitation</Text>
-          <Text style={styles.sheetSub}>Optional: let the brand know why you're passing.</Text>
-          <TextInput
-            value={declineReason}
-            onChangeText={setDeclineReason}
-            placeholder="Reason (optional)"
-            placeholderTextColor={colors.textSubtle}
-            multiline
-            style={styles.sheetInput}
-          />
-          <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
-            <Pressable onPress={() => { setDecliningId(null); setDeclineReason('') }} style={({ pressed }) => [styles.sheetBtnOutline, pressed && { opacity: 0.85 }]}>
-              <Text style={styles.sheetBtnOutlineText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              onPress={decline}
-              disabled={!!busy}
-              style={({ pressed }) => [styles.sheetBtnDanger, pressed && { opacity: 0.85 }, !!busy && { opacity: 0.5 }]}
-            >
-              <Text style={styles.sheetBtnDangerText}>{busy === decliningId ? 'Saving…' : 'Decline'}</Text>
-            </Pressable>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <Pressable style={styles.overlay} onPress={() => { setDecliningId(null); setDeclineReason('') }} />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Decline invite</Text>
+            <Text style={styles.sheetSub}>Tell the brand why (optional).</Text>
+            <TextInput
+              value={declineReason}
+              onChangeText={setDeclineReason}
+              placeholder="Reason (optional)"
+              placeholderTextColor={colors.textSubtle}
+              multiline
+              style={styles.sheetInput}
+            />
+            <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
+              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setDecliningId(null); setDeclineReason('') }} style={({ pressed }) => [styles.sheetBtnOutline, pressed && { opacity: 0.85 }]}>
+                <Text style={styles.sheetBtnOutlineText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); decline() }}
+                disabled={!!busy}
+                style={({ pressed }) => [styles.sheetBtnDanger, pressed && { opacity: 0.85 }, !!busy && { opacity: 0.5 }]}
+              >
+                <Text style={styles.sheetBtnDangerText}>{busy === decliningId ? 'Saving…' : 'Decline'}</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   )
@@ -171,7 +174,7 @@ const styles = StyleSheet.create({
   cardMeta: { color: colors.textMuted, fontSize: 13, lineHeight: 19, marginTop: spacing.xs },
   cardDate: { color: colors.textSubtle, fontSize: 12, marginTop: 4 },
   actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg, justifyContent: 'flex-end' },
-  primary: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.neon, borderRadius: radius.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  primary: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   primaryText: { color: '#000', fontWeight: '800', fontSize: 13 },
   secondary: { flexDirection: 'row', alignItems: 'center', gap: 6, borderColor: colors.border, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   secondaryText: { color: colors.text, fontWeight: '700', fontSize: 13 },

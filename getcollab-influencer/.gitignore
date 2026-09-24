@@ -37,8 +37,7 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-# NOTE: /ios and /android are kept in source control because this project
-# uses `expo prebuild` and custom native code. Do not uncomment these.
-# /ios
-# /android
+# generated native folders: EAS runs prebuild (CNG); the root .gitignore
+# ignores ios/ and android/
+/ios
+/android

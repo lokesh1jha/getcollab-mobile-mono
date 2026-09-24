@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import apiService, { isUnauthorizedError } from '../services/api'
 import { notificationService } from '../services/notification-service'
+import { logger } from '../services/logger'
 import { unwrapUser } from '../utils/unwrap-api'
 import type { User } from '../types'
 import { useChatStore } from './chat-store'
@@ -24,6 +25,10 @@ interface AuthState {
   fetchCurrentUser: () => Promise<void>
   clearError: () => void
 }
+
+// signOut is the api client's onUnauthorized handler, and its own push-token
+// DELETE can 401 — without this guard that re-enters signOut.
+let signingOut = false
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -80,6 +85,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
+    if (signingOut) return
+    signingOut = true
     set({ isLoading: true })
     try {
       // Clean up notification service
@@ -101,7 +108,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Clear stored tokens
       await apiService.clearTokens()
+      logger.identify(null)
     } finally {
+      signingOut = false
       set({
         user: null,
         isAuthenticated: false,
@@ -180,6 +189,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: !!raw?.id,
         isLoading: false,
       })
+      // Covers cold start, sign-in and sign-up; initialize() is idempotent.
+      if (raw?.id) {
+        logger.identify(String(raw.id), { role: raw.role })
+        notificationService.initialize()
+      }
     } catch (error: any) {
       // Not logged in or session expired — show public auth screens.
       if (isUnauthorizedError(error?.message)) {

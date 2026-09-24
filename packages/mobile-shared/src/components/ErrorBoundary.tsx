@@ -1,6 +1,6 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
-import { colors, spacing } from '../constants'
+import { View, Text, StyleSheet, Pressable } from 'react-native'
+import { colors, spacing } from '@/src/theme'
 import { logger } from '../services/logger'
 
 interface State {
@@ -32,10 +32,16 @@ export class ErrorBoundary extends React.Component<Props, State> {
       return (
         <View style={styles.container}>
           <Text style={styles.title}>Something went wrong</Text>
-          <Text style={styles.message}>{this.state.error?.message || 'Unexpected error'}</Text>
-          <TouchableOpacity style={styles.btn} onPress={this.reset}>
+          <Text style={styles.message}>
+            {__DEV__ ? this.state.error?.message : "We've been notified. Try again."}
+          </Text>
+          <Pressable
+            style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
+            onPress={this.reset}
+            accessibilityRole="button"
+          >
             <Text style={styles.btnText}>Try again</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       )
     }
@@ -46,10 +52,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.lg,
+    padding: spacing.xl,
   },
   title: {
     fontSize: 22,
@@ -61,16 +67,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textMuted,
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   btn: {
     backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
     borderRadius: 12,
   },
   btnText: {
-    color: colors.white,
+    color: colors.black,
     fontWeight: '600',
   },
 })

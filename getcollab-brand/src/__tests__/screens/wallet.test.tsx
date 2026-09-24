@@ -38,7 +38,7 @@ describe('WalletScreen', () => {
     expect(screen.getByText('₹2,000')).toBeOnTheScreen()
     expect(screen.getByText('₹7,000')).toBeOnTheScreen()
 
-    expect(screen.getByText('Top-up / Fund')).toBeOnTheScreen()
+    expect(screen.getByText('Top-up')).toBeOnTheScreen()
     expect(screen.getByText('+₹1,000')).toBeOnTheScreen()
   })
 
@@ -72,7 +72,7 @@ describe('WalletScreen', () => {
     fireEvent.press(screen.getAllByText('Top up')[0])
     fireEvent.press(screen.getAllByText('Top up')[1])
 
-    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Enter a valid amount')
+    expect(Alert.alert).toHaveBeenCalledWith('Invalid amount', 'Enter an amount above zero.')
     expect(api.topUpWallet).not.toHaveBeenCalled()
   })
 })

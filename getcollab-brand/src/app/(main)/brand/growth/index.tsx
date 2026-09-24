@@ -95,7 +95,7 @@ function OverviewBody({ site, navigation }: { site: GrowthSite; navigation?: any
   return (
     <GrowthScreen
       title="Overview"
-      subtitle="How your website and creator marketing work together"
+      subtitle="Your website and creator marketing at a glance"
       active="Growth"
       navigation={navigation}
       host={site.host}
@@ -183,8 +183,7 @@ function OverviewBody({ site, navigation }: { site: GrowthSite; navigation?: any
           ) : null}
 
           <Text style={growthStyles.meta}>
-            Unavailable signals stay empty — we never show 0 for “not connected.” Connect Search Console or run an AI
-            Visibility scan to fill those cards.
+            Blank cards need Search Console or an AI Visibility scan.
           </Text>
 
           <View style={growthStyles.metricRow}>
@@ -205,7 +204,7 @@ function OverviewBody({ site, navigation }: { site: GrowthSite; navigation?: any
             <Text style={growthStyles.cardTitle}>Next steps</Text>
             {recommendations.length === 0 ? (
               <Text style={growthStyles.rowBody}>
-                No open recommendations. Re-run analysis after you ship changes.
+                Nothing open. Run analysis again after you make changes.
               </Text>
             ) : (
               recommendations.map((rec: any) => (
@@ -261,7 +260,7 @@ function OverviewBody({ site, navigation }: { site: GrowthSite; navigation?: any
               {overview?.aiVisibility?.score != null
                 ? `${overview.aiVisibility.score} from configured APIs (${(overview.aiVisibility.configuredProviders ?? []).join(', ') || 'none'})`
                 : overview?.aiVisibility?.reason ||
-                  'AI Visibility needs an official provider API and a scan. This is not ChatGPT ranking.'}
+                  'Needs an official provider API and a scan. Not a ChatGPT ranking.'}
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -275,7 +274,7 @@ function OverviewBody({ site, navigation }: { site: GrowthSite; navigation?: any
       ) : null}
 
       {!score && analyzing ? (
-        <Text style={growthStyles.meta}>Hang tight — first results appear when the crawl finishes.</Text>
+        <Text style={growthStyles.meta}>First results appear when the check finishes.</Text>
       ) : null}
     </GrowthScreen>
   )

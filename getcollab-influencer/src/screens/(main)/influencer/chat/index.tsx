@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View, ActivityIndicator } from 'react-native'
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View, ActivityIndicator, RefreshControl } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { useChatStore } from '@shared/stores/chat-store'
+import { useShallow } from 'zustand/react/shallow'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 function formatTime(value?: string): string {
   if (!value) return ''
@@ -22,7 +24,14 @@ function formatTime(value?: string): string {
 }
 
 export default function InfluencerChat({ navigation }: { navigation: InfluencerNavigationProp }) {
-  const { rooms, fetchRooms, unreadByRoom, isLoading } = useChatStore()
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await fetchRooms() } finally { setRefreshing(false) }
+  }
+  const { rooms, fetchRooms, unreadByRoom, isLoading } = useChatStore(
+    useShallow((s) => ({ rooms: s.rooms, fetchRooms: s.fetchRooms, unreadByRoom: s.unreadByRoom, isLoading: s.isLoading })),
+  )
   const [query, setQuery] = useState('')
 
   useFocusEffect(useCallback(() => { fetchRooms() }, [fetchRooms]))
@@ -39,7 +48,7 @@ export default function InfluencerChat({ navigation }: { navigation: InfluencerN
     const lastMsg = item.lastMessage?.content || 'Start a conversation'
     const isRead = unread === 0
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
         <Pressable
           onPress={() => navigation?.navigate('ChatDetail', { id: item.id, roomId: item.id, chat: { id: item.id, influencerName: name } })}
           style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.elevated }]}
@@ -83,15 +92,15 @@ export default function InfluencerChat({ navigation }: { navigation: InfluencerN
         <View style={styles.searchWrap}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput value={query} onChangeText={setQuery} placeholder="Search conversations…" placeholderTextColor={colors.textSubtle} style={styles.searchInput} />
-          {query.length > 0 && <Pressable onPress={() => setQuery('')} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.textMuted} /></Pressable>}
+          {query.length > 0 && <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={8} style={({ pressed }) => pressed && { opacity: 0.85 }}><Ionicons name="close-circle" size={18} color={colors.textMuted} /></Pressable>}
         </View>
 
         {isLoading && rooms.length === 0 ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={colors.neon} />
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
-          <FlatList
+          <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
             data={filtered}
             renderItem={renderRoom}
             keyExtractor={r => r.id}
@@ -102,7 +111,7 @@ export default function InfluencerChat({ navigation }: { navigation: InfluencerN
               <View style={styles.empty}>
                 <View style={styles.emptyIcon}><Ionicons name="chatbubbles-outline" size={26} color={colors.textMuted} /></View>
                 <Text style={styles.emptyTitle}>No messages yet</Text>
-                <Text style={styles.emptySub}>Apply to campaigns to start chatting with brands.</Text>
+                <Text style={styles.emptySub}>Apply to a campaign to chat with brands.</Text>
               </View>
             }
           />
@@ -116,7 +125,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
   title: { color: colors.text, fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
-  unreadCount: { color: colors.neon, fontSize: 12, fontWeight: '600', marginTop: 2 },
+  unreadCount: { color: colors.primary, fontSize: 12, fontWeight: '600', marginTop: 2 },
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: spacing.lg, marginBottom: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: 13, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
   searchInput: { flex: 1, color: colors.text, fontSize: 14, padding: 0 },
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.md },

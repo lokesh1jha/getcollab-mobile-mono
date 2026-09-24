@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Image, ActivityIndicator, TextInput } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, TextInput, RefreshControl } from 'react-native'
+import { Image } from 'expo-image'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePickerLib from 'expo-image-picker'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, overline } from '@/src/theme'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { useCampaignStore } from '@shared/stores/campaign-store'
 import { useSubscriptionStore } from '../../../../stores/subscription-store'
 import apiService, { handleApiError } from '@shared/services/api'
+import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 const SETTINGS_ROWS = [
   { id: 'wallet', icon: 'wallet-outline', label: 'Wallet' },
@@ -25,6 +28,11 @@ const SETTINGS_ROWS = [
 interface Props { navigation?: any }
 
 export default function BrandProfileScreen({ navigation }: Props) {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await Promise.all([loadProfile(), fetchMyCampaigns().catch(() => undefined)]) } finally { setRefreshing(false) }
+  }
   const { user, updateProfile } = useAuthStore()
   const { myCampaigns, fetchMyCampaigns } = useCampaignStore()
   const subscription = useSubscriptionStore((s) => s.subscription)
@@ -45,7 +53,7 @@ export default function BrandProfileScreen({ navigation }: Props) {
       const profile = response?.data || response?.settings || response || {}
       setForm({ name: user?.name || profile.name || '', bio: profile.bio || '', location: profile.location || '', portfolioUrl: profile.websiteUrl || profile.portfolioUrl || '' })
       if (profile.image || profile.avatar || user?.image) setAvatar(profile.image || profile.avatar || user?.image || null)
-    } catch (err) { console.error('Failed to load brand profile:', err) }
+    } catch (err) { logger.error('Failed to load brand profile', err) }
   }
 
   const activeCampaigns = myCampaigns.filter((c) => c.status === 'active').length
@@ -57,7 +65,7 @@ export default function BrandProfileScreen({ navigation }: Props) {
 
   const pickAvatar = async () => {
     const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') { Alert.alert('Permission Denied', 'Please enable photo library access.'); return }
+    if (status !== 'granted') { Alert.alert('Photo access needed', 'Allow photo access in Settings.'); return }
     try {
       const result = await ImagePickerLib.launchImageLibraryAsync({ mediaTypes: ImagePickerLib.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.7, base64: true })
       if (result.canceled || !result.assets[0] || !result.assets[0].base64) return
@@ -67,53 +75,53 @@ export default function BrandProfileScreen({ navigation }: Props) {
         const response = await apiService.uploadProfileImage(base64Image)
         const url = response?.url || response?.imageUrl || response?.data?.url
         if (url) { setAvatar(url); await updateProfile({ image: url } as any) }
-      } catch (err) { handleApiError(err, 'Failed to upload logo') }
+      } catch (err) { handleApiError(err, "Couldn't upload logo") }
       finally { setUploadingAvatar(false) }
-    } catch (err) { console.error('Avatar pick failed:', err) }
+    } catch (err) { logger.error('Avatar pick failed', err) }
   }
 
   const handleSave = async () => {
-    if (!form.name.trim()) { Alert.alert('Error', 'Brand name is required'); return }
+    if (!form.name.trim()) { Alert.alert('Add a brand name'); return }
     setSaving(true)
     try {
       await updateProfile({ name: form.name })
       const payload: any = { bio: form.bio, location: form.location, portfolioUrl: form.portfolioUrl }
       Object.keys(payload).forEach((k) => { if (!payload[k]) delete payload[k] })
-      if (Object.keys(payload).length > 0) await apiService.updateProfile(payload).catch((err) => console.warn('Profile update failed:', err))
-      Alert.alert('Success', 'Profile updated successfully!')
+      if (Object.keys(payload).length > 0) await apiService.updateProfile(payload).catch((err) => logger.warn('Profile update failed', { error: err }))
+      Alert.alert('Saved', 'Profile updated.')
       setIsEditing(false)
-    } catch (error) { handleApiError(error, 'Failed to update profile') }
+    } catch (error) { handleApiError(error, "Couldn't update profile") }
     finally { setSaving(false) }
   }
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
+    Alert.alert('Sign out?', 'You will need to sign in again.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: async () => { await useAuthStore.getState().signOut() } },
+      { text: 'Sign out', style: 'destructive', onPress: async () => { await useAuthStore.getState().signOut() } },
     ])
   }
 
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />} contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <Text style={styles.title}>Profile</Text>
-            <Pressable style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]} onPress={() => setIsEditing(!isEditing)}>
+            <Pressable accessibilityRole="button" accessibilityLabel={isEditing ? 'Cancel editing' : 'Edit profile'} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]} onPress={() => setIsEditing(!isEditing)}>
               <Ionicons name={isEditing ? 'close' : 'create-outline'} size={18} color="#fff" />
             </Pressable>
           </View>
 
           <Animated.View entering={FadeInDown.duration(400)} style={styles.brandCard}>
-            <Pressable onPress={isEditing ? pickAvatar : undefined} style={styles.logoWrap}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Change photo" onPress={isEditing ? pickAvatar : undefined} style={({ pressed }) => [styles.logoWrap, pressed && { opacity: 0.85 }]}>
               {avatar ? (
-                <Image source={{ uri: avatar }} style={styles.avatarImg} />
+                <Image transition={200} source={{ uri: avatar }} style={styles.avatarImg} />
               ) : (
                 <View style={styles.logo}>
                   <View style={styles.logoInner} />
                 </View>
               )}
-              {uploadingAvatar && <ActivityIndicator size="small" color={colors.neon} style={{ position: 'absolute' }} />}
+              {uploadingAvatar && <ActivityIndicator size="small" color={colors.primary} style={{ position: 'absolute' }} />}
               {isEditing && !uploadingAvatar && (
                 <View style={styles.editBadge}>
                   <Ionicons name="camera" size={12} color="#000" />
@@ -123,7 +131,7 @@ export default function BrandProfileScreen({ navigation }: Props) {
 
             {isEditing ? (
               <View style={{ width: '100%', gap: spacing.md }}>
-                <FieldInput label="Brand Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
+                <FieldInput label="Brand name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
                 <FieldInput label="Email" value={user?.email || ''} editable={false} />
                 <FieldInput label="Bio" value={form.bio} onChange={(v) => setForm({ ...form, bio: v })} multiline />
                 <FieldInput label="Location" value={form.location} onChange={(v) => setForm({ ...form, location: v })} />
@@ -138,14 +146,14 @@ export default function BrandProfileScreen({ navigation }: Props) {
                   <Text style={styles.planText}>{planLabel}</Text>
                 </View>
                 {form.bio ? <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center', marginTop: spacing.md }}>{form.bio}</Text> : null}
-                {form.location ? <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: spacing.xs }}>📍 {form.location}</Text> : null}
+                {form.location ? <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: spacing.xs }}>{form.location}</Text> : null}
               </>
             )}
 
             {isEditing && (
               <View style={{ width: '100%', gap: spacing.sm, marginTop: spacing.md }}>
-                <Pressable style={({ pressed }) => [styles.blueBtn, pressed && { opacity: 0.85 }]} onPress={handleSave} disabled={saving}>
-                  <Text style={styles.blueBtnText}>{saving ? 'Saving...' : 'Save Changes'}</Text>
+                <Pressable style={({ pressed }) => [styles.blueBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSave() }} disabled={saving}>
+                  <Text style={styles.blueBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
                 </Pressable>
                 <Pressable style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.7 }]} onPress={() => setIsEditing(false)}>
                   <Text style={styles.outlinedBtnText}>Cancel</Text>
@@ -159,12 +167,12 @@ export default function BrandProfileScreen({ navigation }: Props) {
               <View style={styles.statsCard}>
                 <View style={styles.stat}><Text style={styles.statValue}>{myCampaigns.length}</Text><Text style={styles.statLabel}>Campaigns</Text></View>
                 <View style={styles.statDivider} />
-                <View style={styles.stat}><Text style={styles.statValue}>{myCampaigns.reduce((sum, c) => sum + (c.bidCount || 0), 0)}</Text><Text style={styles.statLabel}>Bids</Text></View>
+                <View style={styles.stat}><Text style={styles.statValue}>{myCampaigns.reduce((sum, c) => sum + (c.bidCount || 0), 0)}</Text><Text style={styles.statLabel}>Applications</Text></View>
                 <View style={styles.statDivider} />
                 <View style={styles.stat}><Text style={styles.statValue}>{activeCampaigns}</Text><Text style={styles.statLabel}>Active</Text></View>
               </View>
 
-              <Text style={styles.sectionTitle}>WORKSPACE</Text>
+              <Text style={styles.sectionTitle}>Workspace</Text>
               <View style={styles.listCard}>
                 {SETTINGS_ROWS.map((r, idx) => (
                   <Pressable
@@ -181,7 +189,7 @@ export default function BrandProfileScreen({ navigation }: Props) {
 
               <Pressable style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.7 }]} onPress={handleLogout}>
                 <Ionicons name="log-out-outline" size={18} color={colors.error} />
-                <Text style={styles.logoutText}>Logout</Text>
+                <Text style={styles.logoutText}>Sign out</Text>
               </Pressable>
 
               <Text style={styles.version}>GetCollab v1.0.0</Text>
@@ -212,10 +220,10 @@ const styles = StyleSheet.create({
 
   brandCard: { marginHorizontal: spacing.lg, marginBottom: spacing.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.xl, alignItems: 'center' },
   logoWrap: { marginBottom: spacing.md, position: 'relative' },
-  logo: { width: 64, height: 64, borderRadius: radius.lg, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center' },
+  logo: { width: 64, height: 64, borderRadius: radius.lg, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   logoInner: { width: 24, height: 24, borderRadius: 6, backgroundColor: '#000' },
   avatarImg: { width: 64, height: 64, borderRadius: radius.lg },
-  editBadge: { position: 'absolute', right: -2, bottom: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.card },
+  editBadge: { position: 'absolute', right: -2, bottom: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.card },
   company: { color: '#fff', fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
   email: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
   planPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(59,130,246,0.14)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, marginTop: spacing.md, borderWidth: 1, borderColor: 'rgba(59,130,246,0.35)' },
@@ -232,12 +240,12 @@ const styles = StyleSheet.create({
   fieldWrap: { borderWidth: 1, borderColor: '#262626', borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 12, backgroundColor: colors.bg },
   fieldInput: { color: '#fff', fontSize: 14, padding: 0 },
 
-  blueBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blue, borderRadius: radius.pill, paddingVertical: 14 },
-  blueBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  blueBtn: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 14 },
+  blueBtnText: { color: colors.black, fontSize: 14, fontWeight: '700' },
   outlinedBtn: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.borderStrong, borderRadius: radius.pill, paddingVertical: 14 },
   outlinedBtnText: { color: colors.textMuted, fontSize: 14, fontWeight: '600' },
 
-  sectionTitle: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.sm },
+  sectionTitle: { ...overline, marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.sm },
   listCard: { marginHorizontal: spacing.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: 14 },
   rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },

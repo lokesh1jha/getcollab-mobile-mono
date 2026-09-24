@@ -7,12 +7,13 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 const FILTERS = ['All', 'applied', 'accepted', 'completed', 'rejected']
 const SORTS = [
   { key: 'newest', label: 'Newest' },
-  { key: 'budget_desc', label: 'Budget: High-Low' },
-  { key: 'budget_asc', label: 'Budget: Low-High' },
+  { key: 'budget_desc', label: 'Budget: high to low' },
+  { key: 'budget_asc', label: 'Budget: low to high' },
 ]
 
 interface Bid {
@@ -66,11 +67,11 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
       const list: Bid[] = res?.data || res?.bids || (Array.isArray(res) ? res : [])
       setBids(Array.isArray(list) ? list : [])
     } catch (err: any) {
-      handleApiError(err, 'Failed to load bids')
+      handleApiError(err, "Couldn't load your applications")
     } finally { setLoading(false); setRefreshing(false) }
   }, [filter, sortKey])
 
-  useFocusEffect(useCallback(() => { load(true) }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
   const onRefresh = () => { setRefreshing(true); load(false) }
 
   const filtered = useMemo(() => {
@@ -99,7 +100,7 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
     const isAccepted = item.status === 'accepted'
     const collabId = item.campaign?.collaborationId
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
         <Pressable
           onPress={() => {
             if (isAccepted && collabId) {
@@ -143,7 +144,7 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
 
   if (loading) return (
     <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-      <ActivityIndicator size="large" color={colors.neon} />
+      <ActivityIndicator size="large" color={colors.primary} />
     </View>
   )
 
@@ -151,8 +152,8 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.header}>
-          <Text style={styles.title}>My Bids</Text>
-          <Pressable onPress={() => setShowSort(true)} style={styles.iconBtn}>
+          <Text style={styles.title}>Applications</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Filters" onPress={() => setShowSort(true)} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.85 }]}>
             <Ionicons name="funnel-outline" size={18} color={colors.text} />
           </Pressable>
         </View>
@@ -160,14 +161,14 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
         <View style={styles.searchWrap}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput value={query} onChangeText={setQuery} placeholder="Search campaigns…" placeholderTextColor={colors.textSubtle} style={styles.searchInput} />
-          {query.length > 0 && <Pressable onPress={() => setQuery('')} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.textMuted} /></Pressable>}
+          {query.length > 0 && <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} hitSlop={8} style={({ pressed }) => pressed && { opacity: 0.85 }}><Ionicons name="close-circle" size={18} color={colors.textMuted} /></Pressable>}
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
           {FILTERS.map(f => {
             const active = f === filter
             return (
-              <Pressable key={f} onPress={() => setFilter(f)} style={[styles.filterChip, active && styles.filterChipActive]}>
+              <Pressable key={f} onPress={() => { Haptics.selectionAsync(); setFilter(f) }} style={({ pressed }) => [styles.filterChip, active && styles.filterChipActive, pressed && { opacity: 0.85 }]}>
                 <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{f.charAt(0).toUpperCase() + f.slice(1)}</Text>
               </Pressable>
             )
@@ -181,15 +182,15 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl }}
           ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
           ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="document-text-outline" size={26} color={colors.textMuted} /></View>
-              <Text style={styles.emptyTitle}>{filter === 'All' ? 'No bids yet' : `No ${filter} bids`}</Text>
-              <Text style={styles.emptySub}>{filter === 'All' ? 'Discover campaigns and apply to start earning.' : 'Try a different filter.'}</Text>
+              <Text style={styles.emptyTitle}>{filter === 'All' ? 'No applications yet' : `No ${filter} applications`}</Text>
+              <Text style={styles.emptySub}>{filter === 'All' ? 'Find a campaign and apply.' : 'Try another filter.'}</Text>
               {filter === 'All' && (
-                <Pressable onPress={() => navigation?.navigate('Discover')} style={styles.discoverBtn}>
-                  <Text style={styles.discoverBtnText}>Find Campaigns</Text>
+                <Pressable onPress={() => navigation?.navigate('Discover')} style={({ pressed }) => [styles.discoverBtn, pressed && { opacity: 0.85 }]}>
+                  <Text style={styles.discoverBtnText}>Find campaigns</Text>
                 </Pressable>
               )}
             </View>
@@ -204,9 +205,9 @@ export default function InfluencerCampaigns({ navigation }: { navigation: Influe
               <View style={styles.sheetHandle} />
               <Text style={styles.sheetTitle}>Sort by</Text>
               {SORTS.map(s => (
-                <Pressable key={s.key} onPress={() => { setSortKey(s.key); setShowSort(false) }} style={[styles.sheetOption, sortKey === s.key && styles.sheetOptionActive]}>
+                <Pressable key={s.key} onPress={() => { Haptics.selectionAsync(); setSortKey(s.key); setShowSort(false) }} style={({ pressed }) => [styles.sheetOption, sortKey === s.key && styles.sheetOptionActive, pressed && { opacity: 0.85 }]}>
                   <Text style={[styles.sheetOptionText, sortKey === s.key && styles.sheetOptionTextActive]}>{s.label}</Text>
-                  {sortKey === s.key && <Ionicons name="checkmark" size={16} color={colors.neon} />}
+                  {sortKey === s.key && <Ionicons name="checkmark" size={16} color={colors.primary} />}
                 </Pressable>
               ))}
             </View>
@@ -245,7 +246,7 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { color: colors.text, fontSize: 15, fontWeight: '700', marginTop: spacing.sm },
   emptySub: { color: colors.textMuted, fontSize: 13, textAlign: 'center', paddingHorizontal: spacing.xl },
-  discoverBtn: { marginTop: spacing.md, backgroundColor: colors.neon, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radius.pill },
+  discoverBtn: { marginTop: spacing.md, backgroundColor: colors.primary, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radius.pill },
   discoverBtnText: { color: '#000', fontSize: 14, fontWeight: '700' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
   sheet: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.xl, paddingBottom: spacing.xxxl, borderWidth: 1, borderBottomWidth: 0, borderColor: colors.border },
@@ -254,5 +255,5 @@ const styles = StyleSheet.create({
   sheetOption: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
   sheetOptionActive: {},
   sheetOptionText: { color: colors.text, fontSize: 15 },
-  sheetOptionTextActive: { color: colors.neon, fontWeight: '700' },
+  sheetOptionTextActive: { color: colors.primary, fontWeight: '700' },
 })

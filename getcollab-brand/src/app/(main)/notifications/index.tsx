@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback, memo } from 'react'
-import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator } from 'react-native'
+import React, { useEffect, useCallback, memo, useState } from 'react'
+import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -8,6 +8,7 @@ import { colors, spacing, radius } from '@/src/theme'
 import { useNotificationStore } from '@shared/stores/notification-store'
 import { navigateToNotification } from '@shared/services/notification-service'
 import type { Notification } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 interface NotificationItemProps {
   item: Notification
@@ -60,6 +61,11 @@ const NotificationItem = memo(function NotificationItem({ item, onPress }: Notif
 })
 
 export default function NotificationsScreen() {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await fetchNotifications() } finally { setRefreshing(false) }
+  }
   const { notifications, unreadCount, isLoading, fetchNotifications, markAsRead, markAllAsRead } = useNotificationStore()
 
   useFocusEffect(
@@ -86,7 +92,7 @@ export default function NotificationsScreen() {
         <Ionicons name="notifications-outline" size={32} color={colors.textMuted} />
       </View>
       <Text style={styles.emptyTitle}>No notifications yet</Text>
-      <Text style={styles.emptySubtext}>You'll see updates about your campaigns, bids, and messages here</Text>
+      <Text style={styles.emptySubtext}>Campaign, application and message updates show up here.</Text>
     </View>
   )
 
@@ -95,7 +101,7 @@ export default function NotificationsScreen() {
       <View style={styles.root}>
         <SafeAreaView style={{ flex: 1 }} edges={['top']}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.neon} />
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
         </SafeAreaView>
       </View>
@@ -113,16 +119,16 @@ export default function NotificationsScreen() {
             )}
           </View>
           {unreadCount > 0 && (
-            <Pressable onPress={handleMarkAllRead}>
+            <Pressable onPress={handleMarkAllRead} style={({ pressed }) => pressed && { opacity: 0.85 }}>
               <Text style={styles.markAllRead}>Mark all read</Text>
             </Pressable>
           )}
         </View>
 
-        <FlatList
+        <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
           data={notifications}
           renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInDown.delay(index * 30).duration(320)}>
+            <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
               <NotificationItem item={item} onPress={() => handleNotificationPress(item)} />
             </Animated.View>
           )}

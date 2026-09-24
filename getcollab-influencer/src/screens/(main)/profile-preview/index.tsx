@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native'
+import { Image } from 'expo-image'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { colors, spacing } from '@/src/theme'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
@@ -7,12 +9,18 @@ import { Card } from '@shared/components/ui'
 import { PortfolioGallery } from '@shared/components/PortfolioGallery'
 import apiService from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import * as Haptics from 'expo-haptics'
 
 interface Props {
   navigation?: InfluencerNavigationProp
 }
 
 export default function ProfilePreviewScreen({ navigation }: Props) {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await load() } finally { setRefreshing(false) }
+  }
   const { user } = useAuthStore()
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -57,79 +65,81 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.previewBadge}>
-          <Text style={styles.previewBadgeText}>👁  Preview as a brand sees you</Text>
-        </View>
-
-        {profile?.coverImage ? (
-          <Image source={{ uri: profile.coverImage }} style={styles.cover} />
-        ) : null}
-
-        <View style={styles.profileHeader}>
-          {(profile?.image || user?.image) ? (
-            <Image source={{ uri: profile?.image || user?.image }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, styles.avatarFallback]}>
-              <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
+      <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />} contentContainerStyle={styles.content}>
+          <View style={styles.previewBadge}>
+            <Text style={styles.previewBadgeText}>How brands see your profile</Text>
+          </View>
+  
+          {profile?.coverImage ? (
+            <Image transition={200} source={{ uri: profile.coverImage }} style={styles.cover} />
+          ) : null}
+  
+          <View style={styles.profileHeader}>
+            {(profile?.image || user?.image) ? (
+              <Image transition={200} source={{ uri: profile?.image || user?.image }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarFallback]}>
+                <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
+              </View>
+            )}
+            <View style={{ flex: 1, marginLeft: spacing.md }}>
+              <Text style={styles.name}>{user?.name || profile?.name}</Text>
+              {profile?.location ? <Text style={styles.location}>📍 {profile.location}</Text> : null}
+            </View>
+          </View>
+  
+          {profile?.bio ? (
+            <Card style={styles.section}>
+              <Text style={styles.bio}>{profile.bio}</Text>
+            </Card>
+          ) : null}
+  
+          {portfolio.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Portfolio</Text>
+              <PortfolioGallery items={portfolio} />
             </View>
           )}
-          <View style={{ flex: 1, marginLeft: spacing.md }}>
-            <Text style={styles.name}>{user?.name || profile?.name}</Text>
-            {profile?.location ? <Text style={styles.location}>📍 {profile.location}</Text> : null}
-          </View>
-        </View>
-
-        {profile?.bio ? (
-          <Card style={styles.section}>
-            <Text style={styles.bio}>{profile.bio}</Text>
-          </Card>
-        ) : null}
-
-        {portfolio.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Portfolio</Text>
-            <PortfolioGallery items={portfolio} onChange={() => {}} editable={false} />
-          </View>
-        )}
-
-        {socials.length > 0 && (
-          <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>Social Reach</Text>
-            {socials.map((s) => (
-              <View key={s.name} style={[styles.socialRow, { borderLeftColor: s.color }]}>
-                <Text style={[styles.socialName, { color: s.color }]}>{s.name}</Text>
-                <Text style={styles.socialHandle}>{String(s.handle).startsWith('@') ? s.handle : `@${s.handle}`}</Text>
-                {s.followers ? <Text style={styles.socialMeta}>{s.followers} followers</Text> : null}
-              </View>
-            ))}
-          </Card>
-        )}
-
-        {(profile?.categories?.length || 0) > 0 && (
-          <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>Categories</Text>
-            <View style={styles.tagRow}>
-              {profile.categories.map((c: string) => (
-                <View key={c} style={styles.tag}>
-                  <Text style={styles.tagText}>{c}</Text>
+  
+          {socials.length > 0 && (
+            <Card style={styles.section}>
+              <Text style={styles.sectionTitle}>Social reach</Text>
+              {socials.map((s) => (
+                <View key={s.name} style={[styles.socialRow, { borderLeftColor: s.color }]}>
+                  <Text style={[styles.socialName, { color: s.color }]}>{s.name}</Text>
+                  <Text style={styles.socialHandle}>{String(s.handle).startsWith('@') ? s.handle : `@${s.handle}`}</Text>
+                  {s.followers ? <Text style={styles.socialMeta}>{s.followers} followers</Text> : null}
                 </View>
               ))}
-            </View>
-          </Card>
-        )}
-
-        {(profile?.pricePerPost || profile?.pricePerReel || profile?.pricePerCampaign) && (
-          <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>Pricing</Text>
-            {profile.pricePerPost ? <PriceRow label="Per Post" value={profile.pricePerPost} /> : null}
-            {profile.pricePerReel ? <PriceRow label="Per Reel" value={profile.pricePerReel} /> : null}
-            {profile.pricePerStory ? <PriceRow label="Per Story" value={profile.pricePerStory} /> : null}
-            {profile.pricePerVideo ? <PriceRow label="Per Video" value={profile.pricePerVideo} /> : null}
-            {profile.pricePerCampaign ? <PriceRow label="Full Campaign" value={profile.pricePerCampaign} /> : null}
-          </Card>
-        )}
-      </ScrollView>
+            </Card>
+          )}
+  
+          {(profile?.categories?.length || 0) > 0 && (
+            <Card style={styles.section}>
+              <Text style={styles.sectionTitle}>Categories</Text>
+              <View style={styles.tagRow}>
+                {profile.categories.map((c: string) => (
+                  <View key={c} style={styles.tag}>
+                    <Text style={styles.tagText}>{c}</Text>
+                  </View>
+                ))}
+              </View>
+            </Card>
+          )}
+  
+          {(profile?.pricePerPost || profile?.pricePerReel || profile?.pricePerCampaign) && (
+            <Card style={styles.section}>
+              <Text style={styles.sectionTitle}>Pricing</Text>
+              {profile.pricePerPost ? <PriceRow label="Per post" value={profile.pricePerPost} /> : null}
+              {profile.pricePerReel ? <PriceRow label="Per reel" value={profile.pricePerReel} /> : null}
+              {profile.pricePerStory ? <PriceRow label="Per story" value={profile.pricePerStory} /> : null}
+              {profile.pricePerVideo ? <PriceRow label="Per video" value={profile.pricePerVideo} /> : null}
+              {profile.pricePerCampaign ? <PriceRow label="Full campaign" value={profile.pricePerCampaign} /> : null}
+            </Card>
+          )}
+        </ScrollView>
+      </Animated.View>
     </SafeAreaView>
   )
 }
@@ -162,7 +172,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarText: { color: colors.white, fontSize: 32, fontWeight: 'bold' },
+  avatarText: { color: colors.black, fontSize: 32, fontWeight: 'bold' },
   name: { fontSize: 22, fontWeight: 'bold', color: colors.text },
   location: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
   section: { marginBottom: spacing.lg, padding: spacing.lg },

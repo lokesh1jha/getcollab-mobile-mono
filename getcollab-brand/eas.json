@@ -11,7 +11,8 @@
         "simulator": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://localhost:3000/api/v1"
+        "EXPO_PUBLIC_API_URL": "http://localhost:4000/api/v1",
+        "EXPO_PUBLIC_APP_ENV": "development"
       }
     },
     "preview": {
@@ -19,16 +20,18 @@
       "ios": {
         "simulator": false
       },
-      "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.getcollab.in/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://api.getcollab.in/api/v1",
+        "EXPO_PUBLIC_APP_ENV": "preview",
+        "SENTRY_ALLOW_FAILURE": "true"
       }
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.getcollab.in/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://api.getcollab.in/api/v1",
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "SENTRY_ALLOW_FAILURE": "true"
       }
     }
   },

@@ -37,7 +37,7 @@ function OpportunitiesBody({ site, navigation }: { site: GrowthSite; navigation?
   return (
     <GrowthScreen
       title="Opportunities"
-      subtitle="Searches you already show up for but could win more"
+      subtitle="Searches you could win more of"
       active="GrowthOpportunities"
       navigation={navigation}
       host={site.host}
@@ -51,13 +51,13 @@ function OpportunitiesBody({ site, navigation }: { site: GrowthSite; navigation?
         <GrowthEmpty
           icon="trending-up-outline"
           title="No opportunities yet"
-          body="Connect Search Console and sync. We look for queries you’re close to winning, plus topics with a creator angle."
+          body="Connect Search Console to find searches you’re close to winning."
           ctaLabel="Open Search Console"
           onCta={() => navigation?.navigate('GrowthSearchConsole')}
         />
       ) : (
         opportunities.map((o: any, i: number) => (
-          <Animated.View key={o.id} entering={FadeInDown.delay(i * 40).duration(320)} style={growthStyles.card}>
+          <Animated.View key={o.id} entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)} style={growthStyles.card}>
             <View style={growthStyles.pillRow}>
               <View style={[growthStyles.pill, { backgroundColor: colors.blueSoft }]}>
                 <Text style={[growthStyles.pillText, { color: colors.blue }]}>{opportunityKindLabel(o.kind)}</Text>

@@ -1,29 +1,14 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react'
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  ActivityIndicator,
-  TextInput,
-  Alert,
-} from 'react-native'
+import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl, ActivityIndicator, TextInput, Alert } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { Relationship } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  pending: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  inactive: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)' },
-  blocked: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
-}
 
 interface Props {
   navigation?: any
@@ -78,7 +63,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
 
   const handleAddRelationship = async () => {
     if (!newEmail.trim()) {
-      Alert.alert('Error', 'Enter an email or user ID')
+      Alert.alert('Details needed', 'Enter an email or user ID.')
       return
     }
     setAdding(true)
@@ -109,7 +94,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
     const s = STATUS_COLORS[st] || STATUS_COLORS.pending
     const initial = item.otherParty?.name?.charAt(0).toUpperCase() ?? '?'
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
         <Pressable
           style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
           onPress={() => navigation?.navigate('RelationshipDetail', { id: item.id })}
@@ -137,7 +122,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -156,7 +141,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
               <View style={styles.header}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.title}>Relationships</Text>
-                  <Text style={styles.subtitle}>Manage your creator relationships</Text>
+                  <Text style={styles.subtitle}>Creators you work with</Text>
                 </View>
                 <Pressable
                   style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.85 }]}
@@ -172,12 +157,12 @@ export default function RelationshipsScreen({ navigation }: Props) {
                 <TextInput
                   value={search}
                   onChangeText={handleSearchChange}
-                  placeholder="Search relationships..."
+                  placeholder="Search relationships"
                   placeholderTextColor={colors.textSubtle}
                   style={styles.searchInput}
                 />
                 {search.length > 0 && (
-                  <Pressable onPress={() => { setSearch(''); loadRelationships() }} hitSlop={8}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => { setSearch(''); loadRelationships() }} hitSlop={8} style={({ pressed }) => pressed && { opacity: 0.85 }}>
                     <Ionicons name="close-circle" size={18} color={colors.textMuted} />
                   </Pressable>
                 )}
@@ -190,24 +175,24 @@ export default function RelationshipsScreen({ navigation }: Props) {
                 <Ionicons name="people-outline" size={26} color={colors.textMuted} />
               </View>
               <Text style={styles.emptyTitle}>
-                {search.trim() ? 'No relationships match your search' : 'No relationships yet'}
+                {search.trim() ? 'No matches' : 'No relationships yet'}
               </Text>
               <Text style={styles.emptySub}>
                 {search.trim()
-                  ? 'Try a different search term.'
-                  : 'Add a creator to start tracking collaborations and conversations.'}
+                  ? 'Try a different search.'
+                  : 'Add a creator to track your collaborations.'}
               </Text>
               {!search.trim() && (
                 <Pressable
                   style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.85 }]}
-                  onPress={() => setDialogOpen(true)}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setDialogOpen(true) }}
                 >
                   <Text style={styles.emptyCtaText}>Add relationship</Text>
                 </Pressable>
               )}
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadRelationships() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadRelationships() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
 
@@ -215,13 +200,13 @@ export default function RelationshipsScreen({ navigation }: Props) {
       {dialogOpen && (
         <Pressable style={styles.modalOverlay} onPress={() => setDialogOpen(false)}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Add Relationship</Text>
-            <Text style={styles.modalBody}>Enter the creator's user ID or email to add them.</Text>
+            <Text style={styles.modalTitle}>Add relationship</Text>
+            <Text style={styles.modalBody}>Enter the creator's email or user ID.</Text>
             <TextInput
               style={styles.input}
               value={newEmail}
               onChangeText={setNewEmail}
-              placeholder="User ID or email"
+              placeholder="Email or user ID"
               placeholderTextColor={colors.textSubtle}
               autoCapitalize="none"
             />
@@ -231,7 +216,7 @@ export default function RelationshipsScreen({ navigation }: Props) {
               </Pressable>
               <Pressable
                 style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]}
-                onPress={handleAddRelationship}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleAddRelationship() }}
                 disabled={adding}
               >
                 <Text style={styles.primaryBtnText}>{adding ? 'Adding…' : 'Add'}</Text>
@@ -249,7 +234,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: spacing.md, marginBottom: spacing.md },
   title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
-  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.neon, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.pill },
+  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.pill },
   addBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
 
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: spacing.lg, paddingVertical: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, marginBottom: spacing.md },
@@ -269,7 +254,7 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { color: '#fff', fontSize: 15, fontWeight: '700', marginTop: spacing.sm },
   emptySub: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
-  emptyCta: { backgroundColor: colors.neon, paddingHorizontal: 20, paddingVertical: 12, borderRadius: radius.pill, marginTop: spacing.md },
+  emptyCta: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: radius.pill, marginTop: spacing.md },
   emptyCtaText: { color: '#000', fontSize: 13, fontWeight: '700' },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
@@ -280,6 +265,6 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
   outlinedBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong },
   outlinedBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, backgroundColor: colors.neon },
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, backgroundColor: colors.primary },
   primaryBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
 })

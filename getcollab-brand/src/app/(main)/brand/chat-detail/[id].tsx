@@ -1,14 +1,17 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
-import { StyleSheet, View, ActivityIndicator, Text, Pressable, TextInput, Alert, FlatList, Image, KeyboardAvoidingView, Platform } from 'react-native'
+import { StyleSheet, View, ActivityIndicator, Text, Pressable, TextInput, Alert, FlatList, KeyboardAvoidingView, Platform } from 'react-native'
+import { Image } from 'expo-image'
 import Animated, { FadeIn } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePickerLib from 'expo-image-picker'
 import { colors, radius, spacing } from '@/src/theme'
 import { useChatStore } from '@shared/stores/chat-store'
+import { useShallow } from 'zustand/react/shallow'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { handleApiError } from '@shared/services/api'
 import type { Message } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 interface Props { navigation?: any; route?: any }
 
@@ -17,7 +20,9 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
   const chatMeta = route?.params?.chat
   const otherUserId = chatMeta?.influencerId || chatMeta?.userId || chatMeta?.brandId
 
-  const { messages, fetchMessages, sendMessage, sendImage, isLoading, isSending, markRoomRead, setTyping, typingUsers, presence, socket, initializeSocket } = useChatStore()
+  const { messages, fetchMessages, sendMessage, sendImage, isLoading, isSending, markRoomRead, setTyping, typingUsers, presence, socket, initializeSocket, leaveRoom } = useChatStore(
+    useShallow((s) => ({ messages: s.messages, fetchMessages: s.fetchMessages, sendMessage: s.sendMessage, sendImage: s.sendImage, isLoading: s.isLoading, isSending: s.isSending, markRoomRead: s.markRoomRead, setTyping: s.setTyping, typingUsers: s.typingUsers, presence: s.presence, socket: s.socket, initializeSocket: s.initializeSocket, leaveRoom: s.leaveRoom })),
+  )
   const { user } = useAuthStore()
   const [input, setInput] = useState('')
   const [searchMode, setSearchMode] = useState(false)
@@ -28,23 +33,26 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
   useEffect(() => {
     if (roomId) { fetchMessages(roomId); markRoomRead(roomId) }
     if (!socket) initializeSocket()
-    return () => { if (typingTimer.current) clearTimeout(typingTimer.current) }
+    return () => {
+      if (typingTimer.current) clearTimeout(typingTimer.current)
+      if (roomId) leaveRoom(roomId)
+    }
   }, [roomId])
 
   const handleSend = async () => {
     if (!input.trim() || !roomId) return
-    const text = input.trim(); setInput(''); setTyping(roomId, false)
-    try { await sendMessage(roomId, text) } catch (err) { handleApiError(err, 'Failed to send') }
+    const text = input.trim(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setInput(''); setTyping(roomId, false)
+    try { await sendMessage(roomId, text) } catch (err) { handleApiError(err, "Couldn't send message") }
   }
 
   const handleAttach = async () => {
     const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') { Alert.alert('Permission Denied', 'Enable photo library access in settings.'); return }
+    if (status !== 'granted') { Alert.alert('Photo access needed', 'Allow photo access in Settings.'); return }
     try {
       const result = await ImagePickerLib.launchImageLibraryAsync({ mediaTypes: ImagePickerLib.MediaTypeOptions.Images, quality: 0.7, base64: true })
       if (result.canceled || !result.assets[0]?.base64) return
       await sendImage(roomId, `data:image/jpeg;base64,${result.assets[0].base64}`)
-    } catch (err) { handleApiError(err, 'Image send failed') }
+    } catch (err) { handleApiError(err, "Couldn't send image") }
   }
 
   const handleInputChange = (text: string) => {
@@ -74,7 +82,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
         {!isMe && (showAvatar ? <View style={styles.bubbleAvatar}><Text style={styles.bubbleAvatarText}>{(chatMeta?.influencerName || '?').charAt(0)}</Text></View> : <View style={styles.bubbleAvatarSpacer} />)}
         <View style={[styles.bubble, isMe ? styles.bubbleMine : styles.bubbleTheirs]}>
           {isImage ? (
-            <Image source={{ uri: item.attachmentUrl || item.content }} style={styles.bubbleImage} />
+            <Image transition={200} source={{ uri: item.attachmentUrl || item.content }} style={styles.bubbleImage} />
           ) : (
             <Text style={styles.bubbleText}>{item.content}</Text>
           )}
@@ -87,7 +95,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
   }
 
   if (isLoading && messages.length === 0) {
-    return <SafeAreaView style={styles.root}><View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={colors.neon} /></View></SafeAreaView>
+    return <SafeAreaView style={styles.root}><View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={colors.primary} /></View></SafeAreaView>
   }
 
   return (
@@ -95,7 +103,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
       <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
         <Animated.View entering={FadeIn.duration(400)} style={{ flex: 1 }}>
           <View style={styles.header}>
-            <Pressable hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Go back" hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
             <View style={styles.peerWrap}>
@@ -108,14 +116,14 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
                 <Text style={styles.peerStatus}>{isOtherTyping ? 'typing…' : otherPresence?.online ? 'Online' : ''}</Text>
               </View>
             </View>
-            <Pressable hitSlop={12} onPress={() => setSearchMode((s) => !s)} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel={searchMode ? 'Close search' : 'Search messages'} hitSlop={12} onPress={() => setSearchMode((s) => !s)} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
               <Ionicons name={searchMode ? 'close' : 'search'} size={20} color="#fff" />
             </Pressable>
           </View>
 
           {searchMode && (
             <View style={styles.searchBar}>
-              <TextInput style={styles.searchInput} placeholder="Search this conversation…" placeholderTextColor={colors.textSubtle} value={searchQuery} onChangeText={setSearchQuery} autoFocus />
+              <TextInput style={styles.searchInput} placeholder="Search messages" placeholderTextColor={colors.textSubtle} value={searchQuery} onChangeText={setSearchQuery} autoFocus />
             </View>
           )}
 
@@ -132,14 +140,14 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
             {isOtherTyping && <View style={styles.typingHint}><Text style={styles.typingHintText}>typing…</Text></View>}
 
             <View style={styles.composer}>
-              <Pressable hitSlop={8} style={({ pressed }) => [styles.attachBtn, pressed && { opacity: 0.75 }]} onPress={handleAttach}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Attach image" hitSlop={8} style={({ pressed }) => [styles.attachBtn, pressed && { opacity: 0.75 }]} onPress={handleAttach}>
                 <Ionicons name="add" size={20} color="#fff" />
               </Pressable>
               <TextInput style={styles.composerInput} placeholder="Message…" placeholderTextColor={colors.textSubtle} value={input} onChangeText={handleInputChange} multiline />
-              <Pressable
+              <Pressable accessibilityRole="button" accessibilityLabel="Send message"
                 style={({ pressed }) => [styles.sendBtn, !input.trim() && { opacity: 0.4 }, pressed && { opacity: 0.85 }]}
                 disabled={!input.trim() || isSending}
-                onPress={handleSend}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSend() }}
               >
                 <Ionicons name="arrow-up" size={18} color="#000" />
               </Pressable>
@@ -182,5 +190,5 @@ const styles = StyleSheet.create({
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, paddingBottom: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg },
   attachBtn: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   composerInput: { flex: 1, color: '#fff', fontSize: 14, lineHeight: 19, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 22, paddingHorizontal: spacing.md, paddingVertical: 10, maxHeight: 110 },
-  sendBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center' },
+  sendBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
 })

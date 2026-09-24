@@ -51,10 +51,25 @@ describe('CreatorReportScreen', () => {
     expect(screen.getByText('7')).toBeOnTheScreen()
 
     expect(screen.getByText('Performance')).toBeOnTheScreen()
-    expect(screen.getByText('Audience Age')).toBeOnTheScreen()
-    expect(screen.getByText('Audience Gender')).toBeOnTheScreen()
+    expect(screen.getByText('Audience age')).toBeOnTheScreen()
+    expect(screen.getByText('Audience gender')).toBeOnTheScreen()
     expect(screen.getByText('68%')).toBeOnTheScreen()
     expect(screen.getByText('Mumbai')).toBeOnTheScreen()
+  })
+
+  it('hides audience sections instead of inventing data when the creator has none', async () => {
+    api.getInfluencer.mockResolvedValue({ influencer: { name: 'Arjun Rao', instagramMetrics: { followers: 900 } } })
+    // The signed-in brand's own metrics must never be shown as the creator's.
+    api.getProfileWithMetrics.mockResolvedValue({ metrics: { genderSplit: { male: 42, female: 55, other: 3 }, topLocations: ['Delhi'] } })
+    renderScreen(CreatorReportScreen)
+
+    expect(await screen.findByText('Arjun Rao')).toBeOnTheScreen()
+    expect(screen.queryByText('Audience age')).toBeNull()
+    expect(screen.queryByText('Audience gender')).toBeNull()
+    expect(screen.queryByText('Top locations')).toBeNull()
+    expect(screen.queryByText('55%')).toBeNull()
+    expect(screen.queryByText('Delhi')).toBeNull()
+    expect(api.getProfileWithMetrics).not.toHaveBeenCalled()
   })
 
   it('shows a not-found state when the creator cannot be loaded', async () => {

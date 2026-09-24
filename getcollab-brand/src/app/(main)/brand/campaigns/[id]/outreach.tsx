@@ -4,20 +4,14 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ campaignOutreach: { id: string; title?: string } }, 'campaignOutreach'>
 
 interface OutreachItem { id: string; creatorName: string; channel: string; status: string; sentAt: string }
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  sent: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)' },
-  delivered: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  opened: { fg: '#8B5CF6', bg: 'rgba(139,92,246,0.14)' },
-  replied: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  failed: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
-}
 
 export default function CampaignOutreachScreen() {
   const route = useRoute<RouteParams>()
@@ -32,7 +26,7 @@ export default function CampaignOutreachScreen() {
     try {
       const [invitesRes, dealsRes] = await Promise.all([
         apiService.getBrandInvites({ campaignId }).catch(() => null),
-        apiService.getDeals({ campaignId }).catch(() => null),
+        apiService.getAllDeals({ campaignId }).catch(() => null),
       ])
       const mapped: OutreachItem[] = []
       const invites = invitesRes?.invites || invitesRes?.data || []
@@ -45,19 +39,19 @@ export default function CampaignOutreachScreen() {
           sentAt: i.createdAt,
         })
       })
-      const deals = dealsRes?.deals || dealsRes?.data || dealsRes?.collabs || []
+      const deals = dealsRes || []
       ;(Array.isArray(deals) ? deals : []).forEach((d: any) => {
         mapped.push({
           id: `deal-${d.id}`,
           creatorName: d.influencer?.name || d.influencerName || 'Creator',
-          channel: 'Deal',
+          channel: 'Collaboration',
           status: d.status === 'active' ? 'replied' : d.status === 'pending' ? 'sent' : 'delivered',
           sentAt: d.createdAt,
         })
       })
       setItems(mapped)
     } catch (err) {
-      handleApiError(err, 'Failed to load outreach')
+      handleApiError(err, "Couldn't load outreach")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -72,7 +66,7 @@ export default function CampaignOutreachScreen() {
     const st = item.status || 'sent'
     const s = STATUS_COLORS[st] || STATUS_COLORS.sent
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
         <View style={styles.cardTop}>
           <View style={{ flex: 1 }}>
             <Text style={styles.name}>{item.creatorName}</Text>
@@ -89,7 +83,7 @@ export default function CampaignOutreachScreen() {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -106,7 +100,7 @@ export default function CampaignOutreachScreen() {
           ListHeaderComponent={
             <View style={styles.header}>
               <Text style={styles.title}>Outreach</Text>
-              <Text style={styles.subtitle}>Invites and messages for {title || 'this campaign'}</Text>
+              <Text style={styles.subtitle}>Invites and collaborations for {title || 'this campaign'}</Text>
             </View>
           }
           ListEmptyComponent={
@@ -116,7 +110,7 @@ export default function CampaignOutreachScreen() {
               <Text style={styles.emptySub}>Invite creators from the Discover tab.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadOutreach() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadOutreach() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>

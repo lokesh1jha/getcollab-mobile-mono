@@ -1,12 +1,14 @@
 import React, { useCallback, useState } from 'react'
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View, ActivityIndicator, Linking } from 'react-native'
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View, ActivityIndicator, Linking, RefreshControl } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, overline } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 interface NotificationSettings {
   emailNotifications?: boolean
@@ -30,6 +32,11 @@ interface SettingsState {
 }
 
 export default function SettingsScreen({ navigation }: { navigation: InfluencerNavigationProp }) {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await load() } finally { setRefreshing(false) }
+  }
   const { signOut } = useAuthStore()
   const [settings, setSettings] = useState<SettingsState>({
     twoFactorEnabled: false,
@@ -42,6 +49,7 @@ export default function SettingsScreen({ navigation }: { navigation: InfluencerN
     },
   })
   const [loading, setLoading] = useState(true)
+  const [prefsFailed, setPrefsFailed] = useState(false)
   const [saving, setSaving] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -51,6 +59,8 @@ export default function SettingsScreen({ navigation }: { navigation: InfluencerN
         apiService.getNotifications().catch(() => null),
       ])
       const s = settingsRes?.data || settingsRes || {}
+      // Unread preferences must not show as all-on defaults.
+      setPrefsFailed(!s.notifications && !s.notificationSettings)
       const n = s.notifications || s.notificationSettings || {}
       setSettings(prev => ({
         twoFactorEnabled: s.twoFactorEnabled ?? s.two_factor_enabled ?? prev.twoFactorEnabled,
@@ -66,7 +76,7 @@ export default function SettingsScreen({ navigation }: { navigation: InfluencerN
     finally { setLoading(false) }
   }, [])
 
-  useFocusEffect(useCallback(() => { setLoading(true); load() }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
   const toggleNotif = async (key: keyof NotificationSettings) => {
     const newVal = !settings.notifications[key]
@@ -76,22 +86,22 @@ export default function SettingsScreen({ navigation }: { navigation: InfluencerN
       await apiService.updateNotificationSettings({ [key]: newVal })
     } catch (err: any) {
       setSettings(prev => ({ ...prev, notifications: { ...prev.notifications, [key]: !newVal } }))
-      handleApiError(err, 'Failed to update setting')
+      handleApiError(err, "Couldn't update this setting. Try again.")
     } finally { setSaving(null) }
   }
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Delete Account',
-      'This action is permanent. All your data, campaigns, and earnings history will be deleted.',
+      'Delete account?',
+      'This is permanent. Your data, campaigns and earnings history will be deleted.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete Account',
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try { await apiService.deleteAccount(); await signOut() }
-            catch (err: any) { handleApiError(err, 'Failed to delete account') }
+            catch (err: any) { handleApiError(err, "Couldn't delete your account. Try again.") }
           }
         }
       ]
@@ -100,7 +110,7 @@ export default function SettingsScreen({ navigation }: { navigation: InfluencerN
 
   if (loading) return (
     <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-      <ActivityIndicator size="large" color={colors.neon} />
+      <ActivityIndicator size="large" color={colors.primary} />
     </View>
   )
 
@@ -108,73 +118,61 @@ export default function SettingsScreen({ navigation }: { navigation: InfluencerN
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.header}>
-          <Pressable hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Go back" hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
             <Ionicons name="chevron-back" size={22} color={colors.text} />
           </Pressable>
           <Text style={styles.headerTitle}>Settings</Text>
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
-          {/* Security */}
-          <SectionHeader title="Security" />
-          <View style={styles.listCard}>
-            <ToggleRow
-              icon="shield-checkmark-outline"
-              label="Two-Factor Authentication"
-              description="Add an extra layer of security"
-              value={settings.twoFactorEnabled}
-              onToggle={async () => {
-                const newVal = !settings.twoFactorEnabled
-                setSettings(prev => ({ ...prev, twoFactorEnabled: newVal }))
-                setSaving('twoFactorEnabled')
-                try {
-                  await apiService.updateSettings({ twoFactorEnabled: newVal })
-                } catch (err: any) {
-                  setSettings(prev => ({ ...prev, twoFactorEnabled: !newVal }))
-                  handleApiError(err, 'Failed to update 2FA setting')
-                } finally {
-                  setSaving(null)
-                }
-              }}
-              loading={saving === 'twoFactorEnabled'}
-            />
-          </View>
-
-          {/* Notifications */}
-          <SectionHeader title="Notifications" />
-          <View style={styles.listCard}>
-            <ToggleRow icon="mail-outline" label="Email Notifications" value={settings.notifications.emailNotifications ?? false} onToggle={() => toggleNotif('emailNotifications')} loading={saving === 'emailNotifications'} divider />
-            <ToggleRow icon="phone-portrait-outline" label="Push Notifications" value={settings.notifications.pushNotifications ?? false} onToggle={() => toggleNotif('pushNotifications')} loading={saving === 'pushNotifications'} divider />
-            <ToggleRow icon="megaphone-outline" label="Campaign Updates" value={settings.notifications.campaignUpdates ?? false} onToggle={() => toggleNotif('campaignUpdates')} loading={saving === 'campaignUpdates'} divider />
-            <ToggleRow icon="chatbubble-outline" label="Message Notifications" value={settings.notifications.messageNotifications ?? false} onToggle={() => toggleNotif('messageNotifications')} loading={saving === 'messageNotifications'} divider />
-            <ToggleRow icon="cash-outline" label="Payment Notifications" value={settings.notifications.paymentNotifications ?? false} onToggle={() => toggleNotif('paymentNotifications')} loading={saving === 'paymentNotifications'} />
-          </View>
-
-          {/* Account */}
-          <SectionHeader title="Account" />
-          <View style={styles.listCard}>
-            <LinkRow icon="lock-closed-outline" label="Change Password" onPress={() => navigation?.navigate('ChangePassword')} divider />
-            <LinkRow icon="card-outline" label="Payout Details" onPress={() => navigation?.navigate('PayoutSettings')} divider />
-            <LinkRow icon="notifications-outline" label="Notification Preferences" onPress={() => navigation?.navigate('Notifications')} />
-          </View>
-
-          {/* Danger Zone */}
-          <SectionHeader title="Danger Zone" />
-          <View style={styles.listCard}>
-            <Pressable onPress={handleDeleteAccount} style={({ pressed }) => [styles.dangerRow, pressed && { opacity: 0.85 }]}>
-              <View style={[styles.rowIcon, { backgroundColor: colors.errorSoft }]}>
-                <Ionicons name="trash-outline" size={18} color={colors.error} />
-              </View>
-              <Text style={styles.dangerText}>Delete Account</Text>
+        <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+          <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />} contentContainerStyle={{ paddingBottom: spacing.xxxl }} showsVerticalScrollIndicator={false}>
+            {/* No two-factor toggle: the API has no 2FA to switch on, so it
+                saved nothing. */}
+            {/* Notifications */}
+            <SectionHeader title="Notifications" />
+            <View style={styles.listCard}>
+              {prefsFailed ? (
+                <Pressable onPress={() => load()} style={({ pressed }) => [{ padding: spacing.lg, gap: 4 }, pressed && { opacity: 0.85 }]}>
+                  <Text style={{ color: colors.text, fontWeight: '600' }}>Couldn't load notification settings</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>Tap to try again</Text>
+                </Pressable>
+              ) : (
+                <>
+                <ToggleRow icon="mail-outline" label="Email" value={settings.notifications.emailNotifications ?? false} onToggle={() => toggleNotif('emailNotifications')} loading={saving === 'emailNotifications'} divider />
+                <ToggleRow icon="phone-portrait-outline" label="Push" value={settings.notifications.pushNotifications ?? false} onToggle={() => toggleNotif('pushNotifications')} loading={saving === 'pushNotifications'} divider />
+                <ToggleRow icon="megaphone-outline" label="Campaign updates" value={settings.notifications.campaignUpdates ?? false} onToggle={() => toggleNotif('campaignUpdates')} loading={saving === 'campaignUpdates'} divider />
+                <ToggleRow icon="chatbubble-outline" label="Messages" value={settings.notifications.messageNotifications ?? false} onToggle={() => toggleNotif('messageNotifications')} loading={saving === 'messageNotifications'} divider />
+                <ToggleRow icon="cash-outline" label="Payments" value={settings.notifications.paymentNotifications ?? false} onToggle={() => toggleNotif('paymentNotifications')} loading={saving === 'paymentNotifications'} />
+                  </>
+              )}
+            </View>
+  
+            {/* Account */}
+            <SectionHeader title="Account" />
+            <View style={styles.listCard}>
+              <LinkRow icon="lock-closed-outline" label="Change password" onPress={() => navigation?.navigate('ChangePassword')} divider />
+              <LinkRow icon="card-outline" label="Payout details" onPress={() => navigation?.navigate('PayoutSettings')} divider />
+              <LinkRow icon="notifications-outline" label="Notification inbox" onPress={() => navigation?.navigate('Notifications')} />
+            </View>
+  
+            {/* Danger Zone */}
+            <SectionHeader title="Danger zone" />
+            <View style={styles.listCard}>
+              <Pressable onPress={handleDeleteAccount} style={({ pressed }) => [styles.dangerRow, pressed && { opacity: 0.85 }]}>
+                <View style={[styles.rowIcon, { backgroundColor: colors.errorSoft }]}>
+                  <Ionicons name="trash-outline" size={18} color={colors.error} />
+                </View>
+                <Text style={styles.dangerText}>Delete account</Text>
+              </Pressable>
+            </View>
+  
+            <Pressable onPress={() => Linking.openURL('mailto:contact@getcollab.in')} style={({ pressed }) => [styles.supportLink, pressed && { opacity: 0.8 }]}>
+              <Text style={styles.supportText}>Need help? Contact support</Text>
             </Pressable>
-          </View>
-
-          <Pressable onPress={() => Linking.openURL('mailto:support@getcollab.in')} style={({ pressed }) => [styles.supportLink, pressed && { opacity: 0.8 }]}>
-            <Text style={styles.supportText}>Need help? Contact support</Text>
-          </Pressable>
-          <Text style={styles.versionText}>GetCollab v1.0.0 · For Creators</Text>
-        </ScrollView>
+            <Text style={styles.versionText}>GetCollab v1.0.0 · For creators</Text>
+          </ScrollView>
+        </Animated.View>
       </SafeAreaView>
     </View>
   )
@@ -195,13 +193,13 @@ function ToggleRow({ icon, label, description, value, onToggle, loading, divider
         {description && <Text style={styles.rowDesc}>{description}</Text>}
       </View>
       {loading ? (
-        <ActivityIndicator size="small" color={colors.neon} />
+        <ActivityIndicator size="small" color={colors.primary} />
       ) : (
         <Switch
           value={value}
           onValueChange={onToggle}
-          trackColor={{ false: colors.elevated, true: colors.neonSoft }}
-          thumbColor={value ? colors.neon : colors.textSubtle}
+          trackColor={{ false: colors.elevated, true: colors.primarySoft }}
+          thumbColor={value ? colors.primary : colors.textSubtle}
           ios_backgroundColor={colors.elevated}
         />
       )}
@@ -226,7 +224,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
   iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
   headerTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
-  sectionHeader: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.sm },
+  sectionHeader: { ...overline, marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.sm },
   listCard: { marginHorizontal: spacing.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },

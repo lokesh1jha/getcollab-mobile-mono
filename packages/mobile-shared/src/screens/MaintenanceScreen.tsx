@@ -1,7 +1,8 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Image, ImageSourcePropType } from 'react-native'
+import { View, Text, StyleSheet, ImageSourcePropType, Pressable } from 'react-native'
+import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing } from '../constants'
+import { colors, spacing } from '@/src/theme'
 
 interface MaintenanceScreenProps {
   onRetry: () => void
@@ -16,7 +17,7 @@ export default function MaintenanceScreen({ onRetry, logo }: MaintenanceScreenPr
           <Image
             source={logo}
             style={styles.logo}
-            resizeMode="contain"
+            contentFit="contain"
           />
         ) : null}
 
@@ -24,23 +25,22 @@ export default function MaintenanceScreen({ onRetry, logo }: MaintenanceScreenPr
           <Text style={styles.icon}>🔧</Text>
         </View>
 
-        <Text style={styles.title}>Under Maintenance</Text>
+        <Text style={styles.title}>Down for maintenance</Text>
         <Text style={styles.subtitle}>We'll be back soon</Text>
 
         <Text style={styles.description}>
-          We're currently performing maintenance to improve your experience. Please try again in a few moments.
+          We're making improvements. Try again in a few minutes.
         </Text>
 
-        <TouchableOpacity
-          style={styles.button}
+        <Pressable
+          style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
           onPress={onRetry}
-          activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>Try Again</Text>
-        </TouchableOpacity>
+          <Text style={styles.buttonText}>Try again</Text>
+        </Pressable>
 
         <Text style={styles.footer}>
-          Need help? Contact us at support@getcollab.com
+          Need help? Contact us at contact@getcollab.in
         </Text>
       </View>
     </SafeAreaView>
@@ -50,23 +50,23 @@ export default function MaintenanceScreen({ onRetry, logo }: MaintenanceScreenPr
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.bg,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxl,
   },
   logo: {
     width: 100,
     height: 100,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
     opacity: 0.5,
   },
   iconContainer: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   icon: {
     fontSize: 60,
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: colors.primary,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
     textAlign: 'center',
     fontWeight: '600',
   },
@@ -89,20 +89,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textMuted,
     textAlign: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
     lineHeight: 22,
   },
   button: {
     backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
     borderRadius: 8,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
     minWidth: 200,
     alignItems: 'center',
   },
   buttonText: {
-    color: colors.white,
+    color: colors.black,
     fontSize: 16,
     fontWeight: '600',
   },

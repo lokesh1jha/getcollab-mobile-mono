@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native'
+import { View, Text, StyleSheet, Animated, Pressable } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, spacing } from '../constants'
+import { colors, spacing } from '@/src/theme'
 
 type Listener = (state: NetworkBannerState) => void
 
@@ -72,24 +72,24 @@ export function NetworkBanner() {
     >
       <Text style={styles.text} numberOfLines={2}>{state.message}</Text>
       {state.onRetry && (
-        <TouchableOpacity
+        <Pressable
           onPress={() => { state.onRetry?.(); networkBanner.hide() }}
-          style={styles.retryBtn}
+          style={({ pressed }) => [styles.retryBtn, pressed && { opacity: 0.85 }]}
           accessibilityRole="button"
           accessibilityLabel="Retry"
         >
           <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
+        </Pressable>
       )}
-      <TouchableOpacity
+      <Pressable
         onPress={() => networkBanner.hide()}
-        style={styles.closeBtn}
+        style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.85 }]}
         accessibilityRole="button"
         accessibilityLabel="Dismiss"
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Ionicons name="close" size={18} color={colors.white} />
-      </TouchableOpacity>
+        <Ionicons name="close" size={18} color={colors.text} />
+      </Pressable>
     </Animated.View>
   )
 }
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     top: 0, left: 0, right: 0,
     backgroundColor: colors.error,
     paddingBottom: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 9999,
@@ -108,12 +108,12 @@ const styles = StyleSheet.create({
   },
   text: {
     flex: 1,
-    color: colors.white,
+    color: colors.text,
     fontSize: 14,
     fontWeight: '500',
   },
   retryBtn: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xs,
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 8,
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   retryText: {
-    color: colors.white,
+    color: colors.text,
     fontWeight: '600',
     fontSize: 13,
   },

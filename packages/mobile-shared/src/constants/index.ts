@@ -1,8 +1,3 @@
-// API Configuration - use apiService singleton for actual calls
-// These are now derived from environment variables in api.ts
-// Kept here for reference but should not be used directly
-// export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api/v1'
-// export const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:3000'
 
 // Colors — Linear design system, matches web globals.css dark theme
 export const colors = {

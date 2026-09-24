@@ -29,8 +29,9 @@ interface SubscriptionState {
 
 const normalizeSubscription = (raw: any): Subscription | null => {
   if (!raw) return null
-  if (raw.status === 'NONE' && !raw.id) return null
-  const status = (raw.status || 'NONE') as SubscriptionStatus
+  if (String(raw.status || '').toUpperCase() === 'NONE' && !raw.id) return null
+  // getcollab-go returns lowercase statuses ('trialing'); the app compares uppercase.
+  const status = String(raw.status || 'NONE').toUpperCase() as SubscriptionStatus
   return {
     id: raw.id,
     status,
@@ -59,7 +60,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   fetchStatus: async () => {
     set({ loading: true, error: null })
     try {
-      const response = await apiService.get('/subscriptions/mobile-status') as any
+      const response = await apiService.get('/subscriptions/status') as any
       const data = response?.data || response
       set({ subscription: normalizeSubscription(data), loading: false, lastFetchedAt: Date.now(), retryCount: 0 })
     } catch (error: any) {
@@ -88,7 +89,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       return
     }
     try {
-      const response = await apiService.get('/subscriptions/mobile-status') as any
+      const response = await apiService.get('/subscriptions/status') as any
       const data = response?.data || response
       set({ subscription: normalizeSubscription(data), lastFetchedAt: Date.now(), retryCount: 0 })
     } catch {

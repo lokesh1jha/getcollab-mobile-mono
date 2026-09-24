@@ -22,6 +22,16 @@ import VerifyEmailScreen from './src/app/(main)/verify-email'
 
 const Stack = createNativeStackNavigator()
 
+// Bare back-button header: the screen draws its own title.
+const authHeaderOptions = {
+  headerShown: true,
+  headerTitle: '',
+  headerBackButtonDisplayMode: 'minimal' as const,
+  headerShadowVisible: false,
+  headerStyle: { backgroundColor: colors.bg },
+  headerTintColor: colors.text,
+}
+
 const navigationTheme = {
   ...DefaultTheme,
   dark: true,
@@ -32,7 +42,7 @@ const navigationTheme = {
     card: colors.card,
     text: colors.text,
     border: colors.border,
-    notification: colors.neon,
+    notification: colors.primary,
   },
 }
 
@@ -45,14 +55,24 @@ function SplashScreen() {
         </View>
         <Text style={styles.title}>GetCollab</Text>
         <Text style={styles.subtitle}>For Brands</Text>
-        <ActivityIndicator size="large" color={colors.neon} style={styles.loading} />
+        <ActivityIndicator size="large" color={colors.primary} style={styles.loading} />
       </View>
     </SafeAreaView>
   )
 }
 
+// The boundary sits outside the splash/maintenance screens so a render error
+// in any of them is reported instead of white-screening.
 export default function App() {
-  const { appReady, apiError, initializeApp } = useAppInit({ splashDelayMs: 2000 })
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  )
+}
+
+function AppContent() {
+  const { appReady, apiError, initializeApp } = useAppInit()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   useEffect(() => {
@@ -73,7 +93,6 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ErrorBoundary>
           <NavigationContainer ref={navigationRef} theme={navigationTheme}>
             <Stack.Navigator
               screenOptions={{
@@ -88,8 +107,8 @@ export default function App() {
                   <Stack.Screen name="Landing" component={LandingScreen} options={{ headerShown: false }} />
                   <Stack.Screen name="SignIn" component={SignInScreen} options={{ headerShown: false }} />
                   <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-                  <Stack.Screen name="ForgotPassword" getComponent={() => require('./src/app/(auth)/forgot-password').default} options={{ headerShown: true, headerTitle: 'Forgot Password' }} />
-                  <Stack.Screen name="ResetPassword" getComponent={() => require('./src/app/(auth)/reset-password').default} options={{ headerShown: true, headerTitle: 'Reset Password' }} />
+                  <Stack.Screen name="ForgotPassword" getComponent={() => require('./src/app/(auth)/forgot-password').default} options={authHeaderOptions} />
+                  <Stack.Screen name="ResetPassword" getComponent={() => require('./src/app/(auth)/reset-password').default} options={authHeaderOptions} />
                   <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ headerShown: false }} />
                 </>
               ) : (
@@ -98,7 +117,6 @@ export default function App() {
             </Stack.Navigator>
           </NavigationContainer>
           <NetworkBanner />
-        </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )
@@ -108,7 +126,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   content: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.sm },
   logoBadge: {
-    width: 48, height: 48, borderRadius: 14, backgroundColor: colors.neon,
+    width: 48, height: 48, borderRadius: 14, backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm,
   },
   logoDot: { width: 16, height: 16, borderRadius: 4, backgroundColor: colors.black },

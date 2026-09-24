@@ -1,15 +1,23 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, Pressable } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, RefreshControl } from 'react-native'
+import { Image } from 'expo-image'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, radius, spacing } from '@/src/theme'
 import apiService from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 interface Props { navigation?: any }
 
 export default function ProfilePreviewScreen({ navigation }: Props) {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await load() } finally { setRefreshing(false) }
+  }
   const { user } = useAuthStore()
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -20,12 +28,12 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
     try {
       const response = await apiService.getProfileWithMetrics().catch(() => apiService.getProfile())
       setProfile(response?.data || response?.profile || response || {})
-    } catch (e) { console.error('Failed to load profile preview:', e) }
+    } catch (e) { logger.error('Failed to load profile preview', e) }
     finally { setLoading(false) }
   }
 
   if (loading) {
-    return <SafeAreaView style={styles.root}><View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={colors.neon} /></View></SafeAreaView>
+    return <SafeAreaView style={styles.root}><View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={colors.primary} /></View></SafeAreaView>
   }
 
   const socials = [
@@ -37,18 +45,18 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />} contentContainerStyle={{ padding: spacing.lg }}>
           <Animated.View entering={FadeInDown.duration(400)}>
             <View style={styles.previewBadge}>
               <Ionicons name="eye" size={14} color={colors.blue} />
-              <Text style={styles.previewBadgeText}>Preview as a brand sees you</Text>
+              <Text style={styles.previewBadgeText}>How others see your profile</Text>
             </View>
 
-            {profile?.coverImage ? <Image source={{ uri: profile.coverImage }} style={styles.cover} /> : null}
+            {profile?.coverImage ? <Image transition={200} source={{ uri: profile.coverImage }} style={styles.cover} /> : null}
 
             <View style={styles.profileHeader}>
               {profile?.image || user?.image ? (
-                <Image source={{ uri: profile?.image || user?.image }} style={styles.avatar} />
+                <Image transition={200} source={{ uri: profile?.image || user?.image }} style={styles.avatar} />
               ) : (
                 <View style={[styles.avatar, styles.avatarFallback]}>
                   <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
@@ -56,7 +64,7 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
               )}
               <View style={{ flex: 1, marginLeft: spacing.md }}>
                 <Text style={styles.name}>{user?.name || profile?.name}</Text>
-                {profile?.location ? <Text style={styles.location}>📍 {profile.location}</Text> : null}
+                {profile?.location ? <Text style={styles.location}>{profile.location}</Text> : null}
               </View>
             </View>
 
@@ -68,7 +76,7 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
 
             {socials.length > 0 && (
               <View style={styles.card}>
-                <Text style={styles.sectionTitle}>Social Reach</Text>
+                <Text style={styles.sectionTitle}>Social reach</Text>
                 {socials.map((s) => (
                   <View key={s.name} style={styles.socialRow}>
                     <Text style={styles.socialName}>{s.name}</Text>
@@ -93,10 +101,10 @@ export default function ProfilePreviewScreen({ navigation }: Props) {
             {(profile?.pricePerPost || profile?.pricePerReel || profile?.pricePerCampaign) && (
               <View style={styles.card}>
                 <Text style={styles.sectionTitle}>Pricing</Text>
-                {profile.pricePerPost ? <PriceRow label="Per Post" value={profile.pricePerPost} /> : null}
-                {profile.pricePerReel ? <PriceRow label="Per Reel" value={profile.pricePerReel} /> : null}
-                {profile.pricePerStory ? <PriceRow label="Per Story" value={profile.pricePerStory} /> : null}
-                {profile.pricePerCampaign ? <PriceRow label="Full Campaign" value={profile.pricePerCampaign} /> : null}
+                {profile.pricePerPost ? <PriceRow label="Per post" value={profile.pricePerPost} /> : null}
+                {profile.pricePerReel ? <PriceRow label="Per reel" value={profile.pricePerReel} /> : null}
+                {profile.pricePerStory ? <PriceRow label="Per story" value={profile.pricePerStory} /> : null}
+                {profile.pricePerCampaign ? <PriceRow label="Full campaign" value={profile.pricePerCampaign} /> : null}
               </View>
             )}
           </Animated.View>

@@ -1,6 +1,6 @@
 import React from "react";
 import { View, TextInput, StyleSheet, Text } from "react-native";
-import { colors, spacing, borderRadius } from "../../constants";
+import { colors, spacing, radius } from '@/src/theme'
 
 interface InputProps {
   label?: string;
@@ -84,8 +84,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
   inputContainer: {
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.elevated,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
     minHeight: 44,
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   input: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingVertical: 10,
     fontSize: 15,
     color: colors.text,

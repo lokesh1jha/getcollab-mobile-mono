@@ -4,19 +4,14 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ campaignCircle: { id: string; title?: string } }, 'campaignCircle'>
 
 interface Member { id: string; name: string; instagramHandle?: string; status: string; image?: string }
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  invited: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  accepted: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  active: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)' },
-  completed: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)' },
-}
 
 export default function CampaignCircleScreen() {
   const route = useRoute<RouteParams>()
@@ -29,8 +24,7 @@ export default function CampaignCircleScreen() {
 
   const loadCircle = useCallback(async () => {
     try {
-      const res = await apiService.getDeals({ campaignId })
-      const list = res?.deals || res?.data || res?.collabs || []
+      const list = await apiService.getAllDeals({ campaignId })
       const mapped = (Array.isArray(list) ? list : []).map((d: any) => ({
         id: d.id,
         name: d.influencer?.name || d.influencerName || 'Creator',
@@ -40,7 +34,7 @@ export default function CampaignCircleScreen() {
       }))
       setMembers(mapped)
     } catch (err) {
-      handleApiError(err, 'Failed to load circle')
+      handleApiError(err, "Couldn't load circle")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -56,7 +50,7 @@ export default function CampaignCircleScreen() {
     const s = STATUS_COLORS[st] || STATUS_COLORS.invited
     const initial = item.name?.charAt(0).toUpperCase() || '?'
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
         <Pressable style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initial}</Text>
@@ -76,7 +70,7 @@ export default function CampaignCircleScreen() {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -92,7 +86,7 @@ export default function CampaignCircleScreen() {
           ItemSeparatorComponent={() => <View style={styles.divider} />}
           ListHeaderComponent={
             <View style={styles.header}>
-              <Text style={styles.title}>Creator Circle</Text>
+              <Text style={styles.title}>Creator circle</Text>
               <Text style={styles.subtitle}>{members.length} creators in {title || 'this campaign'}</Text>
             </View>
           }
@@ -103,7 +97,7 @@ export default function CampaignCircleScreen() {
               <Text style={styles.emptySub}>Invite creators from the Discover tab.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadCircle() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadCircle() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>

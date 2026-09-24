@@ -9,6 +9,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 interface Settlement {
   id: string
@@ -74,11 +75,11 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
       setWalletMinor(typeof walletRes?.availableMinor === 'number' ? walletRes.availableMinor : null)
       setReservedMinor(typeof walletRes?.reservedMinor === 'number' ? walletRes.reservedMinor : (typeof walletRes?.heldMinor === 'number' ? walletRes.heldMinor : null))
     } catch (err: any) {
-      handleApiError(err, 'Failed to load earnings')
+      handleApiError(err, "Couldn't load earnings")
     } finally { setLoading(false); setRefreshing(false) }
   }, [])
 
-  useFocusEffect(useCallback(() => { load(true) }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
   const onRefresh = () => { setRefreshing(true); load(false) }
 
   const handleRequest = async () => {
@@ -86,8 +87,8 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
     setSubmitting(true)
     try {
       const amountMinor = Math.round(Number(amount) * 100)
-      if (!Number.isFinite(amountMinor) || amountMinor <= 0) throw new Error('Enter a valid payout amount')
-      if (walletMinor != null && amountMinor > walletMinor) throw new Error('Amount exceeds your available balance')
+      if (!Number.isFinite(amountMinor) || amountMinor <= 0) throw new Error('Enter a valid amount')
+      if (walletMinor != null && amountMinor > walletMinor) throw new Error('Amount is more than your available balance')
       await apiService.withdrawPayout({ amountMinor, idempotencyKey: `mobile-${Date.now()}-${Math.random().toString(36).slice(2)}` })
       setShowModal(false)
       setAmount('')
@@ -95,14 +96,14 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
       setNotes('')
       load(false)
     } catch (err: any) {
-      handleApiError(err, 'Failed to request payout')
+      handleApiError(err, "Couldn't request payout. Try again.")
     } finally { setSubmitting(false) }
   }
 
   const renderSettlement = ({ item, index }: { item: Settlement; index: number }) => {
     const s = statusColor(item.status)
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
         <View style={styles.cardLeft}>
           <View style={styles.cardIcon}>
             <Ionicons name={item.status === 'paid' || item.status === 'completed' ? 'checkmark-circle' : 'time-outline'} size={18} color={item.status === 'paid' || item.status === 'completed' ? colors.success : colors.warning} />
@@ -124,7 +125,7 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
 
   if (loading) return (
     <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-      <ActivityIndicator size="large" color={colors.neon} />
+      <ActivityIndicator size="large" color={colors.primary} />
     </View>
   )
 
@@ -132,7 +133,7 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.header}>
-          <Pressable hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Go back" hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
             <Ionicons name="chevron-back" size={22} color={colors.text} />
           </Pressable>
           <Text style={styles.headerTitle}>Earnings</Text>
@@ -145,7 +146,7 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
           keyExtractor={s => s.id}
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
           ListHeaderComponent={
             <View>
               {/* Wallet stats */}
@@ -153,7 +154,7 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
                 <Animated.View entering={FadeInDown.delay(0).duration(320)} style={[styles.statCard, { borderColor: 'rgba(34,197,94,0.3)' }]}>
                   <View style={styles.statIconWrap}><Ionicons name="wallet-outline" size={18} color={colors.success} /></View>
                   <Text style={[styles.statValue, { color: colors.success }]}>₹{totalPaid.toLocaleString()}</Text>
-                  <Text style={styles.statLabel}>Total Paid</Text>
+                  <Text style={styles.statLabel}>Total paid</Text>
                 </Animated.View>
                 <Animated.View entering={FadeInDown.delay(80).duration(320)} style={[styles.statCard, { borderColor: 'rgba(245,158,11,0.3)' }]}>
                   <View style={[styles.statIconWrap, { backgroundColor: colors.warningSoft }]}><Ionicons name="time-outline" size={18} color={colors.warning} /></View>
@@ -184,7 +185,7 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
                 style={({ pressed }) => [styles.requestBtn, pressed && { opacity: 0.85 }]}
               >
                 <Ionicons name="cash-outline" size={18} color="#000" />
-                <Text style={styles.requestBtnText}>Request Payout</Text>
+                <Text style={styles.requestBtnText}>Request payout</Text>
               </Pressable>
 
               <Text style={[styles.sectionTitle, { marginTop: spacing.xl, marginBottom: spacing.md }]}>History</Text>
@@ -195,7 +196,7 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="wallet-outline" size={26} color={colors.textMuted} /></View>
               <Text style={styles.emptyTitle}>No earnings yet</Text>
-              <Text style={styles.emptySub}>Complete campaigns to receive payouts here.</Text>
+              <Text style={styles.emptySub}>Finish a collaboration to get paid.</Text>
             </View>
           }
         />
@@ -205,7 +206,7 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
             <Pressable style={styles.overlay} onPress={() => setShowModal(false)} />
             <View style={styles.sheet}>
               <View style={styles.sheetHandle} />
-              <Text style={styles.sheetTitle}>Request Payout</Text>
+              <Text style={styles.sheetTitle}>Request payout</Text>
 
               <Text style={styles.sheetLabel}>Amount (₹)</Text>
               <View style={styles.sheetInput}>
@@ -224,8 +225,8 @@ export default function EarningsScreen({ navigation }: { navigation: InfluencerN
                 <TextInput value={notes} onChangeText={setNotes} placeholder="Additional notes…" placeholderTextColor={colors.textSubtle} multiline style={[styles.sheetInputText, { textAlignVertical: 'top' }]} />
               </View>
 
-              <Pressable onPress={handleRequest} disabled={submitting || !amount.trim()} style={({ pressed }) => [styles.submitBtn, (!amount.trim() || submitting) && { opacity: 0.5 }, pressed && { opacity: 0.85 }]}>
-                <Text style={styles.submitBtnText}>{submitting ? 'Requesting…' : 'Request Payout'}</Text>
+              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleRequest() }} disabled={submitting || !amount.trim()} style={({ pressed }) => [styles.submitBtn, (!amount.trim() || submitting) && { opacity: 0.5 }, pressed && { opacity: 0.85 }]}>
+                <Text style={styles.submitBtnText}>{submitting ? 'Requesting…' : 'Request payout'}</Text>
               </Pressable>
             </View>
           </KeyboardAvoidingView>
@@ -248,7 +249,7 @@ const styles = StyleSheet.create({
   walletCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md },
   walletLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
   walletAmount: { color: colors.text, fontSize: 22, fontWeight: '800', marginTop: 4 },
-  requestBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 14 },
+  requestBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 14 },
   requestBtnText: { color: '#000', fontSize: 15, fontWeight: '700' },
   sectionTitle: { color: colors.text, fontSize: 17, fontWeight: '700', letterSpacing: -0.3 },
   card: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg },
@@ -270,6 +271,6 @@ const styles = StyleSheet.create({
   sheetLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: '600', letterSpacing: 0.4, marginBottom: 8, marginTop: spacing.md },
   sheetInput: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.elevated, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 14 },
   sheetInputText: { flex: 1, color: colors.text, fontSize: 15, padding: 0 },
-  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 16, marginTop: spacing.xl },
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 16, marginTop: spacing.xl },
   submitBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
 })

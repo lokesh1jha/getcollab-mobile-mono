@@ -13,7 +13,7 @@ export default function GrowthSetupScreen({ navigation }: { navigation?: any }) 
   const handleSubmit = async () => {
     const url = websiteUrl.trim()
     if (!url) {
-      Alert.alert('Error', 'Enter your website URL')
+      Alert.alert('Website needed', 'Enter your website URL.')
       return
     }
     setSaving(true)
@@ -35,11 +35,11 @@ export default function GrowthSetupScreen({ navigation }: { navigation?: any }) 
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+        <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
           <Animated.View entering={FadeInDown.duration(400)}>
             <Text style={styles.title}>Set up Growth</Text>
             <Text style={styles.subtitle}>
-              Tell us your website. We’ll check public pages and suggest what to fix first.
+              We’ll check your public pages and show what to fix first.
             </Text>
 
             <View style={styles.card}>
@@ -55,7 +55,7 @@ export default function GrowthSetupScreen({ navigation }: { navigation?: any }) 
                 keyboardType="url"
               />
               <Text style={[growthStyles.meta, { marginTop: spacing.sm }]}>
-                Public https sites only. We’ll crawl your pages, not your competitors’ dashboards.
+                Public https sites only.
               </Text>
 
               <Pressable

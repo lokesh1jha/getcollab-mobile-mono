@@ -1,24 +1,25 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Dimensions, Alert } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Dimensions, Alert, RefreshControl } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { useCampaignStore } from '@shared/stores/campaign-store'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { Campaign } from '@shared/types'
+import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ campaignDetails: { id: string; campaign?: Campaign } }, 'campaignDetails'>
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string; dot: string }> = {
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)', dot: '#22C55E' },
-  draft: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)', dot: '#A1A1AA' },
-  completed: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)', dot: '#3B82F6' },
-  cancelled: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)', dot: '#EF4444' },
-}
 
 export default function BrandCampaignDetailsScreen() {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await loadCampaign() } finally { setRefreshing(false) }
+  }
   const route = useRoute<RouteParams>()
   const navigation = useNavigation()
   const { id, campaign: preloadedCampaign } = route.params || {}
@@ -33,12 +34,12 @@ export default function BrandCampaignDetailsScreen() {
 
   const loadCampaign = async () => {
     try { await fetchCampaign(id); setCampaign(useCampaignStore.getState().currentCampaign) }
-    catch (error) { console.error('Failed to load campaign:', error) }
+    catch (error) { logger.error('Failed to load campaign', error) }
   }
 
   const handlePublish = async () => {
     if (!campaign) return
-    Alert.alert('Publish Campaign', `Make "${campaign.title}" live?`, [
+    Alert.alert('Publish campaign?',`Make "${campaign.title}" live?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Publish',
@@ -48,7 +49,7 @@ export default function BrandCampaignDetailsScreen() {
             setCampaign((prev) => (prev ? { ...prev, status: 'active' } : prev))
             Alert.alert('Published', 'Your campaign is now live.')
           } catch (err) {
-            handleApiError(err, 'Failed to publish campaign')
+            handleApiError(err, "Couldn't publish campaign")
           }
         },
       },
@@ -56,7 +57,7 @@ export default function BrandCampaignDetailsScreen() {
   }
 
   if (isLoading && !campaign) {
-    return <SafeAreaView style={styles.root}><View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={colors.neon} /></View></SafeAreaView>
+    return <SafeAreaView style={styles.root}><View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={colors.primary} /></View></SafeAreaView>
   }
 
   if (!campaign) {
@@ -65,7 +66,7 @@ export default function BrandCampaignDetailsScreen() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg, gap: spacing.md }}>
           <Text style={{ color: colors.error, fontSize: 16 }}>Campaign not found</Text>
           <Pressable style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.8 }]} onPress={() => navigation.goBack()}>
-            <Text style={styles.outlinedBtnText}>Go Back</Text>
+            <Text style={styles.outlinedBtnText}>Go back</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -77,7 +78,7 @@ export default function BrandCampaignDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
+      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />} contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}>
         <Animated.View entering={FadeInDown.duration(400)}>
           <View style={styles.headerRow}>
             <Text style={styles.title}>{campaign.title}</Text>
@@ -88,9 +89,9 @@ export default function BrandCampaignDetailsScreen() {
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Campaign Details</Text>
+            <Text style={styles.sectionTitle}>Details</Text>
             <View style={styles.detailRow}><Text style={styles.label}>Budget</Text><Text style={styles.value}>₹{(campaign.budget ?? 0).toLocaleString()}</Text></View>
-            <View style={styles.detailRow}><Text style={styles.label}>Bids</Text><Text style={styles.value}>{campaign.bidCount}</Text></View>
+            <View style={styles.detailRow}><Text style={styles.label}>Applications</Text><Text style={styles.value}>{campaign.bidCount}</Text></View>
             <View style={styles.detailRow}><Text style={styles.label}>Region</Text><Text style={styles.value}>{campaign.region}</Text></View>
             <View style={[styles.detailRow, { borderBottomWidth: 0 }]}><Text style={styles.label}>Created</Text><Text style={styles.value}>{new Date(campaign.createdAt).toLocaleDateString()}</Text></View>
           </View>
@@ -114,11 +115,11 @@ export default function BrandCampaignDetailsScreen() {
 
           <View style={styles.dateRow}>
             <View style={styles.dateCard}>
-              <Text style={styles.dateLabel}>Start Date</Text>
+              <Text style={styles.dateLabel}>Start date</Text>
               <Text style={styles.dateValue}>{new Date(campaign.startDate).toLocaleDateString()}</Text>
             </View>
             <View style={styles.dateCard}>
-              <Text style={styles.dateLabel}>End Date</Text>
+              <Text style={styles.dateLabel}>End date</Text>
               <Text style={styles.dateValue}>{new Date(campaign.endDate).toLocaleDateString()}</Text>
             </View>
           </View>
@@ -126,15 +127,15 @@ export default function BrandCampaignDetailsScreen() {
           {st === 'draft' && (
             <Pressable style={({ pressed }) => [styles.publishBtn, pressed && { opacity: 0.85 }]} onPress={handlePublish}>
               <Ionicons name="rocket-outline" size={18} color="#000" />
-              <Text style={styles.publishBtnText}>Publish Campaign</Text>
+              <Text style={styles.publishBtnText}>Publish</Text>
             </Pressable>
           )}
 
           <View style={styles.actionsGrid}>
             <DetailAction icon="create-outline" label="Edit" onPress={() => (navigation as any).navigate('CampaignEdit', { id: campaign.id })} />
             <DetailAction icon="search-outline" label="Discover" onPress={() => (navigation as any).navigate('CampaignDiscover', { id: campaign.id, title: campaign.title })} />
-            <DetailAction icon="document-text-outline" label="Responses" onPress={() => (navigation as any).navigate('CampaignResponses', { id: campaign.id, title: campaign.title })} />
-            <DetailAction icon="list-outline" label="Execute" onPress={() => (navigation as any).navigate('CampaignExecute', { id: campaign.id, title: campaign.title })} />
+            <DetailAction icon="document-text-outline" label="Applications" onPress={() => (navigation as any).navigate('CampaignResponses', { id: campaign.id, title: campaign.title })} />
+            <DetailAction icon="list-outline" label="Collaborations" onPress={() => (navigation as any).navigate('CampaignExecute', { id: campaign.id, title: campaign.title })} />
             <DetailAction icon="send-outline" label="Outreach" onPress={() => (navigation as any).navigate('CampaignOutreach', { id: campaign.id, title: campaign.title })} />
             <DetailAction icon="cash-outline" label="Escrow" onPress={() => (navigation as any).navigate('CampaignEscrow', { id: campaign.id, title: campaign.title })} />
             <DetailAction icon="people-outline" label="Circle" onPress={() => (navigation as any).navigate('CampaignCircle', { id: campaign.id, title: campaign.title })} />
@@ -187,6 +188,6 @@ const styles = StyleSheet.create({
   outlinedBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong },
   outlinedBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 
-  publishBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 14, marginBottom: spacing.lg },
+  publishBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 14, marginBottom: spacing.lg },
   publishBtnText: { color: '#000', fontSize: 14, fontWeight: '700' },
 })

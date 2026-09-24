@@ -93,8 +93,8 @@ function SeoBody({ site, navigation, initialSeverity }: { site: GrowthSite; navi
 
       {data?.score ? (
         <Text style={[growthStyles.meta, { marginBottom: 12 }]}>
-          Growth Score {data.score.overall} (algorithm {data.score.algorithmVersion}). SEO Health is crawl-based; AI
-          Readiness is markup — not AI assistant rankings.
+          Growth Score {data.score.overall} (algorithm {data.score.algorithmVersion}). Based on your pages and
+          markup, not AI assistant rankings.
         </Text>
       ) : null}
 
@@ -124,15 +124,15 @@ function SeoBody({ site, navigation, initialSeverity }: { site: GrowthSite; navi
           title={severity ? 'Nothing in this filter' : 'No issues found'}
           body={
             severity
-              ? 'Try a different severity filter.'
-              : 'Run an analysis from Overview if this is your first visit.'
+              ? 'Try a different filter.'
+              : 'New here? Run an analysis from Overview.'
           }
         />
       ) : (
         issues.map((issue: any, i: number) => {
           const tone = SEVERITY_TONES[issue.severity] ?? { fg: colors.textMuted, bg: 'rgba(161,161,170,0.12)' }
           return (
-            <Animated.View key={issue.id} entering={FadeInDown.delay(i * 40).duration(320)} style={growthStyles.card}>
+            <Animated.View key={issue.id} entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)} style={growthStyles.card}>
               <View style={growthStyles.pillRow}>
                 <View style={[growthStyles.pill, { backgroundColor: tone.bg }]}>
                   <Text style={[growthStyles.pillText, { color: tone.fg }]}>{severityLabel(issue.severity)}</Text>

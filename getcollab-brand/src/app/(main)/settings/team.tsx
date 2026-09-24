@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, FlatList, Pressable, Alert, ActivityIndicator, 
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, overline } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { TeamMember, TeamInvite } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 export default function TeamSettingsScreen() {
   const [members, setMembers] = useState<TeamMember[]>([])
@@ -40,13 +41,13 @@ export default function TeamSettingsScreen() {
   )
 
   const handleInvite = async () => {
-    if (!email.trim() || !email.includes('@')) { Alert.alert('Error', 'Enter a valid email'); return }
+    if (!email.trim() || !email.includes('@')) { Alert.alert('Invalid email', 'Enter a valid email address.'); return }
     setInviting(true)
     try {
       await apiService.inviteTeamMember(email.trim())
       setEmail('')
       loadTeam()
-      Alert.alert('Invited', `Invitation sent to ${email.trim()}`)
+      Alert.alert('Invite sent', `Sent to ${email.trim()}`)
     } catch (err) {
       handleApiError(err, 'Failed to invite team member')
     } finally {
@@ -75,7 +76,7 @@ export default function TeamSettingsScreen() {
   const renderMember = ({ item, index }: { item: TeamMember; index: number }) => {
     const initial = item.name?.charAt(0).toUpperCase() || item.email?.charAt(0).toUpperCase() || '?'
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
         <View style={styles.row}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initial}</Text>
@@ -97,7 +98,7 @@ export default function TeamSettingsScreen() {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -105,7 +106,7 @@ export default function TeamSettingsScreen() {
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <FlatList
+        <FlatList automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
           data={members}
           renderItem={renderMember}
           keyExtractor={(item) => item.id}
@@ -138,18 +139,18 @@ export default function TeamSettingsScreen() {
 
               {invites.length > 0 && (
                 <View style={{ marginBottom: spacing.md }}>
-                  <Text style={styles.sectionLabel}>{invites.length} pending invitation{invites.length !== 1 ? 's' : ''}</Text>
+                  <Text style={styles.sectionLabel}>{invites.length} pending invite{invites.length !== 1 ? 's' : ''}</Text>
                 </View>
               )}
             </View>
           }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No team members</Text>
-              <Text style={styles.emptySub}>Invite colleagues to collaborate.</Text>
+              <Text style={styles.emptyTitle}>No team members yet</Text>
+              <Text style={styles.emptySub}>Invite a colleague by email.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadTeam() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadTeam() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>
@@ -166,10 +167,10 @@ const styles = StyleSheet.create({
   label: { color: colors.textMuted, fontSize: 12, fontWeight: '600', letterSpacing: 0.4, marginBottom: 8 },
   inviteRow: { flexDirection: 'row', gap: spacing.sm },
   inviteInput: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: 12, color: '#fff', fontSize: 14, backgroundColor: colors.bg },
-  inviteBtn: { backgroundColor: colors.neon, borderRadius: radius.pill, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  inviteBtn: { backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
   inviteBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
 
-  sectionLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
+  sectionLabel: { ...overline },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   avatar: { width: 40, height: 40, borderRadius: 10, backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },

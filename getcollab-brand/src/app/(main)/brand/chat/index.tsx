@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { View, Text, StyleSheet, FlatList, TextInput, Pressable, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TextInput, Pressable, ActivityIndicator, RefreshControl } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -7,6 +7,8 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService } from '@shared/services/api'
 import { useChatStore } from '@shared/stores/chat-store'
+import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 interface Chat { id: string; influencerName: string; influencerHandle: string; lastMessage: string; timestamp: string; unread: number; campaignTitle: string }
 interface Props { navigation?: any }
@@ -25,6 +27,11 @@ const formatTimestamp = (date: Date): string => {
 }
 
 export default function BrandChatScreen({ navigation }: Props) {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await loadChats() } finally { setRefreshing(false) }
+  }
   const [chats, setChats] = useState<Chat[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -35,25 +42,24 @@ export default function BrandChatScreen({ navigation }: Props) {
   }, [])
 
   const loadChats = useCallback(async () => {
-    setLoading(true)
     try {
       const response = await apiService.getChats()
       const rooms = response?.data || response || []
       const mapped: Chat[] = (Array.isArray(rooms) ? rooms : []).map((room: any) => ({
         id: room.id,
-        influencerName: room.influencerName || room.influencer?.name || 'Unknown',
+        influencerName: room.influencerName || room.influencer?.name || 'Creator',
         influencerHandle: room.influencerHandle || room.influencer?.handle || '',
         lastMessage: room.lastMessage?.content || room.lastMessage || 'No messages yet',
         timestamp: room.lastMessage?.createdAt ? formatTimestamp(new Date(room.lastMessage.createdAt)) : 'New',
         unread: room.unreadCount || 0,
-        campaignTitle: room.campaign?.title || room.campaignTitle || 'Direct Message',
+        campaignTitle: room.campaign?.title || room.campaignTitle || 'Direct message',
       }))
       setChats(mapped)
-    } catch (error) { console.error('Failed to load chats:', error) }
+    } catch (error) { logger.error('Failed to load chats', error) }
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { loadChats(); initializeSocketConnection() }, [loadChats, initializeSocketConnection])
+  useEffect(() => { initializeSocketConnection() }, [initializeSocketConnection])
   useFocusEffect(useCallback(() => { loadChats() }, [loadChats]))
 
   const filtered = useMemo(() => chats.filter((c) => c.influencerName.toLowerCase().includes(searchQuery.toLowerCase()) || c.influencerHandle.toLowerCase().includes(searchQuery.toLowerCase()) || c.campaignTitle.toLowerCase().includes(searchQuery.toLowerCase())), [chats, searchQuery])
@@ -62,7 +68,7 @@ export default function BrandChatScreen({ navigation }: Props) {
   if (loading) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -72,12 +78,9 @@ export default function BrandChatScreen({ navigation }: Props) {
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Inbox</Text>
+            <Text style={styles.title}>Messages</Text>
             <Text style={styles.subtitle}>{totalUnread} unread · {chats.length} conversations</Text>
           </View>
-          <Pressable style={styles.iconBtn}>
-            <Ionicons name="create-outline" size={20} color="#fff" />
-          </Pressable>
         </View>
 
         <View style={styles.searchWrap}>
@@ -85,12 +88,12 @@ export default function BrandChatScreen({ navigation }: Props) {
           <TextInput value={searchQuery} onChangeText={setSearchQuery} placeholder="Search conversations" placeholderTextColor={colors.textSubtle} style={styles.searchInput} />
         </View>
 
-        <FlatList
+        <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
           data={filtered}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: spacing.xxl }}
           renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+            <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
               <Pressable
                 style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.card }]}
                 onPress={() => navigation?.navigate('ChatDetail', { chat: item, roomId: item.id })}
@@ -121,8 +124,8 @@ export default function BrandChatScreen({ navigation }: Props) {
           ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="chatbubbles-outline" size={26} color={colors.textMuted} /></View>
-              <Text style={styles.emptyTitle}>No conversations</Text>
-              <Text style={styles.emptySub}>Reach out to creators to start a chat.</Text>
+              <Text style={styles.emptyTitle}>No messages yet</Text>
+              <Text style={styles.emptySub}>Message a creator to start a chat.</Text>
             </View>
           }
         />
@@ -136,7 +139,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
   title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
 
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: spacing.lg, marginTop: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
   searchInput: { flex: 1, color: '#fff', fontSize: 14, padding: 0 },

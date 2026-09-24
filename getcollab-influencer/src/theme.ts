@@ -1,5 +1,5 @@
 // GetCollab Creator App — Design tokens
-// Creator-focused: true black (OLED) + neon CTAs + Instagram-style gradient accents
+// Creator-focused: true black (OLED) + white CTAs + Instagram-style gradient accents
 // Do NOT import from @shared/constants for new screens — use this file.
 
 export const colors = {
@@ -18,15 +18,17 @@ export const colors = {
   textSubtle: '#6E6E6E',
 
   // GetCollab brand
-  neon: '#D9FF00',
-  neonSoft: 'rgba(217,255,0,0.12)',
+  // Monochrome primary: white CTAs with black text on the black canvas.
+  primary: '#FFFFFF',
+  primarySoft: 'rgba(255,255,255,0.10)',
+  // Wordmark accent, matches the web logo ("Get" white, "Collab" blue).
+  logoAccent: '#27BEFF',
   blue: '#3B82F6',
   blueDeep: '#1E3A8A',
   blueSoft: 'rgba(59,130,246,0.12)',
 
   // Legacy aliases (old @shared/constants names used by pre-migration screens/components)
-  primary: '#D9FF00',          // was Linear indigo → now neon (CTA color)
-  accent: '#D9FF00',           // was Linear indigo → now neon
+  accent: '#FFFFFF',           // alias of primary
   background: '#000000',       // alias of bg
   backgroundLight: '#0F0F0F',  // alias of card
   surface: '#0F0F0F',          // alias of card
@@ -53,6 +55,16 @@ export const colors = {
   warningSoft: 'rgba(245,158,11,0.14)',
   errorSoft: 'rgba(239,68,68,0.14)',
 } as const;
+
+// Small section label / eyebrow. Source text stays sentence case; this renders it
+// as muted uppercase so every overline in the app looks the same.
+export const overline = {
+  color: colors.textMuted,
+  fontSize: 11,
+  fontWeight: '700' as const,
+  letterSpacing: 1,
+  textTransform: 'uppercase' as const,
+}
 
 // Campaign/bid status colors — keys match API lowercase values
 export const STATUS_COLORS: Record<string, { fg: string; bg: string; dot: string }> = {

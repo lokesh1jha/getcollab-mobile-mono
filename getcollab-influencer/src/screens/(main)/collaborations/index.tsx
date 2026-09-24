@@ -4,13 +4,15 @@ import {
   StyleSheet, Text, TextInput, View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useFocusEffect } from '@react-navigation/native'
+import { useFocusEffect, useRoute } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { colors, radius, spacing, statusColor } from '@/src/theme'
-import { apiService, handleApiError, uploadMediaBlob } from '@shared/services/api'
+import { apiService, handleApiError } from '@shared/services/api'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
-import * as ImagePicker from 'expo-image-picker'
+import { DeliverablesPanel } from '@shared/components/deal/DeliverablesPanel'
+import { deliverableProgress } from '@shared/lib/deal-deliverables'
+import * as Haptics from 'expo-haptics'
 
 interface Deal {
   id: string
@@ -31,25 +33,30 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
   const [selected, setSelected] = useState<any | null>(null)
   const [documents, setDocuments] = useState<any[]>([])
   const [shipping, setShipping] = useState<any | null>(null)
-  const [deliverables, setDeliverables] = useState<any[]>([])
+  // GET /collabs/{id}: deal, milestones, contract, submissions.
+  const [detail, setDetail] = useState<any | null>(null)
   const [name, setName] = useState('')
-  const [script, setScript] = useState('')
-  const [liveUrl, setLiveUrl] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
+
+  // A notification tap or an accepted application opens one deal directly.
+  const deepLinkId: string | undefined = (useRoute().params as { id?: string } | undefined)?.id
 
   const load = useCallback(async () => {
     try {
-      const r = await apiService.getDeals()
-      setDeals(r?.deals || r?.collabs || r?.data || [])
-    } catch (e) { handleApiError(e, 'Failed to load collaborations') }
+      const list = await apiService.getAllDeals()
+      setDeals(list)
+      const target = deepLinkId && list.find((d: any) => String(d.id) === deepLinkId)
+      if (target) open(target)
+    } catch (e) { handleApiError(e, "Couldn't load collaborations") }
     finally { setLoading(false); setRefreshing(false) }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkId])
 
-  useFocusEffect(useCallback(() => { setLoading(true); load() }, [load]))
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
   const run = async (key: string, fn: () => Promise<void>) => {
     setBusy(key)
-    try { await fn() } catch (e: any) { handleApiError(e, 'Action failed') }
+    try { await fn() } catch (e: any) { handleApiError(e, "Couldn't complete that. Try again.") }
     finally { setBusy(null) }
   }
 
@@ -57,18 +64,17 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
     setSelected(deal)
     setDocuments([])
     setShipping(null)
-    setDeliverables([])
+    setDetail(null)
     try {
-      const [docs, ship, dels] = await Promise.all([
+      const [docs, ship, d] = await Promise.all([
         apiService.getDocuments(deal.id).catch(() => null),
         apiService.getDealShipping(deal.id).catch(() => null),
         apiService.getDeal(deal.id).catch(() => null),
       ])
       setDocuments(docs?.documents || docs?.data || [])
       setShipping(ship?.shipping || ship?.data || ship || null)
-      const dealData = dels?.deal || dels?.data || dels || {}
-      setDeliverables(dealData.deliverables || [])
-    } catch (e) { handleApiError(e, 'Failed to load collaboration') }
+      setDetail(d)
+    } catch (e) { handleApiError(e, "Couldn't load this collaboration") }
   }
 
   const refreshDocs = async () => {
@@ -78,7 +84,7 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
   }
 
   const sign = (doc: any) => run(`sign-${doc.id}`, async () => {
-    if (!name.trim()) { Alert.alert('Name required', 'Enter your full legal name before signing.'); return }
+    if (!name.trim()) { Alert.alert('Name required', 'Enter your full legal name to sign.'); return }
     await apiService.signDocument(doc.id, name.trim())
     setName('')
     await refreshDocs()
@@ -87,76 +93,35 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
   const openPdf = (doc: any) => run(`pdf-${doc.id}`, async () => {
     const r = await apiService.getDocumentPdf(doc.id)
     const url = r?.url || r?.data?.url
-    if (!url) throw new Error('PDF not available yet')
+    if (!url) throw new Error('PDF not ready yet')
     Linking.openURL(url)
   })
 
   const acceptContract = () => run('contract', async () => {
     await apiService.acceptDealContract(selected.id)
-    Alert.alert('Done', 'Contract accepted.')
+    Alert.alert('Agreement accepted', 'Waiting for the brand to sign.')
     open(selected)
   })
 
   const start = () => run('start', async () => {
     await apiService.startDeal(selected.id)
-    Alert.alert('Done', 'Collaboration started.')
+    Alert.alert('Work started', 'Submit your deliverables when ready.')
     open(selected)
   })
 
-  const submitScript = () => run('script', async () => {
-    if (!script.trim()) { Alert.alert('Script required', 'Write your script before submitting.'); return }
-    await apiService.submitDealScript(selected.id, script.trim())
-    setScript('')
-    Alert.alert('Done', 'Script submitted for review.')
-  })
-
-  const submitMedia = () => run('media', async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') { Alert.alert('Permission needed', 'Enable photo library access to upload.'); return }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images', 'videos'], quality: 0.8 })
-    if (result.canceled || !result.assets[0]) return
-    const a = result.assets[0]
-    const done = await uploadMediaBlob({ uri: a.uri, mime: a.mimeType || 'image/jpeg', sizeBytes: a.fileSize || 0, width: a.width, height: a.height })
-    const blobId = done?.id || done?.blob_id || done?.blobId
-    if (!blobId) throw new Error('Upload failed')
-    await apiService.submitDealMedia(selected.id, { blobId: String(blobId) })
-    Alert.alert('Done', 'Deliverable submitted for review.')
-  })
-
-  const submitProof = () => run('proof', async () => {
-    if (!liveUrl.trim()) { Alert.alert('Link required', 'Paste the live post URL first.'); return }
-    await apiService.upsertDealProof(selected.id, { liveUrl: liveUrl.trim(), screenshotBlobIds: [] })
-    await apiService.submitDealProof(selected.id, {})
-    setLiveUrl('')
-    Alert.alert('Done', 'Proof submitted for review.')
-  })
-
-  const renderDeliverable = ({ item, index }: { item: any; index: number }) => {
-    const done = item.status === 'completed' || item.status === 'approved'
-    return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(300)} style={styles.delRow}>
-        <Ionicons name={done ? 'checkmark-circle' : 'ellipse-outline'} size={18} color={done ? colors.success : colors.textMuted} />
-        <View style={{ flex: 1, marginLeft: spacing.sm }}>
-          <Text style={styles.delTitle}>{item.title || item.type || 'Deliverable'}</Text>
-          <Text style={styles.delMeta}>{item.status || 'pending'}</Text>
-        </View>
-      </Animated.View>
-    )
-  }
-
   if (loading) return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <View style={styles.center}><ActivityIndicator color={colors.neon} /></View>
+      <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>
     </SafeAreaView>
   )
 
   if (selected) {
     return (
       <SafeAreaView style={styles.root} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => setSelected(null)} style={styles.backRow}>
+        <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          <Pressable onPress={() => setSelected(null)} style={({ pressed }) => [styles.backRow, pressed && { opacity: 0.85 }]}>
             <Ionicons name="chevron-back" size={20} color={colors.blue} />
-            <Text style={styles.back}>Back to collaborations</Text>
+            <Text style={styles.back}>Collaborations</Text>
           </Pressable>
 
           <Text style={styles.heading}>{selected.campaignTitle || selected.campaign?.title || 'Collaboration'}</Text>
@@ -165,30 +130,37 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
             <Text style={[styles.statusText, { color: statusColor(selected.status).fg }]}>{selected.status || 'active'}</Text>
           </View>
 
-          {/* Deliverables checklist */}
-          {deliverables.length > 0 && (
-            <View style={styles.block}>
-              <Text style={styles.section}>Deliverables</Text>
-              {deliverables.map((d, i) => renderDeliverable({ item: d, index: i }))}
-            </View>
-          )}
-
-          <Text style={styles.section}>Contract</Text>
+          <Text style={styles.section}>Agreement</Text>
+          <Text style={styles.meta}>
+            {detail?.contract?.status === 'active'
+              ? 'Signed by both sides.'
+              : detail?.contract?.creator_accepted_at
+                ? 'You signed. Waiting for the brand.'
+                : 'Review and sign the agreement to start.'}
+          </Text>
           <View style={styles.row}>
-            <Action label={busy === 'contract' ? 'Saving…' : 'Accept contract'} busy={!!busy} onPress={acceptContract} />
-            <Action label={busy === 'start' ? 'Saving…' : 'Start work'} busy={!!busy} onPress={start} />
+            {detail?.contract && detail.contract.status !== 'active' && !detail.contract.creator_accepted_at && (
+              <Action label={busy === 'contract' ? 'Saving…' : 'Accept agreement'} busy={!!busy} onPress={acceptContract} />
+            )}
+            {detail?.contract?.status === 'active' && detail?.deal?.stage === 'CONTRACT' && (
+              detail.deal.payment_status === 'held'
+                ? <Action label={busy === 'start' ? 'Saving…' : 'Start work'} busy={!!busy} onPress={start} />
+                : <Text style={styles.meta}>Wait until the brand funds escrow before starting.</Text>
+            )}
           </View>
 
-          <Text style={styles.section}>Script</Text>
-          <TextInput value={script} onChangeText={setScript} placeholder="Paste your script…" placeholderTextColor={colors.textSubtle} multiline style={[styles.input, { minHeight: 90 }]} />
-          <Action label={busy === 'script' ? 'Submitting…' : 'Submit script'} busy={!!busy} onPress={submitScript} />
-
-          <Text style={styles.section}>Deliverable</Text>
-          <Action label={busy === 'media' ? 'Uploading…' : 'Upload & submit media'} busy={!!busy} onPress={submitMedia} />
-
-          <Text style={styles.section}>Proof of publishing</Text>
-          <TextInput value={liveUrl} onChangeText={setLiveUrl} placeholder="https://…" autoCapitalize="none" placeholderTextColor={colors.textSubtle} style={styles.input} />
-          <Action label={busy === 'proof' ? 'Submitting…' : 'Submit proof'} busy={!!busy} onPress={submitProof} />
+          {detail && (
+            <View style={styles.block}>
+              <DeliverablesPanel
+                dealId={selected.id}
+                progress={deliverableProgress(detail.milestones ?? [], detail.submissions ?? [])}
+                isBrand={false}
+                maxRevisions={detail.deal?.max_revisions ?? 2}
+                theme={colors}
+                onChanged={() => open(selected)}
+              />
+            </View>
+          )}
 
           {shipping ? (
             <View style={styles.block}>
@@ -200,16 +172,16 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Tracking</Text>
-                  <Text style={styles.infoValue}>{shipping.trackingNumber || shipping.tracking_number || 'No tracking number'}</Text>
+                  <Text style={styles.infoValue}>{shipping.trackingNumber || shipping.tracking_number || 'None yet'}</Text>
                 </View>
               </View>
             </View>
           ) : null}
 
           <Text style={styles.section}>Documents</Text>
-          <TextInput value={name} onChangeText={setName} placeholder="Full name for signing" placeholderTextColor={colors.textSubtle} style={styles.input} />
+          <TextInput value={name} onChangeText={setName} placeholder="Full legal name" placeholderTextColor={colors.textSubtle} style={styles.input} />
 
-          {documents.length === 0 && <Text style={styles.empty}>No documents have been generated yet.</Text>}
+          {documents.length === 0 && <Text style={styles.empty}>No documents yet.</Text>}
           {documents.map((doc) => (
             <View key={doc.id} style={styles.docCard}>
               <View style={{ flex: 1 }}>
@@ -231,23 +203,23 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.listHeader}>
         <Text style={styles.listTitle}>Collaborations</Text>
-        <Text style={styles.listSub}>Track all active and completed collaborations</Text>
+        <Text style={styles.listSub}>Your active and completed collaborations.</Text>
       </View>
-      <FlatList
+      <FlatList automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); load() }} tintColor={colors.primary} />}
         data={deals}
         keyExtractor={(x) => String(x.id)}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <View style={styles.emptyIconBox}><Ionicons name="people-outline" size={26} color={colors.textMuted} /></View>
             <Text style={styles.emptyTitle}>No collaborations yet</Text>
-            <Text style={styles.emptySub}>Start a collaboration from a relationship or accepted bid.</Text>
+            <Text style={styles.emptySub}>Apply to campaigns. Accepted ones appear here.</Text>
           </View>
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(index * 40).duration(300)}>
-            <Pressable onPress={() => open(item)} style={styles.dealCard}>
+          <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
+            <Pressable onPress={() => open(item)} style={({ pressed }) => [styles.dealCard, pressed && { opacity: 0.85 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
                 <View style={styles.dealAvatar}>
                   <Text style={styles.dealAvatarText}>{(item.campaignTitle || item.campaign?.title || 'C').charAt(0).toUpperCase()}</Text>
@@ -313,7 +285,7 @@ const styles = StyleSheet.create({
   docCard: { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.md },
   docTitle: { color: colors.text, fontWeight: '700' },
   docMeta: { color: colors.textMuted, fontSize: 13, marginTop: 2, marginBottom: spacing.sm },
-  primary: { alignSelf: 'flex-start', backgroundColor: colors.neon, borderRadius: radius.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, marginTop: spacing.sm },
+  primary: { alignSelf: 'flex-start', backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, marginTop: spacing.sm },
   primaryText: { color: '#000', fontWeight: '800' },
   secondary: { alignSelf: 'flex-start', borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, marginTop: spacing.sm },
   secondaryText: { color: colors.text, fontWeight: '700' },

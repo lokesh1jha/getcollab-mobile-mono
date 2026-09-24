@@ -4,19 +4,14 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, RouteProp } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS, overline } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ campaignEscrow: { id: string; title?: string } }, 'campaignEscrow'>
 
 interface EscrowItem { id: string; label: string; amount: number; status: string; date?: string }
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  funded: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  pending: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  released: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)' },
-  held: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)' },
-}
 
 export default function CampaignEscrowScreen() {
   const route = useRoute<RouteParams>()
@@ -26,39 +21,39 @@ export default function CampaignEscrowScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
+  // Reads the campaign's escrow pool. This used to present the campaign
+  // budget as "funded" and the org-wide wallet balance as held for this
+  // campaign, neither of which is escrow.
   const loadEscrow = useCallback(async () => {
     try {
-      const [campaignRes, walletRes] = await Promise.all([
-        apiService.getCampaign(campaignId).catch(() => null),
-        apiService.fetchWalletSummary().catch(() => null),
-      ])
-      const c = campaignRes?.campaign || campaignRes || {}
-      const budget = c.budget || 0
-      const wallet = walletRes?.summary || walletRes || {}
-      const available = wallet.available_minor || wallet.available || 0
-      const reserved = wallet.reserved_minor || wallet.reserved || wallet.held_minor || wallet.held || 0
-
-      // Only show what we know from real data
-      const items: EscrowItem[] = []
-      if (budget > 0) {
-        items.push({ id: '1', label: 'Campaign budget', amount: budget, status: 'funded', date: c.createdAt })
+      const pool = await apiService.getCampaignPool(campaignId).catch((e: any) => {
+        if (e?.code === 'not_found' || /not found/i.test(String(e?.message))) return null
+        throw e
+      })
+      if (!pool) {
+        setEscrow({ totalBudget: 0, funded: 0, released: 0, held: 0, items: [] })
+        return
       }
-      if (reserved > 0) {
-        items.push({ id: '2', label: 'Reserved from wallet', amount: reserved / 100, status: 'held' })
-      }
-      if (available > 0) {
-        items.push({ id: '3', label: 'Wallet available', amount: available / 100, status: 'released' })
-      }
-
+      const rupees = (minor?: number) => (minor ?? 0) / 100
+      const rows: Array<[string, number, string]> = [
+        ['Funded into escrow', pool.fundedMinor, 'funded'],
+        ['Reserved for creators', pool.reservedMinor, 'held'],
+        ['Released to creators', (pool.releasedMinor ?? 0) + (pool.paidMinor ?? 0), 'released'],
+        ['Refunded to you', pool.refundedMinor, 'pending'],
+        ['Available to reserve', pool.availableMinor, 'funded'],
+      ]
+      const items: EscrowItem[] = rows
+        .filter(([, minor]) => (minor ?? 0) > 0)
+        .map(([label, minor, status], idx) => ({ id: String(idx), label, amount: rupees(minor), status }))
       setEscrow({
-        totalBudget: budget,
-        funded: budget,
-        released: 0,
-        held: reserved / 100,
+        totalBudget: rupees(pool.budgetMinor),
+        funded: rupees(pool.fundedMinor),
+        released: rupees((pool.releasedMinor ?? 0) + (pool.paidMinor ?? 0)),
+        held: rupees(pool.reservedMinor),
         items,
       })
     } catch (err) {
-      handleApiError(err, 'Failed to load escrow')
+      handleApiError(err, "Couldn't load escrow")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -72,7 +67,7 @@ export default function CampaignEscrowScreen() {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -81,7 +76,7 @@ export default function CampaignEscrowScreen() {
     <SafeAreaView style={styles.root}>
       <ScrollView
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadEscrow() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadEscrow() }} tintColor={colors.primary} />}
       >
         <Animated.View entering={FadeInDown.duration(400)}>
           <Text style={styles.title}>Escrow</Text>
@@ -89,7 +84,7 @@ export default function CampaignEscrowScreen() {
 
           <View style={styles.metricsRow}>
             <View style={styles.metricCard}>
-              <Text style={styles.metricLabel}>Total Budget</Text>
+              <Text style={styles.metricLabel}>Total budget</Text>
               <Text style={styles.metricValue}>₹{(escrow?.totalBudget ?? 0).toLocaleString()}</Text>
             </View>
             <View style={styles.metricCard}>
@@ -100,7 +95,7 @@ export default function CampaignEscrowScreen() {
 
           {escrow && escrow.items.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Transactions</Text>
+              <Text style={styles.sectionTitle}>Breakdown</Text>
               <View style={styles.listCard}>
                 {escrow.items.map((item, idx) => {
                   const s = STATUS_COLORS[item.status] || STATUS_COLORS.pending
@@ -126,8 +121,8 @@ export default function CampaignEscrowScreen() {
           {(!escrow || escrow.items.length === 0) && (
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="cash-outline" size={26} color={colors.textMuted} /></View>
-              <Text style={styles.emptyTitle}>No escrow activity</Text>
-              <Text style={styles.emptySub}>Fund transactions will appear here once the campaign is active.</Text>
+              <Text style={styles.emptyTitle}>Nothing in escrow yet</Text>
+              <Text style={styles.emptySub}>Funds show here once you fund a collaboration.</Text>
             </View>
           )}
         </Animated.View>
@@ -147,7 +142,7 @@ const styles = StyleSheet.create({
   metricValue: { color: '#fff', fontSize: 20, fontWeight: '700', marginTop: 6 },
 
   section: { marginBottom: spacing.lg },
-  sectionTitle: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: spacing.sm },
+  sectionTitle: { ...overline, marginBottom: spacing.sm },
 
   listCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden' },
   listRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },

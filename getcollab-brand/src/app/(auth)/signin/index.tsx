@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
-import { Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View, ScrollView } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View, ScrollView } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, overline } from '@/src/theme'
 import { showSignInError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import * as Haptics from 'expo-haptics'
+import { BrandLogo } from '@shared/components/BrandLogo'
 
 interface ScreenProps { navigation?: any }
 
@@ -19,7 +21,7 @@ export default function SignInScreen({ navigation }: ScreenProps) {
     let valid = true
     const newErrors = { email: '', password: '' }
     if (!email) { newErrors.email = 'Email is required'; valid = false }
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { newErrors.email = 'Please enter a valid email'; valid = false }
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { newErrors.email = 'Enter a valid email'; valid = false }
     if (!password) { newErrors.password = 'Password is required'; valid = false }
     else if (password.length < 6) { newErrors.password = 'Min 6 characters'; valid = false }
     setErrors(newErrors)
@@ -45,21 +47,18 @@ export default function SignInScreen({ navigation }: ScreenProps) {
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <View style={styles.header}>
-            <Pressable testID="sign-in-back-btn" hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Go back" testID="sign-in-back-btn" hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
-            <View style={styles.brandRow}>
-              <Image source={require('../../../../assets/getcollab_only_logo.png')} style={styles.logoImg} resizeMode="contain" />
-              <Text style={styles.logoText}><Text style={styles.logoGet}>Get</Text><Text style={styles.logoCollab}>Collab</Text></Text>
-            </View>
+            <BrandLogo />
             <View style={{ width: 36 }} />
           </View>
 
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             <Animated.View entering={FadeInDown.duration(400)} style={styles.body}>
               <Text style={styles.eyebrow}>WELCOME BACK</Text>
-              <Text style={styles.heading}>Sign in to your{'\n'}brand workspace</Text>
-              <Text style={styles.sub}>Continue where you left off.</Text>
+              <Text style={styles.heading}>Sign in to your{'\n'}brand account</Text>
+              <Text style={styles.sub}>Pick up where you left off.</Text>
 
               <View style={{ gap: spacing.md, marginTop: spacing.xxl }}>
                 <View>
@@ -89,7 +88,7 @@ export default function SignInScreen({ navigation }: ScreenProps) {
                       value={password}
                       onChangeText={(v) => { setPassword(v); setErrors({ ...errors, password: '' }) }}
                       secureTextEntry
-                      placeholder="Enter password"
+                      placeholder="Password"
                       placeholderTextColor={colors.textSubtle}
                       style={styles.fieldInput}
                     />
@@ -98,18 +97,18 @@ export default function SignInScreen({ navigation }: ScreenProps) {
                 </View>
               </View>
 
-              <Pressable testID="sign-in-forgot" style={styles.forgotRow} onPress={() => navigation?.navigate('ForgotPassword')}>
+              <Pressable testID="sign-in-forgot" style={({ pressed }) => [styles.forgotRow, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('ForgotPassword')}>
                 <Text style={styles.forgotText}>Forgot password?</Text>
               </Pressable>
 
               <Pressable
                 testID="sign-in-submit-btn"
-                onPress={handleSignIn}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleSignIn() }}
                 disabled={loading}
                 style={({ pressed }) => [styles.primaryBtn, pressed && !loading && { opacity: 0.85 }]}
               >
                 <View style={styles.primaryGradient}>
-                  <Text style={styles.primaryBtnText}>{loading ? 'Signing in...' : 'Sign In'}</Text>
+                  <Text style={styles.primaryBtnText}>{loading ? 'Signing in…' : 'Sign in'}</Text>
                   {!loading && <Ionicons name="arrow-forward" size={18} color="#000" />}
                 </View>
               </Pressable>
@@ -127,8 +126,8 @@ export default function SignInScreen({ navigation }: ScreenProps) {
 
               <View style={styles.bottomRow}>
                 <Text style={styles.bottomText}>New to GetCollab? </Text>
-                <Pressable testID="sign-in-go-signup" onPress={() => navigation?.navigate('SignUp')}>
-                  <Text style={styles.bottomLink}>Create account</Text>
+                <Pressable testID="sign-in-go-signup" onPress={() => navigation?.navigate('SignUp')} style={({ pressed }) => pressed && { opacity: 0.85 }}>
+                  <Text style={styles.bottomLink}>Sign up</Text>
                 </Pressable>
               </View>
             </Animated.View>
@@ -140,20 +139,15 @@ export default function SignInScreen({ navigation }: ScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
+  root: { flex: 1, backgroundColor: colors.bg },
   scrollContent: { flexGrow: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm,
   },
   iconBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: '#1f1f1f', alignItems: 'center', justifyContent: 'center' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logoImg: { width: 28, height: 28 },
-  logoText: { fontSize: 18, fontWeight: '800', letterSpacing: -0.4 },
-  logoGet: { color: '#fff' },
-  logoCollab: { color: colors.neon },
   body: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl },
-  eyebrow: { color: colors.neon, fontSize: 11, fontWeight: '700', letterSpacing: 1.4 },
+  eyebrow: { ...overline },
   heading: { color: '#fff', fontSize: 30, fontWeight: '800', lineHeight: 36, letterSpacing: -1, marginTop: spacing.md },
   sub: { color: 'rgba(255,255,255,0.6)', fontSize: 14, marginTop: spacing.sm },
 
@@ -168,12 +162,12 @@ const styles = StyleSheet.create({
   errorText: { color: colors.error, fontSize: 11, marginTop: 4, marginLeft: 2 },
 
   forgotRow: { alignSelf: 'flex-end', marginTop: spacing.md },
-  forgotText: { color: colors.neon, fontSize: 13, fontWeight: '600' },
+  forgotText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
 
   primaryBtn: { borderRadius: radius.pill, overflow: 'hidden', marginTop: spacing.xl },
   primaryGradient: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    paddingVertical: 18, backgroundColor: colors.neon,
+    paddingVertical: 18, backgroundColor: colors.primary,
   },
   primaryBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
 
@@ -190,5 +184,5 @@ const styles = StyleSheet.create({
 
   bottomRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xxl, paddingBottom: spacing.xl },
   bottomText: { color: 'rgba(255,255,255,0.55)', fontSize: 13 },
-  bottomLink: { color: colors.neon, fontSize: 13, fontWeight: '700' },
+  bottomLink: { color: colors.primary, fontSize: 13, fontWeight: '700' },
 })

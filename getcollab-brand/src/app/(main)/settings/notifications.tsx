@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, overline } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import { logger } from '@shared/services/logger'
 
 interface NotificationPrefs {
   emailCampaignUpdates: boolean
@@ -29,13 +30,17 @@ const DEFAULT_PREFS: NotificationPrefs = {
 export default function NotificationsSettingsScreen() {
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS)
   const [loading, setLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
   const [saving, setSaving] = useState<keyof NotificationPrefs | null>(null)
 
   const loadPrefs = useCallback(async () => {
+    setLoadFailed(false)
     try {
       const res = await apiService.getSettings()
       const s = res?.settings || res?.data || res || {}
-      const notifications = s.notifications || s.notificationSettings || {}
+      // getSettings returns notifications: null when preferences couldn't be read.
+      if (!s.notifications && !s.notificationSettings) { setLoadFailed(true); return }
+      const notifications = s.notifications || s.notificationSettings
       setPrefs({
         emailCampaignUpdates: notifications.emailCampaignUpdates ?? DEFAULT_PREFS.emailCampaignUpdates,
         emailBidAlerts: notifications.emailBidAlerts ?? DEFAULT_PREFS.emailBidAlerts,
@@ -46,7 +51,9 @@ export default function NotificationsSettingsScreen() {
         pushMessageAlerts: notifications.pushMessageAlerts ?? DEFAULT_PREFS.pushMessageAlerts,
       })
     } catch (err) {
-      console.warn('Failed to load notification settings:', err)
+      logger.warn('Failed to load notification settings', { error: err })
+      // Don't show defaults as if they were the saved settings.
+      setLoadFailed(true)
     } finally {
       setLoading(false)
     }
@@ -90,7 +97,22 @@ export default function NotificationsSettingsScreen() {
   if (loading) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
+  }
+
+  if (loadFailed) {
+    return (
+      <View style={[styles.root, { justifyContent: 'center', alignItems: 'center', padding: spacing.xl, gap: spacing.sm }]}>
+        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>Couldn't load your settings</Text>
+        <Text style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center' }}>Check your connection and try again.</Text>
+        <Pressable
+          onPress={() => { setLoading(true); loadPrefs() }}
+          style={({ pressed }) => [{ marginTop: spacing.md, backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: spacing.xl, paddingVertical: spacing.md }, pressed && { opacity: 0.85 }]}
+        >
+          <Text style={{ color: colors.black, fontWeight: '700' }}>Try again</Text>
+        </Pressable>
       </View>
     )
   }
@@ -104,17 +126,16 @@ export default function NotificationsSettingsScreen() {
 
           <Text style={styles.sectionLabel}>Email</Text>
           <View style={styles.card}>
-            <SettingRow label="Campaign Updates" description="New bids, status changes, and milestones" valueKey="emailCampaignUpdates" />
-            <SettingRow label="Bid Alerts" description="When a creator applies to your campaign" valueKey="emailBidAlerts" />
-            <SettingRow label="Message Alerts" description="New chat messages" valueKey="emailMessageAlerts" />
-            <SettingRow label="Weekly Digest" description="Summary of weekly activity" valueKey="emailWeeklyDigest" />
+            <SettingRow label="Campaign updates" description="Applications, status changes and milestones" valueKey="emailCampaignUpdates" />
+            <SettingRow label="New applications" description="When a creator applies to your campaign" valueKey="emailBidAlerts" />
+            <SettingRow label="Messages" description="New chat messages" valueKey="emailMessageAlerts" />
           </View>
 
           <Text style={styles.sectionLabel}>Push</Text>
           <View style={styles.card}>
-            <SettingRow label="Campaign Updates" description="Push for campaign activity" valueKey="pushCampaignUpdates" />
-            <SettingRow label="Bid Alerts" description="Push when creators apply" valueKey="pushBidAlerts" />
-            <SettingRow label="Message Alerts" description="Push for new messages" valueKey="pushMessageAlerts" />
+            <SettingRow label="Campaign updates" description="Campaign activity" valueKey="pushCampaignUpdates" />
+            <SettingRow label="New applications" description="When creators apply" valueKey="pushBidAlerts" />
+            <SettingRow label="Messages" description="New chat messages" valueKey="pushMessageAlerts" />
           </View>
         </Animated.View>
       </ScrollView>
@@ -126,7 +147,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { color: colors.textMuted, fontSize: 13, marginTop: 2, marginBottom: spacing.lg },
-  sectionLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: spacing.sm, marginTop: spacing.md },
+  sectionLabel: { ...overline, marginBottom: spacing.sm, marginTop: spacing.md },
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   rowText: { flex: 1, marginRight: spacing.md },

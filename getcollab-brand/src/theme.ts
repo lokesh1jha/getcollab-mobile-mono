@@ -18,8 +18,11 @@ export const colors = {
   blueSoft: 'rgba(59,130,246,0.12)',
 
   black: '#000000',
-  neon: '#D9FF00',
-  neonSoft: 'rgba(217,255,0,0.15)',
+  // Monochrome primary: white CTAs with black text on the black canvas.
+  primary: '#FFFFFF',
+  primarySoft: 'rgba(255,255,255,0.10)',
+  // Wordmark accent, matches the web logo ("Get" white, "Collab" blue).
+  logoAccent: '#27BEFF',
 
   success: '#22C55E',
   warning: '#F59E0B',
@@ -28,6 +31,16 @@ export const colors = {
   warningSoft: 'rgba(245,158,11,0.14)',
   errorSoft: 'rgba(239,68,68,0.14)',
 } as const;
+
+// Small section label / eyebrow. Source text stays sentence case; this renders it
+// as muted uppercase so every overline in the app looks the same.
+export const overline = {
+  color: colors.textMuted,
+  fontSize: 11,
+  fontWeight: '700' as const,
+  letterSpacing: 1,
+  textTransform: 'uppercase' as const,
+}
 
 export const spacing = {
   xs: 4,
@@ -58,12 +71,35 @@ export const typography = {
 
 // Keys match API values (lowercase). Use STATUS_COLORS[status] ?? STATUS_COLORS.draft as fallback.
 export const STATUS_COLORS: Record<string, { fg: string; bg: string; dot: string }> = {
-  active:    { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)',    dot: '#22C55E' },
-  review:    { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)',   dot: '#F59E0B' },
-  draft:     { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)', dot: '#A1A1AA' },
-  completed: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)',   dot: '#3B82F6' },
-  paused:    { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)',   dot: '#F59E0B' },
-  cancelled: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)',    dot: '#EF4444' },
+  active:      { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)', dot: '#22C55E' },
+  accepted:    { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)', dot: '#22C55E' },
+  approved:    { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)', dot: '#22C55E' },
+  delivered:   { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)', dot: '#22C55E' },
+  done:        { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)', dot: '#22C55E' },
+  funded:      { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)', dot: '#22C55E' },
+  pending:     { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)', dot: '#F59E0B' },
+  review:      { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)', dot: '#F59E0B' },
+  paused:      { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)', dot: '#F59E0B' },
+  invited:     { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)', dot: '#F59E0B' },
+  replied:     { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)', dot: '#F59E0B' },
+  open:        { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)', dot: '#F59E0B' },
+  submitted:   { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)', dot: '#F59E0B' },
+  completed:   { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)', dot: '#3B82F6' },
+  in_progress: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)', dot: '#3B82F6' },
+  paid:        { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)', dot: '#3B82F6' },
+  released:    { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)', dot: '#3B82F6' },
+  sent:        { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)', dot: '#3B82F6' },
+  opened:      { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)', dot: '#3B82F6' },
+  draft:       { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)', dot: '#A1A1AA' },
+  held:        { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)', dot: '#A1A1AA' },
+  inactive:    { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)', dot: '#A1A1AA' },
+  dismissed:   { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)', dot: '#A1A1AA' },
+  cancelled:   { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)', dot: '#EF4444' },
+  rejected:    { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)', dot: '#EF4444' },
+  declined:    { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)', dot: '#EF4444' },
+  failed:      { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)', dot: '#EF4444' },
+  blocked:     { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)', dot: '#EF4444' },
+  closed:      { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)', dot: '#EF4444' },
 };
 
 export function matchScoreColor(score: number): string {

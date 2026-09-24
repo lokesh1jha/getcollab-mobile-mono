@@ -121,7 +121,7 @@ function SearchConsoleBody({ site, navigation }: { site: GrowthSite; navigation?
           }
           body={
             conn?.unavailableReason ||
-            'Without Google, we can only score your pages. Connecting Search Console shows the real searches you already rank for.'
+            'Connect to see the real searches you already rank for.'
           }
           ctaLabel={conn?.available === false ? undefined : busy ? 'Redirecting…' : 'Connect Google'}
           onCta={conn?.available === false ? undefined : connect}
@@ -136,7 +136,7 @@ function SearchConsoleBody({ site, navigation }: { site: GrowthSite; navigation?
           </Text>
           <View style={[growthStyles.btnRow, { marginTop: 12 }]}>
             {properties.length === 0 ? (
-              <Text style={growthStyles.rowBody}>No properties returned by Google yet.</Text>
+              <Text style={growthStyles.rowBody}>Google hasn't returned any properties yet.</Text>
             ) : (
               properties.map((p) => {
                 const isActive = selected === p
@@ -186,13 +186,13 @@ function SearchConsoleBody({ site, navigation }: { site: GrowthSite; navigation?
             <GrowthEmpty
               icon="search-outline"
               title="No search queries yet"
-              body="Refresh data after Google has a few days of traffic, or check that the property matches your site."
+              body="Try again after a few days of traffic, or check the property matches your site."
               ctaLabel="Refresh data"
               onCta={sync}
             />
           ) : (
             queries.map((row: any, i: number) => (
-              <Animated.View key={`${row.query}-${i}`} entering={FadeInDown.delay(i * 30).duration(320)} style={growthStyles.card}>
+              <Animated.View key={`${row.query}-${i}`} entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)} style={growthStyles.card}>
                 <Text style={growthStyles.rowLabel}>{row.query}</Text>
                 <Text style={growthStyles.meta}>
                   {row.clicks} clicks · shown {Number(row.impressions).toLocaleString()} · avg position{' '}

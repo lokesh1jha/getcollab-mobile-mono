@@ -306,7 +306,7 @@ describe('Growth — AI Visibility', () => {
     await screen.findByText('Ask about this site')
 
     fireEvent.changeText(
-      screen.getByPlaceholderText('e.g. What should we fix first to get more search traffic?'),
+      screen.getByPlaceholderText('What should we fix first?'),
       'What should we fix first?',
     )
     fireEvent.press(screen.getByText('Ask'))

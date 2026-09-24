@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import {
-  ActivityIndicator, Alert, FlatList, Image, Modal, Pressable, ScrollView,
-  StyleSheet, Text, TextInput, View, Dimensions, Linking,
-} from 'react-native'
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Dimensions, Linking, RefreshControl } from 'react-native'
+import { Image } from 'expo-image'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -11,6 +9,7 @@ import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError, uploadMediaBlob } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 const { width } = Dimensions.get('window')
 const GRID_GAP = 2
@@ -44,6 +43,11 @@ function formatFollowers(n?: number): string {
 }
 
 export default function InfluencerProfile({ navigation }: { navigation: InfluencerNavigationProp }) {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await load() } finally { setRefreshing(false) }
+  }
   const { user } = useAuthStore()
   const [profile, setProfile] = useState<ProfileData>({})
   const [loading, setLoading] = useState(true)
@@ -54,14 +58,13 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
   const [previewUri, setPreviewUri] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    setLoading(true)
     try {
       const res = await apiService.getProfileWithMetrics().catch(() => apiService.getProfile())
       const p = res?.data || res?.profile || res?.influencerProfile || res || {}
       setProfile(p)
       setForm(p)
     } catch (err: any) {
-      handleApiError(err, 'Failed to load profile')
+      handleApiError(err, "Couldn't load your profile")
     } finally { setLoading(false) }
   }, [])
 
@@ -78,13 +81,13 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
       setProfile(form)
       setEditing(false)
     } catch (err: any) {
-      handleApiError(err, 'Failed to save profile')
+      handleApiError(err, "Couldn't save your profile. Try again.")
     } finally { setSaving(false) }
   }
 
   const pickImage = async (field: 'avatar' | 'coverImage') => {
     const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') { Alert.alert('Permission needed', 'Enable photo library access.'); return }
+    if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo access in Settings.'); return }
     const result = await ImagePickerLib.launchImageLibraryAsync({ mediaTypes: ImagePickerLib.MediaTypeOptions.Images, quality: 0.8, base64: true })
     if (result.canceled || !result.assets[0]?.base64) return
     const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`
@@ -97,13 +100,13 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
       setProfile(prev => ({ ...prev, [field]: url }))
       setForm(prev => ({ ...prev, [field]: url }))
     } catch (err: any) {
-      handleApiError(err, `Failed to upload ${field === 'avatar' ? 'profile photo' : 'cover image'}`)
+      handleApiError(err, `Couldn't upload the ${field === 'avatar' ? 'profile photo' : 'cover image'}. Try again.`)
     } finally { setUploading(null) }
   }
 
   const addPortfolioImage = async () => {
     const { status } = await ImagePickerLib.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') { Alert.alert('Permission needed', 'Enable photo library access.'); return }
+    if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo access in Settings.'); return }
     const result = await ImagePickerLib.launchImageLibraryAsync({ mediaTypes: ImagePickerLib.MediaTypeOptions.Images, quality: 0.85 })
     if (result.canceled || !result.assets[0]) return
     const a = result.assets[0]
@@ -116,7 +119,7 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
       setForm(prev => ({ ...prev, portfolio: next }))
       setProfile(prev => ({ ...prev, portfolio: next }))
     } catch (err: any) {
-      handleApiError(err, 'Failed to upload portfolio image')
+      handleApiError(err, "Couldn't upload the image. Try again.")
     } finally { setUploading(null) }
   }
 
@@ -130,7 +133,8 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
   const toggleCategory = (cat: string) => {
     setForm(prev => {
       const cats = prev.categories || []
-      return { ...prev, categories: cats.includes(cat) ? cats.filter(c => c !== cat) : [...cats, cat] }
+      const has = cats.some(c => c.toLowerCase() === cat.toLowerCase())
+      return { ...prev, categories: has ? cats.filter(c => c.toLowerCase() !== cat.toLowerCase()) : [...cats, cat] }
     })
   }
 
@@ -155,21 +159,23 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
 
   if (loading) return (
     <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-      <ActivityIndicator size="large" color={colors.neon} />
+      <ActivityIndicator size="large" color={colors.primary} />
     </View>
   )
 
   const displayName = profile.name || user?.name || 'Creator'
-  const handle = `@${(profile.name || user?.name || 'creator').replace(/\s+/g, '').toLowerCase()}`
+  // Real social handle only; never derived from the display name.
+  const rawHandle = profile.instagramHandle || profile.youtubeHandle || profile.tiktokHandle || profile.twitterHandle
+  const handle = rawHandle ? `@${String(rawHandle).replace(/^@/, '')}` : ''
 
   return (
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
           {/* Cover image */}
           <Pressable onPress={editing ? () => pickImage('coverImage') : undefined} style={({ pressed }) => [styles.coverWrap, editing && pressed && { opacity: 0.85 }]}>
             {form.coverImage ? (
-              <Image source={{ uri: form.coverImage }} style={styles.coverImg} />
+              <Image transition={200} source={{ uri: form.coverImage }} style={styles.coverImg} />
             ) : (
               <View style={styles.coverPlaceholder}>
                 {editing && <Ionicons name="camera-outline" size={24} color={colors.textMuted} />}
@@ -179,15 +185,15 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
               <View style={{ flex: 1 }} />
               {editing ? (
                 <View style={styles.coverBtns}>
-                  <Pressable onPress={() => { setEditing(false); setForm(profile) }} style={[styles.coverBtn, { borderColor: colors.border }]}>
+                  <Pressable onPress={() => { setEditing(false); setForm(profile) }} style={({ pressed }) => [styles.coverBtn, { borderColor: colors.border }, pressed && { opacity: 0.85 }]}>
                     <Text style={styles.coverBtnText}>Cancel</Text>
                   </Pressable>
-                  <Pressable onPress={save} disabled={saving} style={[styles.coverBtn, { backgroundColor: colors.neon, borderColor: colors.neon }]}>
+                  <Pressable onPress={save} disabled={saving} style={({ pressed }) => [styles.coverBtn, { backgroundColor: colors.primary, borderColor: colors.primary }, pressed && { opacity: 0.85 }]}>
                     {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={[styles.coverBtnText, { color: '#000' }]}>Save</Text>}
                   </Pressable>
                 </View>
               ) : (
-                <Pressable onPress={() => setEditing(true)} style={[styles.coverBtn, { backgroundColor: colors.card }]}>
+                <Pressable onPress={() => setEditing(true)} style={({ pressed }) => [styles.coverBtn, { backgroundColor: colors.card }, pressed && { opacity: 0.85 }]}>
                   <Ionicons name="pencil-outline" size={14} color={colors.text} />
                   <Text style={styles.coverBtnText}>Edit</Text>
                 </Pressable>
@@ -199,7 +205,7 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
           <View style={styles.profileInfo}>
             <Pressable onPress={editing ? () => pickImage('avatar') : undefined} style={({ pressed }) => [styles.avatarOuter, editing && pressed && { opacity: 0.85 }]}>
               {form.avatar ? (
-                <Image source={{ uri: form.avatar }} style={styles.avatar} />
+                <Image transition={200} source={{ uri: form.avatar }} style={styles.avatar} />
               ) : (
                 <View style={[styles.avatar, { backgroundColor: colors.elevated, alignItems: 'center', justifyContent: 'center' }]}>
                   <Text style={{ color: colors.text, fontSize: 32, fontWeight: '700' }}>{displayName.charAt(0).toUpperCase()}</Text>
@@ -217,7 +223,7 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
             ) : (
               <Text style={styles.displayName}>{displayName}</Text>
             )}
-            <Text style={styles.handle}>{handle}</Text>
+            {handle ? <Text style={styles.handle}>{handle}</Text> : <View style={{ height: spacing.lg }} />}
 
             {/* Profile completion */}
             {completion < 100 && (
@@ -246,7 +252,7 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
             {/* Bio */}
             <Section title="Bio">
               {editing ? (
-                <TextInput value={form.bio || ''} onChangeText={v => setForm(p => ({ ...p, bio: v }))} placeholder="Tell brands about yourself…" placeholderTextColor={colors.textSubtle} multiline style={styles.bioInput} />
+                <TextInput value={form.bio || ''} onChangeText={v => setForm(p => ({ ...p, bio: v }))} placeholder="A short bio for brands" placeholderTextColor={colors.textSubtle} multiline style={styles.bioInput} />
               ) : (
                 <Text style={styles.bioText}>{profile.bio || 'No bio yet. Tap Edit to add one.'}</Text>
               )}
@@ -264,15 +270,15 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
 
             {/* Languages */}
             {editing && (
-              <Section title="Content Languages">
+              <Section title="Content languages">
                 <View style={styles.categoryGrid}>
                   {['English', 'Hindi', 'Spanish', 'French', 'German', 'Arabic', 'Portuguese', 'Russian', 'Japanese', 'Korean', 'Chinese'].map(lang => {
                     const active = (form.languages || []).includes(lang)
                     return (
-                      <Pressable key={lang} onPress={() => setForm(prev => {
+                      <Pressable key={lang} onPress={() => { Haptics.selectionAsync(); setForm(prev => {
                         const langs = prev.languages || []
                         return { ...prev, languages: langs.includes(lang) ? langs.filter(l => l !== lang) : [...langs, lang] }
-                      })} style={[styles.categoryChip, active && styles.categoryChipActive]}>
+                      }) }} style={({ pressed }) => [styles.categoryChip, active && styles.categoryChipActive, pressed && { opacity: 0.85 }]}>
                         <Text style={[styles.categoryText, active && styles.categoryTextActive]}>{lang}</Text>
                       </Pressable>
                     )
@@ -282,7 +288,7 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
             )}
 
             {/* Social handles */}
-            <Section title="Social Platforms">
+            <Section title="Social accounts">
               <View style={styles.socialList}>
                 {SOCIAL_PLATFORMS.map(p => {
                   const val = (editing ? form : profile)[p.key as keyof ProfileData] as string | undefined
@@ -314,24 +320,24 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
                   )
                 })}
                 {!editing && SOCIAL_PLATFORMS.every(p => !(profile[p.key as keyof ProfileData])) && (
-                  <Text style={styles.emptyNote}>No social handles added yet.</Text>
+                  <Text style={styles.emptyNote}>No social accounts yet.</Text>
                 )}
               </View>
             </Section>
 
             {/* Categories */}
-            <Section title="Content Categories">
+            <Section title="Content categories">
               <View style={styles.categoryGrid}>
                 {CATEGORIES.map(cat => {
-                  const active = (editing ? form : profile).categories?.includes(cat)
+                  const active = (editing ? form : profile).categories?.some(c => c.toLowerCase() === cat.toLowerCase())
                   if (!editing && !active) return null
                   return (
-                    <Pressable key={cat} onPress={editing ? () => toggleCategory(cat) : undefined} style={[styles.categoryChip, active && styles.categoryChipActive]}>
+                    <Pressable key={cat} onPress={editing ? () => { Haptics.selectionAsync(); toggleCategory(cat) } : undefined} style={({ pressed }) => [styles.categoryChip, active && styles.categoryChipActive, pressed && { opacity: 0.85 }]}>
                       <Text style={[styles.categoryText, active && styles.categoryTextActive]}>{cat}</Text>
                     </Pressable>
                   )
                 })}
-                {!editing && !profile.categories?.length && <Text style={styles.emptyNote}>No categories added yet.</Text>}
+                {!editing && !profile.categories?.length && <Text style={styles.emptyNote}>No categories yet.</Text>}
               </View>
             </Section>
 
@@ -340,11 +346,11 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
               <Section title="Pricing">
                 <View style={{ gap: spacing.sm }}>
                   {([
-                    ['pricePerPost', 'Per Post'],
-                    ['pricePerReel', 'Per Reel'],
-                    ['pricePerStory', 'Per Story'],
-                    ['pricePerVideo', 'Per Video'],
-                    ['pricePerCampaign', 'Full Campaign'],
+                    ['pricePerPost', 'Per post'],
+                    ['pricePerReel', 'Per reel'],
+                    ['pricePerStory', 'Per story'],
+                    ['pricePerVideo', 'Per video'],
+                    ['pricePerCampaign', 'Full campaign'],
                   ] as const).map(([key, label]) => (
                     <View key={key} style={styles.fieldWrap}>
                       <Text style={styles.priceFieldLabel}>{label}</Text>
@@ -365,13 +371,13 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
               <Section title="Pricing">
                 {(() => {
                   const rows = ([
-                    ['pricePerPost', 'Per Post'],
-                    ['pricePerReel', 'Per Reel'],
-                    ['pricePerStory', 'Per Story'],
-                    ['pricePerVideo', 'Per Video'],
-                    ['pricePerCampaign', 'Full Campaign'],
+                    ['pricePerPost', 'Per post'],
+                    ['pricePerReel', 'Per reel'],
+                    ['pricePerStory', 'Per story'],
+                    ['pricePerVideo', 'Per video'],
+                    ['pricePerCampaign', 'Full campaign'],
                   ] as const).filter(([key]) => profile[key] != null)
-                  if (!rows.length) return <Text style={styles.emptyNote}>No pricing set yet. Tap Edit to add rates.</Text>
+                  if (!rows.length) return <Text style={styles.emptyNote}>No prices yet. Tap Edit to add them.</Text>
                   return (
                     <View style={styles.listCard}>
                       {rows.map(([key, label], i) => (
@@ -406,17 +412,17 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
             <Section title="Portfolio">
               {editing && (
                 <Pressable onPress={addPortfolioImage} disabled={uploading === 'portfolio'} style={({ pressed }) => [styles.addPortfolioBtn, pressed && { opacity: 0.85 }, uploading === 'portfolio' && { opacity: 0.5 }]}>
-                  <Ionicons name="add-circle-outline" size={18} color={colors.neon} />
+                  <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
                   <Text style={styles.addPortfolioText}>{uploading === 'portfolio' ? 'Uploading…' : 'Add portfolio image'}</Text>
                 </Pressable>
               )}
               {(form.portfolio || []).length > 0 ? (
                 <View style={styles.portfolioGrid}>
                   {(form.portfolio || []).map((uri, i) => (
-                    <Pressable key={`${uri}-${i}`} onPress={() => setPreviewUri(uri)} style={styles.portfolioItemWrap}>
-                      <Image source={{ uri }} style={styles.portfolioItem} />
+                    <Pressable key={`${uri}-${i}`} onPress={() => setPreviewUri(uri)} style={({ pressed }) => [styles.portfolioItemWrap, pressed && { opacity: 0.85 }]}>
+                      <Image transition={200} source={{ uri }} style={styles.portfolioItem} />
                       {editing && (
-                        <Pressable onPress={() => removePortfolioImage(i)} style={styles.portfolioRemove} hitSlop={8}>
+                        <Pressable accessibilityRole="button" accessibilityLabel="Remove image" onPress={() => removePortfolioImage(i)} style={({ pressed }) => [styles.portfolioRemove, pressed && { opacity: 0.85 }]} hitSlop={8}>
                           <Ionicons name="close-circle" size={20} color={colors.error} />
                         </Pressable>
                       )}
@@ -424,29 +430,29 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
                   ))}
                 </View>
               ) : (
-                <Text style={styles.emptyNote}>{editing ? 'Tap above to add your first portfolio image.' : 'No portfolio images yet.'}</Text>
+                <Text style={styles.emptyNote}>{editing ? 'Add your first image above.' : 'No portfolio images yet.'}</Text>
               )}
             </Section>
 
             {/* Account actions */}
             <Section title="Account">
               <View style={styles.listCard}>
-                <AccountRow icon="lock-closed-outline" label="Change Password" onPress={() => navigation?.navigate('ChangePassword')} divider />
+                <AccountRow icon="lock-closed-outline" label="Change password" onPress={() => navigation?.navigate('ChangePassword')} divider />
                 <AccountRow icon="notifications-outline" label="Notifications" onPress={() => navigation?.navigate('Notifications')} divider />
                 <AccountRow icon="settings-outline" label="Settings" onPress={() => navigation?.navigate('Settings')} divider />
-                <AccountRow icon="mail-outline" label="Campaign Invites" onPress={() => navigation?.navigate('DealInvites')} divider />
-                <AccountRow icon="link-outline" label="Affiliate Programs" onPress={() => navigation?.navigate('Affiliate')} divider />
-                <AccountRow icon="people-outline" label="Brand Relationships" onPress={() => navigation?.navigate('Relationships')} divider />
-                <AccountRow icon="images-outline" label="Asset Library" onPress={() => navigation?.navigate('Assets')} divider />
-                <AccountRow icon="help-circle-outline" label="Help & Support" onPress={() => Linking.openURL('mailto:support@getcollab.in')} />
+                <AccountRow icon="mail-outline" label="Invites" onPress={() => navigation?.navigate('DealInvites')} divider />
+                <AccountRow icon="link-outline" label="Affiliate programs" onPress={() => navigation?.navigate('Affiliate')} divider />
+                <AccountRow icon="people-outline" label="Brands" onPress={() => navigation?.navigate('Relationships')} divider />
+                <AccountRow icon="images-outline" label="Asset library" onPress={() => navigation?.navigate('Assets')} divider />
+                <AccountRow icon="help-circle-outline" label="Help and support" onPress={() => Linking.openURL('mailto:contact@getcollab.in')} />
               </View>
 
               <Pressable
-                onPress={() => { Alert.alert('Sign Out', 'Are you sure?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Sign Out', style: 'destructive', onPress: useAuthStore.getState().signOut }]) }}
+                onPress={() => { Alert.alert('Sign out?', 'You can sign back in any time.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Sign out', style: 'destructive', onPress: useAuthStore.getState().signOut }]) }}
                 style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.85 }]}
               >
                 <Ionicons name="log-out-outline" size={18} color={colors.error} />
-                <Text style={styles.logoutText}>Sign Out</Text>
+                <Text style={styles.logoutText}>Sign out</Text>
               </Pressable>
             </Section>
           </View>
@@ -458,9 +464,9 @@ export default function InfluencerProfile({ navigation }: { navigation: Influenc
         <Pressable style={styles.previewOverlay} onPress={() => setPreviewUri(null)}>
           <SafeAreaView style={{ flex: 1 }}>
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
+              {previewUri && <Image transition={200} source={{ uri: previewUri }} style={styles.previewImage} contentFit="contain" />}
             </View>
-            <Pressable onPress={() => setPreviewUri(null)} style={styles.previewClose}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close preview" onPress={() => setPreviewUri(null)} style={({ pressed }) => [styles.previewClose, pressed && { opacity: 0.85 }]}>
               <Ionicons name="close" size={28} color={colors.text} />
             </Pressable>
           </SafeAreaView>
@@ -510,15 +516,15 @@ const styles = StyleSheet.create({
   profileInfo: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: 0, marginTop: -40 },
   avatarOuter: { position: 'relative', marginBottom: spacing.md },
   avatar: { width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: colors.bg },
-  avatarEditBadge: { position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderRadius: 12, backgroundColor: colors.neon, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.bg },
+  avatarEditBadge: { position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.bg },
   displayName: { color: colors.text, fontSize: 20, fontWeight: '700', letterSpacing: -0.4 },
   nameInput: { color: colors.text, fontSize: 20, fontWeight: '700', letterSpacing: -0.4, textAlign: 'center', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 4, minWidth: 200 },
   handle: { color: colors.textMuted, fontSize: 14, marginTop: 2, marginBottom: spacing.lg },
   completionCard: { width: '100%', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg },
   completionLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
-  completionValue: { color: colors.neon, fontSize: 13, fontWeight: '700' },
+  completionValue: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   completionTrack: { height: 6, borderRadius: 3, backgroundColor: colors.elevated, overflow: 'hidden' },
-  completionFill: { height: '100%', borderRadius: 3, backgroundColor: colors.neon },
+  completionFill: { height: '100%', borderRadius: 3, backgroundColor: colors.primary },
   statsCard: { flexDirection: 'row', alignItems: 'center', width: '100%', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, paddingVertical: spacing.lg },
   statDivider: { width: 1, height: 28, backgroundColor: colors.border },
   statValue: { color: colors.text, fontSize: 18, fontWeight: '700', letterSpacing: -0.3 },
@@ -541,11 +547,11 @@ const styles = StyleSheet.create({
   emptyNote: { color: colors.textSubtle, fontSize: 13 },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   categoryChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
-  categoryChipActive: { backgroundColor: colors.neon, borderColor: colors.neon },
+  categoryChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   categoryText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   categoryTextActive: { color: '#000' },
-  addPortfolioBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.md, alignSelf: 'flex-start', backgroundColor: colors.neonSoft, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill },
-  addPortfolioText: { color: colors.neon, fontSize: 13, fontWeight: '700' },
+  addPortfolioBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.md, alignSelf: 'flex-start', backgroundColor: colors.primarySoft, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill },
+  addPortfolioText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   portfolioGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
   portfolioItemWrap: { position: 'relative' },
   portfolioItem: { width: GRID_ITEM, height: GRID_ITEM, backgroundColor: colors.elevated },

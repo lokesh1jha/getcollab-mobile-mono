@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, Image, TextInput, Pressable, Linking } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TextInput, Pressable, Linking } from 'react-native'
+import { Image } from 'expo-image'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
@@ -11,6 +13,7 @@ import { useReferenceDataStore, selectCategories, selectLanguages, selectCampaig
 import type { RefItem } from '@shared/stores/reference-data-store'
 import apiService, { handleApiError } from '@shared/services/api'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 // Web pins these first in the language picker (creator flow suggestions).
 const SUGGESTED_LANGUAGES = ['English', 'Hindi']
@@ -72,7 +75,7 @@ export default function OnboardingScreen({ navigation }: Props) {
 
   const handleBrandStep1 = async () => {
     if (!brandStep1.companyName.trim() || !brandStep1.industry.trim()) {
-      Alert.alert('Required fields', 'Company name and industry are required.')
+      Alert.alert('Required fields', 'Enter your company name and industry.')
       return
     }
     setSubmitting(true)
@@ -80,7 +83,7 @@ export default function OnboardingScreen({ navigation }: Props) {
       await apiService.patchOnboarding({ role: 'brand', step: 'brand.profile', patch: { profile: brandStep1 } })
       setStep(2)
     } catch (e) {
-      handleApiError(e, 'Failed to save')
+      handleApiError(e, "Couldn't save. Try again.")
     } finally {
       setSubmitting(false)
     }
@@ -88,15 +91,15 @@ export default function OnboardingScreen({ navigation }: Props) {
 
   const handleBrandStep2 = async () => {
     if (brandStep2.campaignTypes.length === 0 || brandStep2.creatorCategories.length === 0) {
-      Alert.alert('Select more', 'Pick campaign types and creator categories.')
+      Alert.alert('Pick a few more', 'Choose campaign types and creator categories.')
       return
     }
     if (brandStep2.ageRanges.length === 0 || brandStep2.genders.length === 0) {
-      Alert.alert('Target audience', 'Pick at least one age range and gender.')
+      Alert.alert('Target audience', 'Choose at least one age range and gender.')
       return
     }
     if (brandStep2.objectives.length === 0) {
-      Alert.alert('Objectives', 'Pick at least one objective.')
+      Alert.alert('Objectives', 'Choose at least one objective.')
       return
     }
     setSubmitting(true)
@@ -119,7 +122,7 @@ export default function OnboardingScreen({ navigation }: Props) {
       })
       setStep(3)
     } catch (e) {
-      handleApiError(e, 'Failed to save')
+      handleApiError(e, "Couldn't save. Try again.")
     } finally {
       setSubmitting(false)
     }
@@ -146,11 +149,11 @@ export default function OnboardingScreen({ navigation }: Props) {
       })
       await apiService.completeOnboarding('brand')
       await fetchCurrentUser()
-      Alert.alert('Welcome aboard!', 'Your brand profile is set up. Manage billing from the web dashboard to launch campaigns.', [
-        { text: 'Go to Dashboard', onPress: () => navigation?.navigate('Main', { screen: 'Dashboard' }) },
+      Alert.alert('Profile set up', 'Manage billing on the web dashboard to launch campaigns.', [
+        { text: 'Go to dashboard', onPress: () => navigation?.navigate('Main', { screen: 'Dashboard' }) },
       ])
     } catch (e) {
-      handleApiError(e, 'Failed to complete onboarding')
+      handleApiError(e, "Couldn't finish setup. Try again.")
     } finally {
       setSubmitting(false)
     }
@@ -159,7 +162,7 @@ export default function OnboardingScreen({ navigation }: Props) {
   const pickAvatar = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Enable photo library access to add a profile photo.')
+      Alert.alert('Permission needed', 'Allow photo access in Settings to add a photo.')
       return
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -177,7 +180,7 @@ export default function OnboardingScreen({ navigation }: Props) {
       const res = await apiService.uploadProfileImage(base64)
       setAvatarUrl(res?.url || res?.data?.url || res?.image || base64)
     } catch (e) {
-      handleApiError(e, 'Failed to upload photo')
+      handleApiError(e, "Couldn't upload the photo. Try again.")
     } finally {
       setUploadingAvatar(false)
     }
@@ -185,19 +188,19 @@ export default function OnboardingScreen({ navigation }: Props) {
 
   const handleInfStep1 = async () => {
     if (!infStep1.bio.trim() || infStep1.bio.trim().length < 20) {
-      Alert.alert('Bio too short', 'Tell brands about yourself (at least 20 characters).')
+      Alert.alert('Bio too short', 'Write at least 20 characters about yourself.')
       return
     }
     if (!infStep1.country.trim()) {
-      Alert.alert('Location', 'Select your country.')
+      Alert.alert('Country needed', 'Select your country.')
       return
     }
     if (infStep1.categories.length === 0) {
-      Alert.alert('Categories', 'Pick at least one category.')
+      Alert.alert('Categories', 'Choose at least one category.')
       return
     }
     if (infStep1.languages.length === 0) {
-      Alert.alert('Content Language', 'Pick at least one language you create content in.')
+      Alert.alert('Content language', 'Choose at least one language you create in.')
       return
     }
     setSubmitting(true)
@@ -222,7 +225,7 @@ export default function OnboardingScreen({ navigation }: Props) {
       })
       setStep(2)
     } catch (e) {
-      handleApiError(e, 'Failed to save')
+      handleApiError(e, "Couldn't save. Try again.")
     } finally {
       setSubmitting(false)
     }
@@ -266,11 +269,11 @@ export default function OnboardingScreen({ navigation }: Props) {
       })
       await apiService.completeOnboarding('influencer')
       await fetchCurrentUser()
-      Alert.alert('You\'re all set!', 'Time to find campaigns that match your style.', [
-        { text: 'Discover Campaigns', onPress: () => navigation?.navigate('Main', { screen: 'Discover' }) },
+      Alert.alert('You\'re all set', 'Find campaigns that fit you.', [
+        { text: 'Find campaigns', onPress: () => navigation?.navigate('Main', { screen: 'Discover' }) },
       ])
     } catch (e) {
-      handleApiError(e, 'Failed to complete onboarding')
+      handleApiError(e, "Couldn't finish setup. Try again.")
     } finally {
       setSubmitting(false)
     }
@@ -278,9 +281,9 @@ export default function OnboardingScreen({ navigation }: Props) {
 
   const renderAvatarPicker = () => (
     <View style={styles.avatarWrap}>
-      <Pressable style={({ pressed }) => [styles.avatar, pressed && styles.pressed]} onPress={pickAvatar} disabled={uploadingAvatar}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Change photo" style={({ pressed }) => [styles.avatar, pressed && styles.pressed]} onPress={pickAvatar} disabled={uploadingAvatar}>
         {avatarUrl ? (
-          <Image source={{ uri: avatarUrl }} style={styles.avatarImg} />
+          <Image transition={200} source={{ uri: avatarUrl }} style={styles.avatarImg} />
         ) : (
           <Ionicons name="person" size={40} color={colors.textSubtle} />
         )}
@@ -317,7 +320,7 @@ export default function OnboardingScreen({ navigation }: Props) {
         <Pressable
           key={o}
           style={({ pressed }) => [styles.chip, selected.includes(o) && styles.chipActive, pressed && styles.pressed]}
-          onPress={() => onToggle(o)}
+          onPress={() => { Haptics.selectionAsync(); onToggle(o) }}
         >
           <Text style={[styles.chipText, selected.includes(o) && styles.chipTextActive]}>{o}</Text>
         </Pressable>
@@ -332,11 +335,11 @@ export default function OnboardingScreen({ navigation }: Props) {
         <Text style={styles.heading}>Tell us about your brand</Text>
         <Text style={styles.subheading}>Step 1 of 3 · Company profile</Text>
         {renderProgress()}
-        <Input label="Company Name *" value={brandStep1.companyName} onChangeText={(v) => setBrandStep1({ ...brandStep1, companyName: v })} style={styles.input} />
+        <Input label="Company name *" value={brandStep1.companyName} onChangeText={(v) => setBrandStep1({ ...brandStep1, companyName: v })} style={styles.input} />
         <Input label="Industry *" value={brandStep1.industry} onChangeText={(v) => setBrandStep1({ ...brandStep1, industry: v })} placeholder="e.g. Fashion, Tech" style={styles.input} />
         <Input label="Website" value={brandStep1.websiteUrl} onChangeText={(v) => setBrandStep1({ ...brandStep1, websiteUrl: v })} placeholder="https://" style={styles.input} />
         <Input label="Phone" value={brandStep1.primaryPhone} onChangeText={(v) => setBrandStep1({ ...brandStep1, primaryPhone: v })} keyboardType="phone-pad" style={styles.input} />
-        <Button title={submitting ? 'Saving...' : 'Continue'} onPress={handleBrandStep1} loading={submitting} disabled={submitting} fullWidth />
+        <Button title={submitting ? 'Saving…' : 'Continue'} onPress={handleBrandStep1} loading={submitting} disabled={submitting} fullWidth />
       </Wrapper>
     )
   }
@@ -348,19 +351,19 @@ export default function OnboardingScreen({ navigation }: Props) {
         <Text style={styles.subheading}>Step 2 of 3 · Who & what</Text>
         {renderProgress()}
 
-        <SectionLabel label="Campaign Types *" />
+        <SectionLabel label="Campaign types *" />
         {renderChips(campaignTypes, brandStep2.campaignTypes, (v) => setBrandStep2({ ...brandStep2, campaignTypes: toggle(brandStep2.campaignTypes, v) }))}
 
-        <SectionLabel label="Target Age Ranges *" />
+        <SectionLabel label="Target age ranges *" />
         {renderChips(AGE_RANGES, brandStep2.ageRanges, (v) => setBrandStep2({ ...brandStep2, ageRanges: toggle(brandStep2.ageRanges, v) }))}
 
-        <SectionLabel label="Target Genders *" />
+        <SectionLabel label="Target genders *" />
         {renderChips(GENDERS, brandStep2.genders, (v) => setBrandStep2({ ...brandStep2, genders: toggle(brandStep2.genders, v) }))}
 
-        <SectionLabel label="Target Location" />
+        <SectionLabel label="Target location" />
         <Input value={brandStep2.location} onChangeText={(v) => setBrandStep2({ ...brandStep2, location: v })} placeholder="e.g. All India" />
 
-        <SectionLabel label="Creator Categories *" />
+        <SectionLabel label="Creator categories *" />
         {renderChips(categories, brandStep2.creatorCategories, (v) => setBrandStep2({ ...brandStep2, creatorCategories: toggle(brandStep2.creatorCategories, v) }))}
 
         <SectionLabel label="Objectives *" />
@@ -368,7 +371,7 @@ export default function OnboardingScreen({ navigation }: Props) {
 
         <View style={styles.actionRow}>
           <Button title="Back" variant="outline" onPress={() => setStep(1)} style={{ flex: 1 }} />
-          <Button title={submitting ? 'Saving...' : 'Continue'} onPress={handleBrandStep2} loading={submitting} disabled={submitting} style={{ flex: 1 }} />
+          <Button title={submitting ? 'Saving…' : 'Continue'} onPress={handleBrandStep2} loading={submitting} disabled={submitting} style={{ flex: 1 }} />
         </View>
       </Wrapper>
     )
@@ -381,18 +384,18 @@ export default function OnboardingScreen({ navigation }: Props) {
         <Text style={styles.subheading}>Step 3 of 3 · Scale</Text>
         {renderProgress()}
 
-        <SectionLabel label="Budget Range" />
+        <SectionLabel label="Budget range" />
         {renderChips(['<₹50k', '₹50k-2L', '₹2L-10L', '₹10L+'], [brandStep3.budgetRange], (v) => setBrandStep3({ ...brandStep3, budgetRange: brandStep3.budgetRange === v ? '' : v }))}
 
-        <SectionLabel label="Company Size" />
+        <SectionLabel label="Company size" />
         {renderChips(['1-10', '11-50', '51-200', '200+'], [brandStep3.companySize], (v) => setBrandStep3({ ...brandStep3, companySize: brandStep3.companySize === v ? '' : v }))}
 
-        <SectionLabel label="Campaign Frequency" />
+        <SectionLabel label="Campaign frequency" />
         {renderChips(['Monthly', 'Quarterly', 'One-time', 'Ongoing'], [brandStep3.frequency], (v) => setBrandStep3({ ...brandStep3, frequency: brandStep3.frequency === v ? '' : v }))}
 
         <View style={styles.actionRow}>
           <Button title="Back" variant="outline" onPress={() => setStep(2)} style={{ flex: 1 }} />
-          <Button title={submitting ? 'Finishing...' : 'Finish & Start Trial'} onPress={handleBrandStep3} loading={submitting} disabled={submitting} style={{ flex: 1 }} />
+          <Button title={submitting ? 'Finishing…' : 'Start trial'} onPress={handleBrandStep3} loading={submitting} disabled={submitting} style={{ flex: 1 }} />
         </View>
       </Wrapper>
     )
@@ -435,7 +438,7 @@ export default function OnboardingScreen({ navigation }: Props) {
           placeholder="Search categories"
         />
 
-        <SectionLabel label="Content Languages *" />
+        <SectionLabel label="Content languages *" />
         <MultiSearchSelect
           options={languageOptions}
           selected={infStep1.languages}
@@ -444,7 +447,7 @@ export default function OnboardingScreen({ navigation }: Props) {
           suggestions={SUGGESTED_LANGUAGES}
         />
 
-        <Button title={submitting ? 'Saving...' : 'Continue'} onPress={handleInfStep1} loading={submitting} disabled={submitting} fullWidth style={{ marginTop: spacing.lg }} />
+        <Button title={submitting ? 'Saving…' : 'Continue'} onPress={handleInfStep1} loading={submitting} disabled={submitting} fullWidth style={{ marginTop: spacing.lg }} />
       </Wrapper>
     )
   }
@@ -514,7 +517,7 @@ export default function OnboardingScreen({ navigation }: Props) {
 
         <View style={styles.actionRow}>
           <Button title="Back" variant="outline" onPress={() => setStep(1)} style={{ flex: 1 }} />
-          <Button title={submitting ? 'Finishing...' : 'Finish'} onPress={handleInfStep2} loading={submitting} disabled={submitting} style={{ flex: 1 }} />
+          <Button title={submitting ? 'Finishing…' : 'Finish'} onPress={handleInfStep2} loading={submitting} disabled={submitting} style={{ flex: 1 }} />
         </View>
       </Wrapper>
     )
@@ -524,14 +527,16 @@ export default function OnboardingScreen({ navigation }: Props) {
 }
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
-  <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
-    <ScrollView
-      contentContainerStyle={styles.content}
-      bounces={false}
-      overScrollMode="never"
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-    >{children}</ScrollView>
+  <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+    <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+      <ScrollView automaticallyAdjustKeyboardInsets
+        contentContainerStyle={styles.content}
+        bounces={false}
+        overScrollMode="never"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >{children}</ScrollView>
+    </Animated.View>
   </SafeAreaView>
 )
 
@@ -592,7 +597,7 @@ function MultiSearchSelect({
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Type to filter..."
+            placeholder="Search"
             placeholderTextColor={colors.textSubtle}
             style={ss.search}
           />
@@ -608,7 +613,7 @@ function MultiSearchSelect({
               </View>
             </View>
           )}
-          <ScrollView style={ss.list} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+          <ScrollView automaticallyAdjustKeyboardInsets style={ss.list} nestedScrollEnabled keyboardShouldPersistTaps="handled">
             {filtered.length === 0 && <Text style={ss.empty}>No matches</Text>}
             {filtered.map((o) => {
               const isSel = selected.includes(o.value)
@@ -622,7 +627,7 @@ function MultiSearchSelect({
                   }}
                 >
                   <Text style={[ss.rowText, isSel && ss.rowTextSel]}>{o.label}</Text>
-                  {isSel && <Ionicons name="checkmark" size={18} color={colors.neon} />}
+                  {isSel && <Ionicons name="checkmark" size={18} color={colors.primary} />}
                 </Pressable>
               )
             })}
@@ -647,12 +652,12 @@ const ss = StyleSheet.create({
   wrap: { marginBottom: spacing.md },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 6 },
   chip: {
-    backgroundColor: colors.neonSoft,
+    backgroundColor: colors.primarySoft,
     borderRadius: radius.pill,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  chipText: { color: colors.neon, fontSize: 13, fontWeight: '600' },
+  chipText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
   field: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -704,11 +709,11 @@ const ss = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  rowSel: { backgroundColor: colors.neonSoft },
+  rowSel: { backgroundColor: colors.primarySoft },
   rowText: { color: colors.text, fontSize: 15 },
-  rowTextSel: { color: colors.neon, fontWeight: '600' },
+  rowTextSel: { color: colors.primary, fontWeight: '600' },
   doneBtn: { alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border },
-  doneText: { color: colors.neon, fontSize: 14, fontWeight: '700' },
+  doneText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   card: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -732,7 +737,7 @@ const ss = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: colors.neon,
+    backgroundColor: colors.primary,
   },
   cardBtnText: { color: colors.bg, fontSize: 13, fontWeight: '700' },
   cardBtnManual: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
@@ -741,9 +746,9 @@ const ss = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: colors.neonSoft,
+    backgroundColor: colors.primarySoft,
   },
-  badgeOkText: { color: colors.neon, fontSize: 12, fontWeight: '700' },
+  badgeOkText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   cardForm: { marginTop: spacing.md },
 })
 
@@ -802,7 +807,7 @@ function PlatformCard({
               style={({ pressed }) => [ss.cardBtn, ss.cardBtnManual, pressed && ss.pressed]}
               onPress={onExpand}
             >
-              <Text style={[ss.cardBtnText, ss.cardBtnManualText]}>Manual</Text>
+              <Text style={[ss.cardBtnText, ss.cardBtnManualText]}>Add manually</Text>
             </Pressable>
           </View>
         )}
@@ -847,7 +852,7 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 13, color: colors.text },
-  chipTextActive: { color: colors.white },
+  chipTextActive: { color: colors.black },
   actionRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
   avatarWrap: { alignItems: 'center', marginBottom: spacing.md },
   avatar: {
@@ -869,7 +874,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.neon,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,

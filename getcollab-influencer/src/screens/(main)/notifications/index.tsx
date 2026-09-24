@@ -1,5 +1,5 @@
-import React, { useCallback, memo } from 'react'
-import { FlatList, Pressable, StyleSheet, Text, View, ActivityIndicator } from 'react-native'
+import React, { useCallback, memo, useState } from 'react'
+import { FlatList, Pressable, StyleSheet, Text, View, ActivityIndicator, RefreshControl } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { useNotificationStore } from '@shared/stores/notification-store'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
+import * as Haptics from 'expo-haptics'
 
 function notifIcon(type: string): string {
   if (type?.includes('bid') || type?.includes('campaign')) return 'megaphone-outline'
@@ -32,8 +33,8 @@ const NotifItem = memo(({ item, index, onRead, onOpen }: { item: any; index: num
   const isUnread = !item.read
   const icon = notifIcon(item.type || '')
   return (
-    <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
-      <Pressable onPress={() => { onRead(item.id); onOpen(item) }} style={[styles.row, isUnread && styles.rowUnread]}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
+      <Pressable onPress={() => { onRead(item.id); onOpen(item) }} style={({ pressed }) => [styles.row, isUnread && styles.rowUnread, pressed && { opacity: 0.85 }]}>
         {isUnread && <View style={styles.unreadBar} />}
         <View style={[styles.iconWrap, isUnread && { backgroundColor: colors.blueSoft }]}>
           <Ionicons name={icon as any} size={18} color={isUnread ? colors.blue : colors.textMuted} />
@@ -48,6 +49,11 @@ const NotifItem = memo(({ item, index, onRead, onOpen }: { item: any; index: num
 })
 
 export default function NotificationsScreen({ navigation }: { navigation: InfluencerNavigationProp }) {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await fetchNotifications() } finally { setRefreshing(false) }
+  }
   const { notifications, isLoading, fetchNotifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore()
 
   useFocusEffect(useCallback(() => { fetchNotifications() }, [fetchNotifications]))
@@ -61,7 +67,7 @@ export default function NotificationsScreen({ navigation }: { navigation: Influe
 
   if (isLoading && notifications.length === 0) return (
     <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-      <ActivityIndicator size="large" color={colors.neon} />
+      <ActivityIndicator size="large" color={colors.primary} />
     </View>
   )
 
@@ -69,7 +75,7 @@ export default function NotificationsScreen({ navigation }: { navigation: Influe
     <View style={styles.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.header}>
-          <Pressable hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Go back" hitSlop={12} onPress={() => navigation?.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.75 }]}>
             <Ionicons name="chevron-back" size={22} color={colors.text} />
           </Pressable>
           <View style={{ flex: 1, paddingHorizontal: spacing.md }}>
@@ -77,13 +83,13 @@ export default function NotificationsScreen({ navigation }: { navigation: Influe
             {unreadCount > 0 && <Text style={styles.unreadLabel}>{unreadCount} unread</Text>}
           </View>
           {unreadCount > 0 && (
-            <Pressable onPress={markAllAsRead} hitSlop={8}>
+            <Pressable onPress={markAllAsRead} hitSlop={8} style={({ pressed }) => pressed && { opacity: 0.85 }}>
               <Text style={styles.markAllText}>Mark all read</Text>
             </Pressable>
           )}
         </View>
 
-        <FlatList
+        <FlatList refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
           data={notifications}
            renderItem={({ item, index }) => <NotifItem item={item} index={index} onRead={markAsRead} onOpen={openNotification} />}
           keyExtractor={n => String(n.id)}
@@ -94,7 +100,7 @@ export default function NotificationsScreen({ navigation }: { navigation: Influe
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="notifications-outline" size={26} color={colors.textMuted} /></View>
               <Text style={styles.emptyTitle}>All caught up</Text>
-              <Text style={styles.emptySub}>New campaign updates and payments will appear here.</Text>
+              <Text style={styles.emptySub}>Campaign updates and payments show up here.</Text>
             </View>
           }
         />
@@ -108,7 +114,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
   iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
   headerTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
-  unreadLabel: { color: colors.neon, fontSize: 12, fontWeight: '600', marginTop: 1 },
+  unreadLabel: { color: colors.primary, fontSize: 12, fontWeight: '600', marginTop: 1 },
   markAllText: { color: colors.blue, fontSize: 13, fontWeight: '600' },
   row: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.md },
   rowUnread: { backgroundColor: 'rgba(59,130,246,0.04)' },

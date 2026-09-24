@@ -4,16 +4,11 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { BrandInvite } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  pending: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  accepted: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  declined: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
-  cancelled: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)' },
-}
 
 interface Props {
   navigation?: any
@@ -46,9 +41,9 @@ export default function InvitesScreen({ navigation }: Props) {
 
   const handleCancel = async (invite: BrandInvite) => {
     Alert.alert('Cancel invite?', `Cancel invite to ${invite.influencerName || 'this creator'}?`, [
-      { text: 'No', style: 'cancel' },
+      { text: 'Keep', style: 'cancel' },
       {
-        text: 'Cancel Invite',
+        text: 'Cancel invite',
         style: 'destructive',
         onPress: async () => {
           setCancellingId(invite.id)
@@ -71,7 +66,7 @@ export default function InvitesScreen({ navigation }: Props) {
     const isCancelling = cancellingId === item.id
 
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
         <View style={styles.cardTop}>
           <View style={{ flex: 1 }}>
             <Text style={styles.influencerName}>{item.influencerName || 'Creator'}</Text>
@@ -89,7 +84,7 @@ export default function InvitesScreen({ navigation }: Props) {
             onPress={() => handleCancel(item)}
             disabled={isCancelling}
           >
-            <Text style={styles.cancelBtnText}>{isCancelling ? 'Cancelling…' : 'Cancel Invite'}</Text>
+            <Text style={styles.cancelBtnText}>{isCancelling ? 'Cancelling…' : 'Cancel invite'}</Text>
           </Pressable>
         )}
       </Animated.View>
@@ -99,7 +94,7 @@ export default function InvitesScreen({ navigation }: Props) {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -116,7 +111,7 @@ export default function InvitesScreen({ navigation }: Props) {
           ListHeaderComponent={
             <View style={styles.header}>
               <Text style={styles.title}>Invites</Text>
-              <Text style={styles.subtitle}>Campaign invites sent to creators</Text>
+              <Text style={styles.subtitle}>Campaign invites you've sent</Text>
             </View>
           }
           ListEmptyComponent={
@@ -125,10 +120,10 @@ export default function InvitesScreen({ navigation }: Props) {
                 <Ionicons name="mail-outline" size={26} color={colors.textMuted} />
               </View>
               <Text style={styles.emptyTitle}>No invites yet</Text>
-              <Text style={styles.emptySub}>Invite creators to your campaigns from the Creators tab.</Text>
+              <Text style={styles.emptySub}>Invite creators from the Creators tab.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadInvites() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadInvites() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>

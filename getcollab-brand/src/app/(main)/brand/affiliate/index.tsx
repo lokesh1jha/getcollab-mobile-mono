@@ -4,16 +4,11 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { AffiliateProgram } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  paused: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  draft: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)' },
-  closed: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
-}
 
 export default function AffiliateProgramsScreen({ navigation }: any) {
   const [programs, setPrograms] = useState<AffiliateProgram[]>([])
@@ -43,7 +38,7 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
   )
 
   const handleCreate = async () => {
-    if (!newName.trim()) { Alert.alert('Error', 'Enter a program name'); return }
+    if (!newName.trim()) { Alert.alert('Name needed', 'Enter a program name.'); return }
     setCreating(true)
     try {
       await apiService.createAffiliateProgram({
@@ -80,8 +75,8 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
     const s = STATUS_COLORS[st] || STATUS_COLORS.draft
     const budget = item.budget
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
-        <Pressable style={({ pressed }) => [styles.card, pressed && { opacity: 0.9 }]} onPress={() => navigation?.navigate('AffiliateDetail', { id: item.id })}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
+        <Pressable style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('AffiliateDetail', { id: item.id })}>
           <View style={styles.cardTop}>
             <View style={{ flex: 1 }}>
               <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
@@ -99,10 +94,10 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
             </View>
           )}
           <View style={styles.actionsRow}>
-            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={(e) => { e.stopPropagation(); navigation?.navigate('AffiliateLinks', { programId: item.id }) }}>
+            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={(e) => { e.stopPropagation(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation?.navigate('AffiliateLinks', { programId: item.id }) }}>
               <Text style={styles.actionBtnText}>Links</Text>
             </Pressable>
-            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={(e) => { e.stopPropagation(); navigation?.navigate('AffiliateCommissions', { programId: item.id }) }}>
+            <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={(e) => { e.stopPropagation(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation?.navigate('AffiliateCommissions', { programId: item.id }) }}>
               <Text style={styles.actionBtnText}>Commissions</Text>
             </Pressable>
           </View>
@@ -114,7 +109,7 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -133,7 +128,7 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
               <View style={styles.header}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.title}>Affiliate</Text>
-                  <Text style={styles.subtitle}>Manage affiliate programs</Text>
+                  <Text style={styles.subtitle}>Your affiliate programs</Text>
                 </View>
                 <Pressable style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.85 }]} onPress={() => setDialogOpen(true)}>
                   <Ionicons name="add" size={16} color="#000" />
@@ -146,10 +141,10 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="link-outline" size={26} color={colors.textMuted} /></View>
               <Text style={styles.emptyTitle}>No programs yet</Text>
-              <Text style={styles.emptySub}>Create your first affiliate program to start tracking referrals.</Text>
+              <Text style={styles.emptySub}>Create a program to start tracking referrals.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadPrograms() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadPrograms() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
 
@@ -157,14 +152,14 @@ export default function AffiliateProgramsScreen({ navigation }: any) {
       {dialogOpen && (
         <Pressable style={styles.modalOverlay} onPress={() => setDialogOpen(false)}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>New Program</Text>
-            <Text style={styles.modalBody}>Give your affiliate program a name.</Text>
+            <Text style={styles.modalTitle}>New program</Text>
+            <Text style={styles.modalBody}>Name your affiliate program.</Text>
             <TextInput style={styles.input} value={newName} onChangeText={setNewName} placeholder="Program name" placeholderTextColor={colors.textSubtle} />
             <View style={styles.modalActions}>
               <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setDialogOpen(false)}>
                 <Text style={styles.outlinedBtnText}>Cancel</Text>
               </Pressable>
-              <Pressable style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]} onPress={handleCreate} disabled={creating}>
+              <Pressable style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleCreate() }} disabled={creating}>
                 <Text style={styles.primaryBtnText}>{creating ? 'Creating…' : 'Create'}</Text>
               </Pressable>
             </View>
@@ -180,7 +175,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: spacing.md, marginBottom: spacing.md },
   title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
-  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.neon, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.pill },
+  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.pill },
   addBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
 
   card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg },
@@ -210,6 +205,6 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
   outlinedBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong },
   outlinedBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, backgroundColor: colors.neon },
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, backgroundColor: colors.primary },
   primaryBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
 })

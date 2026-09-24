@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native'
 import { colors, spacing, radius } from '@/src/theme'
 import { useTrialGuard } from '../hooks/useTrialGuard'
+import * as Haptics from 'expo-haptics'
 
 interface TrialGuardProps {
   children: React.ReactNode
@@ -18,7 +19,7 @@ export function TrialGuard({ children, feature, loading: externalLoading, fallba
   if (externalLoading || loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -43,15 +44,16 @@ export function TrialGuard({ children, feature, loading: externalLoading, fallba
             <Text style={styles.icon}>🔒</Text>
           </View>
           <Text style={styles.title}>
-            {isPastDue ? 'Payment Required' : 'Workspace Access Required'}
+            {isPastDue ? 'Payment required' : 'Access required'}
           </Text>
           <Text style={styles.description}>
-            {blockReason || 'Manage your subscription to continue using this feature.'}
+            {blockReason || 'Renew your plan to use this feature.'}
           </Text>
           <View style={styles.actions}>
             <Pressable
               style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
               onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
                 setActionLoading(true)
                 try {
                   await openBillingPortal()
@@ -64,14 +66,14 @@ export function TrialGuard({ children, feature, loading: externalLoading, fallba
               {actionLoading ? (
                 <ActivityIndicator size="small" color="#000" />
               ) : (
-                <Text style={styles.primaryBtnText}>Open Billing Portal</Text>
+                <Text style={styles.primaryBtnText}>Manage billing</Text>
               )}
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.7 }]}
               onPress={refresh}
             >
-              <Text style={styles.outlinedBtnText}>Check Status</Text>
+              <Text style={styles.outlinedBtnText}>Refresh status</Text>
             </Pressable>
           </View>
         </View>
@@ -85,14 +87,15 @@ export function TrialGuard({ children, feature, loading: externalLoading, fallba
         <View style={styles.iconContainer}>
           <Text style={styles.icon}>🔒</Text>
         </View>
-        <Text style={styles.title}>Workspace Access Required</Text>
+        <Text style={styles.title}>Access required</Text>
         <Text style={styles.description}>
-          {blockReason || 'Manage your subscription to continue using this feature.'}
+          {blockReason || 'Renew your plan to use this feature.'}
         </Text>
         <View style={styles.actions}>
           <Pressable
             style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
             onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
               setActionLoading(true)
               try {
                 await startTrial()
@@ -105,14 +108,14 @@ export function TrialGuard({ children, feature, loading: externalLoading, fallba
             {actionLoading ? (
               <ActivityIndicator size="small" color="#000" />
             ) : (
-              <Text style={styles.primaryBtnText}>Continue Access</Text>
+              <Text style={styles.primaryBtnText}>Start free trial</Text>
             )}
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.7 }]}
             onPress={openBillingPortal}
           >
-            <Text style={styles.outlinedBtnText}>Open Billing Portal</Text>
+            <Text style={styles.outlinedBtnText}>Manage billing</Text>
           </Pressable>
         </View>
       </View>
@@ -181,7 +184,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.neon,
+    backgroundColor: colors.primary,
     borderRadius: radius.pill,
     paddingVertical: 14,
   },

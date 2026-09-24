@@ -7,8 +7,8 @@ const { monorepoRoot, sharedRoot, srcRoot, extraNodeModules, nodeModulesPaths } 
 
 const config = getDefaultConfig(projectRoot)
 
-config.resolver.unstable_enableSymlinks = true
-config.watchFolders = [monorepoRoot, sharedRoot]
+// Symlinks are on by default since SDK 53; keep Expo's default watch folders.
+config.watchFolders = [...new Set([...config.watchFolders, monorepoRoot, sharedRoot])]
 config.resolver.nodeModulesPaths = nodeModulesPaths
 config.resolver.extraNodeModules = extraNodeModules
 config.resolver.resolveRequest = createResolveRequest({ projectRoot, srcRoot })

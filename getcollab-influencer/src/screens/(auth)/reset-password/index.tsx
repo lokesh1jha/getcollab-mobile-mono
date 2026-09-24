@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, RouteProp } from '@react-navigation/native'
 import { colors, spacing } from '@/src/theme'
@@ -41,17 +42,17 @@ export default function ResetPasswordScreen({ navigation }: ResetPasswordScreenP
       return
     }
     if (password !== confirm) {
-      Alert.alert('Mismatch', 'Passwords do not match.')
+      Alert.alert("Passwords don't match", 'Enter the same password twice.')
       return
     }
     setSubmitting(true)
     try {
       await apiService.resetPassword(token.trim(), password)
-      Alert.alert('Password reset', 'You can now sign in with your new password.', [
-        { text: 'Sign In', onPress: () => navigation?.navigate('SignIn') },
+      Alert.alert('Password reset', 'Sign in with your new password.', [
+        { text: 'Sign in', onPress: () => navigation?.navigate('SignIn') },
       ])
     } catch (e) {
-      handleApiError(e, 'Failed to reset password')
+      handleApiError(e, "Couldn't reset your password. Try again.")
     } finally {
       setSubmitting(false)
     }
@@ -59,54 +60,56 @@ export default function ResetPasswordScreen({ navigation }: ResetPasswordScreenP
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Reset your password</Text>
-        <Text style={styles.subtitle}>
-          Paste the token from your email and choose a new password.
-        </Text>
-
-        <Input
-          label="Reset Token"
-          value={token}
-          onChangeText={setToken}
-          placeholder="Paste reset token"
-          style={styles.input}
-        />
-
-        <Input
-          label="New Password"
-          value={password}
-          onChangeText={setPassword}
-          placeholder="At least 8 chars, mix of cases, number, symbol"
-          secureTextEntry
-          style={styles.input}
-        />
-
-        <Input
-          label="Confirm Password"
-          value={confirm}
-          onChangeText={setConfirm}
-          placeholder="Repeat password"
-          secureTextEntry
-          style={styles.input}
-        />
-
-        <Button
-          title={submitting ? 'Resetting...' : 'Reset Password'}
-          onPress={handleSubmit}
-          disabled={submitting}
-          loading={submitting}
-          fullWidth
-          style={styles.submitBtn}
-        />
-
-        <Button
-          title="Back to Sign In"
-          variant="ghost"
-          onPress={() => navigation?.navigate('SignIn')}
-          fullWidth
-        />
-      </ScrollView>
+      <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+        <ScrollView automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+          <Text style={styles.title}>Reset your password</Text>
+          <Text style={styles.subtitle}>
+            Paste the token from your email, then pick a new password.
+          </Text>
+  
+          <Input
+            label="Reset token"
+            value={token}
+            onChangeText={setToken}
+            placeholder="Paste reset token"
+            style={styles.input}
+          />
+  
+          <Input
+            label="New password"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="At least 8 characters"
+            secureTextEntry
+            style={styles.input}
+          />
+  
+          <Input
+            label="Confirm password"
+            value={confirm}
+            onChangeText={setConfirm}
+            placeholder="Repeat password"
+            secureTextEntry
+            style={styles.input}
+          />
+  
+          <Button
+            title={submitting ? 'Resetting…' : 'Reset password'}
+            onPress={handleSubmit}
+            disabled={submitting}
+            loading={submitting}
+            fullWidth
+            style={styles.submitBtn}
+          />
+  
+          <Button
+            title="Back to sign in"
+            variant="ghost"
+            onPress={() => navigation?.navigate('SignIn')}
+            fullWidth
+          />
+        </ScrollView>
+      </Animated.View>
     </SafeAreaView>
   )
 }

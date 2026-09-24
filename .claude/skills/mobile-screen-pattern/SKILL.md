@@ -24,7 +24,8 @@ touching UI** — this skill is the working checklist, that file is the source o
 |---|---|---|---|
 | `colors.bg` | `#0A0A0A` | `#000000` | Page background |
 | `colors.card` | `#111111` | `#0F0F0F` | Card surface |
-| `colors.neon` | `#D9FF00` | Primary CTA, active states, logo accent |
+| `colors.primary` | `#FFFFFF` | Primary CTA, active states (monochrome — black text on it) |
+| `colors.logoAccent` | `#27BEFF` | "Collab" in the wordmark only — use `@shared/components/BrandLogo` |
 | `colors.blue` | `#3B82F6` | Secondary actions, AI features, links |
 | `colors.text` | `#FFFFFF` | Primary text |
 | `colors.textMuted` | `#A8A8A8` | Secondary labels |
@@ -32,7 +33,8 @@ touching UI** — this skill is the working checklist, that file is the source o
 
 Also exported from `theme.ts`: `spacing`, `radius`, `typography`, `STATUS_COLORS`, `statusColor()`.
 
-Primary CTA = `backgroundColor: colors.neon` with dark text.
+Primary CTA = `backgroundColor: colors.primary` (white) with `colors.black` text. No bright
+accent colours for CTAs — the look is monochrome, shadcn-like.
 
 ## Screen skeleton
 
@@ -58,7 +60,7 @@ Stagger list entrances with `FadeInDown.delay(80 * i).duration(320)`.
 
 ```tsx
 <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }}>
-  <ActivityIndicator size="large" color={colors.neon} />
+  <ActivityIndicator size="large" color={colors.primary} />
 </View>
 ```
 

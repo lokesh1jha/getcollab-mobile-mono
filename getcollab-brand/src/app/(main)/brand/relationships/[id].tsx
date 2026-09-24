@@ -4,18 +4,13 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS, overline } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { RelationshipDetail } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ relationshipDetail: { id: string } }, 'relationshipDetail'>
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  pending: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  inactive: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)' },
-  blocked: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
-}
 
 export default function RelationshipDetailScreen() {
   const route = useRoute<RouteParams>()
@@ -71,7 +66,7 @@ export default function RelationshipDetailScreen() {
     return (
       <SafeAreaView style={styles.root}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.neon} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     )
@@ -83,7 +78,7 @@ export default function RelationshipDetailScreen() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg, gap: spacing.md }}>
           <Text style={{ color: colors.error, fontSize: 16 }}>Relationship not found</Text>
           <Pressable style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.8 }]} onPress={() => navigation.goBack()}>
-            <Text style={styles.outlinedBtnText}>Go Back</Text>
+            <Text style={styles.outlinedBtnText}>Go back</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -98,7 +93,7 @@ export default function RelationshipDetailScreen() {
     <SafeAreaView style={styles.root}>
       <ScrollView
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxxl }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadDetail() }} tintColor={colors.neon} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadDetail() }} tintColor={colors.primary} />}
       >
         <Animated.View entering={FadeInDown.duration(400)}>
           {/* Header Card */}
@@ -119,17 +114,17 @@ export default function RelationshipDetailScreen() {
               <View style={styles.statDivider} />
               <View style={styles.stat}>
                 <Text style={styles.statValue}>{relationship.averageRating?.toFixed(1) ?? '—'}</Text>
-                <Text style={styles.statLabel}>Avg Rating</Text>
+                <Text style={styles.statLabel}>Avg rating</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.stat}>
                 <Text style={styles.statValue}>₹{(relationship.totalSpend ?? 0).toLocaleString('en-IN')}</Text>
-                <Text style={styles.statLabel}>Total Spend</Text>
+                <Text style={styles.statLabel}>Total spend</Text>
               </View>
             </View>
 
             <Pressable style={({ pressed }) => [styles.messageBtn, pressed && { opacity: 0.85 }]} onPress={handleMessage}>
-              <Ionicons name="chatbubble-outline" size={16} color="#fff" />
+              <Ionicons name="chatbubble-outline" size={16} color={colors.black} />
               <Text style={styles.messageBtnText}>Message</Text>
             </Pressable>
           </View>
@@ -190,11 +185,11 @@ const styles = StyleSheet.create({
   statValue: { color: '#fff', fontSize: 18, fontWeight: '700' },
   statLabel: { color: colors.textMuted, fontSize: 11, marginTop: 2, letterSpacing: 0.3 },
 
-  messageBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.blue, borderRadius: radius.pill, paddingHorizontal: 20, paddingVertical: 12, marginTop: spacing.lg },
-  messageBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  messageBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: 20, paddingVertical: 12, marginTop: spacing.lg },
+  messageBtnText: { color: colors.black, fontSize: 14, fontWeight: '700' },
 
   section: { marginBottom: spacing.lg },
-  sectionTitle: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: spacing.sm },
+  sectionTitle: { ...overline, marginBottom: spacing.sm },
 
   listCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden' },
   listRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },

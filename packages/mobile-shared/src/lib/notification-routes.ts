@@ -107,6 +107,14 @@ export function routeFromDeepLink(link: string): NotificationRoute | null {
       return { screen: 'Growth' }
     case 'invites':
       return { screen: 'Invites' }
+    // Deal events link here (deals.event fan-out). Both apps register a
+    // "Collaborations" route that opens the deal when given its id.
+    case 'collaborations':
+      return rest[1] ? { screen: 'Collaborations', params: { id: rest[1] } } : { screen: 'Collaborations' }
+    case 'deal-invites':
+      return { screen: 'DealInvites' }
+    case 'applied':
+      return { screen: 'MyCampaigns' }
     case 'bids':
       return { screen: 'Bids' }
     case 'disputes':

@@ -69,7 +69,7 @@ function AiVisibilityBody({ site, navigation }: { site: GrowthSite; navigation?:
   return (
     <GrowthScreen
       title="AI Visibility"
-      subtitle="Mentions in answers from configured model APIs"
+      subtitle="How often AI answers mention you"
       active="GrowthAiVisibility"
       navigation={navigation}
       host={site.host}
@@ -87,7 +87,7 @@ function AiVisibilityBody({ site, navigation }: { site: GrowthSite; navigation?:
             disabled={scanning}
             style={({ pressed }) => [growthStyles.primaryBtn, (pressed || scanning) && { opacity: 0.7 }]}
           >
-            <Text style={growthStyles.primaryBtnText}>{scanning ? 'Queuing…' : 'Run AI Visibility scan'}</Text>
+            <Text style={growthStyles.primaryBtnText}>{scanning ? 'Queuing…' : 'Run scan'}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -98,7 +98,7 @@ function AiVisibilityBody({ site, navigation }: { site: GrowthSite; navigation?:
           title="AI Visibility isn’t configured"
           body={
             data.reason ||
-            'We only call official APIs (OpenAI, Anthropic, Gemini, Perplexity). We do not scrape consumer chat apps.'
+            'We only use official APIs (OpenAI, Anthropic, Gemini, Perplexity), never consumer chat apps.'
           }
         />
       ) : null}
@@ -107,7 +107,7 @@ function AiVisibilityBody({ site, navigation }: { site: GrowthSite; navigation?:
         <GrowthEmpty
           icon="sparkles-outline"
           title="Run your first scan"
-          body="We’ll ask standardized buyer-intent prompts through configured APIs and record mentions, citations, and competitors."
+          body="We’ll ask buyer-style questions and record mentions, citations and competitors."
           ctaLabel="Run scan"
           onCta={scan}
         />
@@ -135,7 +135,7 @@ function AiVisibilityBody({ site, navigation }: { site: GrowthSite; navigation?:
       ) : null}
 
       {providers.map((p: any, i: number) => (
-        <Animated.View key={p.name} entering={FadeInDown.delay(i * 40).duration(320)} style={growthStyles.card}>
+        <Animated.View key={p.name} entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)} style={growthStyles.card}>
           <Text style={growthStyles.cardTitle}>{String(p.name).replace(/^./, (c) => c.toUpperCase())}</Text>
           <Text style={growthStyles.rowBody}>
             {p.mentioned ? 'Mentioned' : 'Not mentioned'} · {p.results} tracked answers
@@ -145,7 +145,7 @@ function AiVisibilityBody({ site, navigation }: { site: GrowthSite; navigation?:
 
       {missingQueries.length > 0 ? (
         <View style={growthStyles.card}>
-          <Text style={growthStyles.cardTitle}>Queries where you weren’t mentioned</Text>
+          <Text style={growthStyles.cardTitle}>Queries without a mention</Text>
           {missingQueries.map((q: string, i: number) => (
             <Text key={q} style={[growthStyles.rowBody, { marginBottom: 4 }]}>
               {i + 1}. {q}
@@ -157,14 +157,13 @@ function AiVisibilityBody({ site, navigation }: { site: GrowthSite; navigation?:
       <View style={growthStyles.card}>
         <Text style={growthStyles.cardTitle}>Ask about this site</Text>
         <Text style={growthStyles.rowBody}>
-          Answers are split into observed data, interpretation, and recommendation. We won’t invent Search Console or
-          AI Visibility you don’t have.
+          Answers use only the data you’ve connected.
         </Text>
         <TextInput
           style={[growthStyles.input, { marginTop: spacing.md, minHeight: 80, textAlignVertical: 'top' }]}
           value={question}
           onChangeText={setQuestion}
-          placeholder="e.g. What should we fix first to get more search traffic?"
+          placeholder="What should we fix first?"
           placeholderTextColor={colors.textSubtle}
           multiline
         />

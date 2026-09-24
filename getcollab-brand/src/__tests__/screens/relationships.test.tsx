@@ -60,7 +60,7 @@ describe('RelationshipsScreen', () => {
     renderScreen(RelationshipsScreen)
     await screen.findByText('Priya Nair')
 
-    fireEvent.changeText(screen.getByPlaceholderText('Search relationships...'), 'arjun')
+    fireEvent.changeText(screen.getByPlaceholderText('Search relationships'), 'arjun')
 
     await waitFor(() => expect(screen.queryByText('Priya Nair')).not.toBeOnTheScreen())
     expect(screen.getByText('Arjun Rao')).toBeOnTheScreen()

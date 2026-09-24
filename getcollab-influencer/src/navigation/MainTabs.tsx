@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
-import { View, StyleSheet, Platform } from 'react-native'
+import { View, StyleSheet } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
@@ -29,6 +30,7 @@ import RelationshipsScreen from '../screens/(main)/relationships'
 import AssetsScreen from '../screens/(main)/assets'
 import SettlementsScreen from '../screens/(main)/settlements'
 import CollaborationsScreen from '../screens/(main)/collaborations'
+import * as Haptics from 'expo-haptics'
 
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
@@ -38,7 +40,7 @@ function ActiveDot() {
 }
 
 function TabIcon({ name, focused, badge }: { name: string; focused: boolean; badge?: number }) {
-  const color = focused ? colors.neon : colors.textMuted
+  const color = focused ? colors.primary : colors.textMuted
   return (
     <View style={[styles.tabIconWrap, focused && styles.tabIconActive]}>
       <Ionicons name={name as any} size={22} color={color} />
@@ -55,13 +57,16 @@ function TabIcon({ name, focused, badge }: { name: string; focused: boolean; bad
 function InfluencerTabs() {
   const unreadByRoom = useChatStore((s) => s.unreadByRoom)
   const totalUnread = Object.values(unreadByRoom).reduce((sum, n) => sum + n, 0)
+  // Real home-indicator / gesture-bar inset instead of a per-OS guess.
+  const bottomInset = Math.max(useSafeAreaInsets().bottom, 8)
 
   return (
     <Tab.Navigator
+      screenListeners={{ tabPress: () => { Haptics.selectionAsync() } }}
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { height: 56 + bottomInset, paddingBottom: bottomInset }],
         tabBarHideOnKeyboard: true,
       }}
     >
@@ -85,7 +90,7 @@ function InfluencerTabs() {
         name="MyCampaigns"
         component={InfluencerCampaigns}
         options={{
-          tabBarAccessibilityLabel: 'My Bids',
+          tabBarAccessibilityLabel: 'Applications',
           tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'document-text' : 'document-text-outline'} focused={focused} />,
         }}
       />
@@ -124,30 +129,30 @@ function InfluencerStack() {
     headerTintColor: colors.text,
     headerTitleStyle: { fontSize: 15, fontWeight: '700' as const },
     headerShadowVisible: false,
-    headerBackTitleVisible: false,
+    headerBackButtonDisplayMode: 'minimal' as const,
   }
 
   return (
     <Stack.Navigator screenOptions={{ contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Screen name="MainTabs" component={InfluencerTabs} options={{ headerShown: false }} />
-      <Stack.Screen name="CampaignDetails" component={InfluencerCampaignDetails} options={{ ...sharedHeaderOptions, headerTitle: 'Campaign' }} />
+      <Stack.Screen name="CampaignDetails" component={InfluencerCampaignDetails} options={{ headerShown: false }} />
       <Stack.Screen name="ChatDetail" component={InfluencerChatDetail} options={{ headerShown: false }} />
-      <Stack.Screen name="Earnings" component={EarningsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Earnings' }} />
-      <Stack.Screen name="Disputes" component={DisputesScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Disputes' }} />
-      <Stack.Screen name="Settings" component={SettingsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Settings' }} />
-      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Notifications' }} />
-      <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Verify Email' }} />
-      <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Change Password' }} />
+      <Stack.Screen name="Earnings" component={EarningsScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Disputes" component={DisputesScreen} options={{ ...sharedHeaderOptions, headerTitle: '' }} />
+      <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ ...sharedHeaderOptions, headerTitle: '' }} />
+      <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ ...sharedHeaderOptions, headerTitle: '' }} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="ProfilePreview" component={ProfilePreviewScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Public Profile' }} />
+      <Stack.Screen name="ProfilePreview" component={ProfilePreviewScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Public profile' }} />
       <Stack.Screen name="Analytics" component={AnalyticsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Analytics' }} />
-      <Stack.Screen name="PayoutSettings" component={PayoutSettingsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Payout Details' }} />
-      <Stack.Screen name="DealInvites" component={DealInvitesScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Campaign Invites' }} />
+      <Stack.Screen name="PayoutSettings" component={PayoutSettingsScreen} options={{ ...sharedHeaderOptions, headerTitle: '' }} />
+      <Stack.Screen name="DealInvites" component={DealInvitesScreen} options={{ ...sharedHeaderOptions, headerTitle: '' }} />
       <Stack.Screen name="Affiliate" component={AffiliateScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Affiliate' }} />
-      <Stack.Screen name="Relationships" component={RelationshipsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Brand Relationships' }} />
-      <Stack.Screen name="Assets" component={AssetsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Asset Library' }} />
+      <Stack.Screen name="Relationships" component={RelationshipsScreen} options={{ ...sharedHeaderOptions, headerTitle: '' }} />
+      <Stack.Screen name="Assets" component={AssetsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Asset library' }} />
       <Stack.Screen name="Settlements" component={SettlementsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Settlements' }} />
-      <Stack.Screen name="Collaborations" component={CollaborationsScreen} options={{ ...sharedHeaderOptions, headerTitle: 'Collaborations' }} />
+      <Stack.Screen name="Collaborations" component={CollaborationsScreen} options={{ ...sharedHeaderOptions, headerTitle: '' }} />
     </Stack.Navigator>
   )
 }
@@ -160,9 +165,7 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: colors.bg,
     borderTopColor: colors.border,
-    borderTopWidth: 0.5,
-    height: Platform.OS === 'ios' ? 84 : 64,
-    paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+    borderTopWidth: 1,
     paddingTop: 8,
   },
   tabIconWrap: {
@@ -173,7 +176,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   tabIconActive: {
-    backgroundColor: colors.neonSoft,
+    backgroundColor: colors.primarySoft,
   },
   activeDot: {
     position: 'absolute',
@@ -181,7 +184,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.neon,
+    backgroundColor: colors.primary,
   },
   badge: {
     position: 'absolute',

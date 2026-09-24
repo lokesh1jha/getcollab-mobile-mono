@@ -4,9 +4,10 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { useAuthStore } from '@shared/stores/auth-store'
+import * as Haptics from 'expo-haptics'
 
 interface CampaignMetric {
   id: string
@@ -33,13 +34,6 @@ interface MonthlyPoint {
   spent: number
 }
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  active: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  draft: { fg: '#A1A1AA', bg: 'rgba(161,161,170,0.12)' },
-  completed: { fg: '#3B82F6', bg: 'rgba(59,130,246,0.14)' },
-  paused: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  cancelled: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
-}
 
 type Tab = 'campaigns' | 'creators'
 
@@ -53,7 +47,7 @@ function SimpleBarChart({ data }: { data: MonthlyPoint[] }) {
           <Text style={chartStyles.legendText}>Budget</Text>
         </View>
         <View style={chartStyles.legendItem}>
-          <View style={[chartStyles.legendDot, { backgroundColor: colors.neon }]} />
+          <View style={[chartStyles.legendDot, { backgroundColor: colors.primary }]} />
           <Text style={chartStyles.legendText}>Spent</Text>
         </View>
       </View>
@@ -62,7 +56,7 @@ function SimpleBarChart({ data }: { data: MonthlyPoint[] }) {
           <View key={point.month} style={chartStyles.column}>
             <View style={chartStyles.bars}>
               <View style={[chartStyles.bar, { height: `${(point.budget / max) * 100}%`, backgroundColor: colors.blue }]} />
-              <View style={[chartStyles.bar, { height: `${(point.spent / max) * 100}%`, backgroundColor: colors.neon }]} />
+              <View style={[chartStyles.bar, { height: `${(point.spent / max) * 100}%`, backgroundColor: colors.primary }]} />
             </View>
             <Text style={chartStyles.monthLabel}>{point.month}</Text>
           </View>
@@ -114,24 +108,21 @@ export default function AnalyticsScreen({ navigation }: any) {
         }))
       )
 
-      // Build dummy monthly trend from campaign data (fallback)
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
-      const trend = months.map((m, i) => {
-        const monthCamps = campsList.filter((c: any) => new Date(c.createdAt).getMonth() === i)
+      // Last six calendar months (this one included), bucketed by year and month.
+      const now = new Date()
+      const trend = Array.from({ length: 6 }, (_, k) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - (5 - k), 1)
+        const monthCamps = campsList.filter((c: any) => {
+          const created = new Date(c.createdAt)
+          return created.getFullYear() === d.getFullYear() && created.getMonth() === d.getMonth()
+        })
         return {
-          month: m,
+          month: d.toLocaleString('en-US', { month: 'short' }),
           budget: monthCamps.reduce((sum: number, c: any) => sum + (c.budget || 0), 0),
           spent: monthCamps.reduce((sum: number, c: any) => sum + (c.spent || 0), 0),
         }
       })
-      setMonthlyData(trend.some((t) => t.budget > 0 || t.spent > 0) ? trend : [
-        { month: 'Jan', budget: 0, spent: 0 },
-        { month: 'Feb', budget: 0, spent: 0 },
-        { month: 'Mar', budget: 0, spent: 0 },
-        { month: 'Apr', budget: 0, spent: 0 },
-        { month: 'May', budget: 0, spent: 0 },
-        { month: 'Jun', budget: 0, spent: 0 },
-      ])
+      setMonthlyData(trend.some((t) => t.budget > 0 || t.spent > 0) ? trend : [])
 
       const rels = relRes?.relationships || relRes?.data || []
       setCreatorMetrics(
@@ -165,11 +156,11 @@ export default function AnalyticsScreen({ navigation }: any) {
   const renderCampaign = ({ item, index }: { item: CampaignMetric; index: number }) => {
     const s = STATUS_COLORS[item.status] || STATUS_COLORS.draft
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
         <Pressable style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('CampaignAnalytics', { id: item.id, title: item.title })}>
           <View style={{ flex: 1 }}>
             <Text style={styles.rowTitle} numberOfLines={1}>{item.title}</Text>
-            <Text style={styles.rowMeta}>₹{item.totalBudget.toLocaleString()} budget · {item.totalBids} bids</Text>
+            <Text style={styles.rowMeta}>₹{item.totalBudget.toLocaleString()} budget · {item.totalBids} applications</Text>
           </View>
           <View style={[styles.statusPill, { backgroundColor: s.bg }]}>
             <Text style={[styles.statusText, { color: s.fg }]}>{item.status.charAt(0).toUpperCase() + item.status.slice(1)}</Text>
@@ -181,14 +172,14 @@ export default function AnalyticsScreen({ navigation }: any) {
   }
 
   const renderCreator = ({ item, index }: { item: CreatorMetric; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
       <Pressable style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('RelationshipDetail', { id: item.id })}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.rowTitle} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.rowMeta}>{item.collaborations} collabs · ₹{item.totalSpend.toLocaleString()} spent</Text>
+          <Text style={styles.rowMeta}>{item.collaborations} collaborations · ₹{item.totalSpend.toLocaleString()} spent</Text>
         </View>
         <Ionicons name="chevron-forward" size={16} color={colors.textSubtle} />
       </Pressable>
@@ -198,7 +189,7 @@ export default function AnalyticsScreen({ navigation }: any) {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -221,31 +212,31 @@ export default function AnalyticsScreen({ navigation }: any) {
 
               <View style={styles.metricsRow}>
                 <View style={styles.metricCard}>
-                  <Text style={styles.metricLabel}>Total Budget</Text>
+                  <Text style={styles.metricLabel}>Total budget</Text>
                   <Text style={styles.metricValue}>₹{totalBudget.toLocaleString()}</Text>
                 </View>
                 <View style={styles.metricCard}>
-                  <Text style={styles.metricLabel}>Total Spent</Text>
+                  <Text style={styles.metricLabel}>Total spent</Text>
                   <Text style={styles.metricValue}>₹{totalSpent.toLocaleString()}</Text>
                 </View>
                 <View style={styles.metricCard}>
-                  <Text style={styles.metricLabel}>Total Bids</Text>
+                  <Text style={styles.metricLabel}>Applications</Text>
                   <Text style={styles.metricValue}>{totalBids}</Text>
                 </View>
               </View>
 
-              {tab === 'campaigns' && (
+              {tab === 'campaigns' && monthlyData.length > 0 && (
                 <View style={styles.chartCard}>
-                  <Text style={styles.chartTitle}>Budget vs Spent</Text>
+                  <Text style={styles.chartTitle}>Budget vs spent</Text>
                   <SimpleBarChart data={monthlyData} />
                 </View>
               )}
 
               <View style={styles.tabRow}>
-                <Pressable onPress={() => setTab('campaigns')} style={({ pressed }) => [styles.tab, tab === 'campaigns' && styles.tabActive, pressed && { opacity: 0.7 }]}>
+                <Pressable onPress={() => { Haptics.selectionAsync(); setTab('campaigns') }} style={({ pressed }) => [styles.tab, tab === 'campaigns' && styles.tabActive, pressed && { opacity: 0.7 }]}>
                   <Text style={[styles.tabText, tab === 'campaigns' && styles.tabTextActive]}>Campaigns</Text>
                 </Pressable>
-                <Pressable onPress={() => setTab('creators')} style={({ pressed }) => [styles.tab, tab === 'creators' && styles.tabActive, pressed && { opacity: 0.7 }]}>
+                <Pressable onPress={() => { Haptics.selectionAsync(); setTab('creators') }} style={({ pressed }) => [styles.tab, tab === 'creators' && styles.tabActive, pressed && { opacity: 0.7 }]}>
                   <Text style={[styles.tabText, tab === 'creators' && styles.tabTextActive]}>Creators</Text>
                 </Pressable>
               </View>
@@ -257,10 +248,10 @@ export default function AnalyticsScreen({ navigation }: any) {
                 <Ionicons name="stats-chart-outline" size={26} color={colors.textMuted} />
               </View>
               <Text style={styles.emptyTitle}>No data yet</Text>
-              <Text style={styles.emptySub}>Analytics will appear once you have campaigns and relationships.</Text>
+              <Text style={styles.emptySub}>Launch a campaign to see analytics here.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadAnalytics() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadAnalytics() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>

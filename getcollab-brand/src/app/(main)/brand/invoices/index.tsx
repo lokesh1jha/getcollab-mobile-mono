@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { Invoice } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 export default function InvoicesScreen({ navigation }: any) {
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -39,7 +40,7 @@ export default function InvoicesScreen({ navigation }: any) {
       if (url) {
         Linking.openURL(url)
       } else {
-        handleApiError(new Error('No download URL'), 'Download unavailable')
+        handleApiError(new Error("This invoice isn't ready to download."), 'Download unavailable')
       }
     } catch (err) {
       handleApiError(err, 'Failed to download invoice')
@@ -47,7 +48,7 @@ export default function InvoicesScreen({ navigation }: any) {
   }
 
   const renderInvoice = ({ item, index }: { item: Invoice; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)}>
       <Pressable style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]} onPress={() => handleDownload(item.id)}>
         <View style={styles.rowIcon}>
           <Ionicons name="document-text-outline" size={18} color={colors.textMuted} />
@@ -70,7 +71,7 @@ export default function InvoicesScreen({ navigation }: any) {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -99,7 +100,7 @@ export default function InvoicesScreen({ navigation }: any) {
               <Text style={styles.emptySub}>Invoices appear after your first payment.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadInvoices() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadInvoices() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>

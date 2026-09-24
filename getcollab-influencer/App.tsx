@@ -28,12 +28,12 @@ const navigationTheme = {
   dark: true,
   colors: {
     ...DefaultTheme.colors,
-    primary: colors.neon,
+    primary: colors.primary,
     background: colors.bg,
     card: colors.card,
     text: colors.text,
     border: colors.border,
-    notification: colors.neon,
+    notification: colors.primary,
   },
 }
 
@@ -48,15 +48,25 @@ function SplashScreen() {
             <Text style={styles.logoCollab}>Collab</Text>
           </Text>
         </View>
-        <Text style={styles.subtitle}>For Creators</Text>
-        <ActivityIndicator size="large" color={colors.neon} style={styles.loading} />
+        <Text style={styles.subtitle}>For creators</Text>
+        <ActivityIndicator size="large" color={colors.primary} style={styles.loading} />
       </View>
     </SafeAreaView>
   )
 }
 
+// The boundary sits outside the splash/maintenance screens so a render error
+// in any of them is reported instead of white-screening.
 export default function App() {
-  const { appReady, apiError, initializeApp } = useAppInit({ splashDelayMs: 1500 })
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  )
+}
+
+function AppContent() {
+  const { appReady, apiError, initializeApp } = useAppInit()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const onboardingCompleted = useAuthStore((s) => s.user?.onboardingCompleted === true)
 
@@ -78,7 +88,6 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ErrorBoundary>
           <NavigationContainer ref={navigationRef} theme={navigationTheme}>
             <Stack.Navigator
               screenOptions={{
@@ -105,7 +114,6 @@ export default function App() {
             </Stack.Navigator>
           </NavigationContainer>
           <NetworkBanner />
-        </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )
@@ -118,7 +126,7 @@ const styles = StyleSheet.create({
   logoImg: { width: 36, height: 36 },
   logoText: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
   logoGet: { color: colors.text },
-  logoCollab: { color: colors.neon },
+  logoCollab: { color: colors.primary },
   subtitle: { fontSize: 14, color: colors.textMuted },
   loading: { marginTop: spacing.xl },
 })

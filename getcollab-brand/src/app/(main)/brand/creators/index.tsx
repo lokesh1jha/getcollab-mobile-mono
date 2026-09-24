@@ -5,16 +5,17 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, matchScoreColor } from '@/src/theme'
 import { TrialGuard } from '../../../../components/TrialGuard'
 import apiService, { handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 const SAVED_CREATORS_KEY = '@getcollab:brand:saved_creators'
 // The saved shortlist is backed by a brand-owned creator circle so it follows the
 // brand across devices instead of living only in this install's storage.
 const SAVED_CIRCLE_NAME = 'Saved Creators'
 
-interface Creator { id: string; name: string; avatar?: string; image?: string; bio?: string; location?: string; categories?: string[]; audienceSize?: number; engagementRate?: number; verified?: boolean; instagramHandle?: string; instagramMetrics?: { followers?: number }; matchScore?: number }
+interface Creator { id: string; name: string; avatar?: string; image?: string; bio?: string; location?: string; categories?: string[]; audienceSize?: number; engagementRate?: number; verified?: boolean; instagramHandle?: string; instagramMetrics?: { followers?: number }; matchScore?: number; pricePerPost?: number }
 interface Props { navigation?: any }
 
 const CATEGORIES = ['All', 'Saved', 'Skincare', 'Fashion', 'Fitness', 'Tech', 'Travel', 'Food', 'Beauty']
@@ -104,7 +105,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
       // Roll back rather than show a bookmark the server never stored.
       setShortlisted(shortlisted)
       mirrorLocally(shortlisted)
-      handleApiError(err, 'Failed to update saved creators')
+      handleApiError(err, "Couldn't update saved creators")
     }
   }
 
@@ -116,7 +117,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
       const response = await apiService.getMarketplace(params)
       const list = response?.influencers || response?.data || (Array.isArray(response) ? response : [])
       setCreators(Array.isArray(list) ? list : [])
-    } catch (err) { handleApiError(err, 'Failed to load creators') }
+    } catch (err) { handleApiError(err, "Couldn't load creators") }
     finally { setLoading(false) }
   }, [searchQuery, selectedCategory])
 
@@ -140,15 +141,15 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
       const room = await apiService.createDirectChat(creator.id)
       const roomId = room?.id || room?.data?.id
       navigation?.navigate('ChatDetail', { roomId, chat: { id: roomId, influencerName: creator.name } })
-    } catch (err) { handleApiError(err, 'Failed to start chat') }
+    } catch (err) { handleApiError(err, "Couldn't start chat") }
   }
 
   const renderCreator = ({ item, index }: { item: Creator; index: number }) => {
     const followers = item.audienceSize || item.instagramMetrics?.followers || 0
     const score = item.matchScore
-    const scoreColor = score != null ? (score >= 90 ? colors.success : score >= 80 ? colors.blue : colors.warning) : colors.blue
+    const scoreColor = score != null ? matchScoreColor(score) : colors.blue
     return (
-      <Animated.View entering={FadeInDown.delay(index * 60).duration(320)} style={styles.creatorCard}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.creatorCard}>
         <View style={styles.creatorTopRow}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{item.name?.charAt(0).toUpperCase() || '?'}</Text>
@@ -188,8 +189,8 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
 
         <View style={styles.creatorBottom}>
           <View style={styles.priceWrap}>
-            <Text style={styles.priceLabel}>Range</Text>
-            <Text style={styles.priceValue}>Variable</Text>
+            <Text style={styles.priceLabel}>Price</Text>
+            <Text style={styles.priceValue}>{item.pricePerPost ? `₹${item.pricePerPost.toLocaleString('en-IN')}/post` : '—'}</Text>
           </View>
           <View style={styles.creatorActions}>
             <Pressable style={({ pressed }) => [styles.viewBtn, pressed && { opacity: 0.85 }]} onPress={() => navigation?.navigate('CreatorReport', { id: item.id })}>
@@ -199,7 +200,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
               <Text style={styles.viewBtnText}>Invite</Text>
             </Pressable>
             <Pressable style={({ pressed }) => [styles.viewBtn, styles.messageBtn, pressed && { opacity: 0.85 }]} onPress={() => handleStartChat(item)}>
-              <Text style={styles.viewBtnText}>Message</Text>
+              <Text style={[styles.viewBtnText, { color: colors.black }]}>Message</Text>
             </Pressable>
             <Pressable
               onPress={() => toggleSaved(item.id)}
@@ -218,7 +219,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -237,9 +238,6 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
               <View>
                 <View style={styles.header}>
                   <Text style={styles.title}>Creators</Text>
-                  <Pressable style={styles.iconBtn}>
-                    <Ionicons name="options-outline" size={20} color="#fff" />
-                  </Pressable>
                 </View>
 
                 <View style={styles.searchWrap}>
@@ -247,12 +245,12 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
                   <TextInput
                     value={searchQuery}
                     onChangeText={setSearchQuery}
-                    placeholder="Search by name, handle, category..."
+                    placeholder="Search name, handle or category"
                     placeholderTextColor={colors.textSubtle}
                     style={styles.searchInput}
                   />
                   {searchQuery.length > 0 && (
-                    <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setSearchQuery('')} hitSlop={8} style={({ pressed }) => pressed && { opacity: 0.85 }}>
                       <Ionicons name="close-circle" size={18} color={colors.textMuted} />
                     </Pressable>
                   )}
@@ -263,7 +261,7 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
                     {CATEGORIES.map((cat) => {
                       const active = (!selectedCategory && cat === 'All') || cat === selectedCategory
                       return (
-                        <Pressable key={cat} onPress={() => setSelectedCategory(cat === 'All' ? null : cat)} style={[styles.chip, active && styles.chipActive]}>
+                        <Pressable key={cat} onPress={() => { Haptics.selectionAsync(); setSelectedCategory(cat === 'All' ? null : cat) }} style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.85 }]}>
                           <Text style={[styles.chipText, active && styles.chipTextActive]}>{cat}</Text>
                         </Pressable>
                       )
@@ -274,16 +272,13 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
                 <Animated.View entering={FadeIn.duration(360)} style={styles.aiBanner}>
                   <View style={styles.aiBannerLeft}>
                     <View style={styles.aiSparkle}>
-                      <Ionicons name="sparkles" size={14} color={colors.blue} />
+                      <Ionicons name="people" size={14} color={colors.blue} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.aiBannerTitle}>AI found creators matching your needs</Text>
+                      <Text style={styles.aiBannerTitle}>Creators</Text>
                       <Text style={styles.aiBannerSub}>{filtered.length} creators found</Text>
                     </View>
                   </View>
-                  <Pressable style={styles.aiBannerCta}>
-                    <Text style={styles.aiBannerCtaText}>View</Text>
-                  </Pressable>
                 </Animated.View>
               </View>
             }
@@ -296,11 +291,11 @@ export default function BrowseCreatorsScreen({ navigation }: Props) {
                 <Text style={styles.emptySub}>
                   {selectedCategory === 'Saved'
                     ? 'Star profiles to build a saved list.'
-                    : 'Try adjusting your search or category filter.'}
+                    : 'Try a different search or filter.'}
                 </Text>
               </View>
             }
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
           />
         </SafeAreaView>
       </View>
@@ -312,7 +307,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: spacing.md, paddingBottom: spacing.sm },
   title: { color: '#fff', fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
 
   searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: spacing.lg, paddingVertical: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
   searchInput: { flex: 1, color: '#fff', fontSize: 14, padding: 0 },
@@ -328,8 +322,6 @@ const styles = StyleSheet.create({
   aiSparkle: { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(59,130,246,0.18)', alignItems: 'center', justifyContent: 'center' },
   aiBannerTitle: { color: '#fff', fontSize: 13, fontWeight: '600', lineHeight: 18 },
   aiBannerSub: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
-  aiBannerCta: { backgroundColor: colors.blue, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },
-  aiBannerCtaText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 
   creatorCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg },
   creatorTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
@@ -354,10 +346,10 @@ const styles = StyleSheet.create({
   priceValue: { color: '#fff', fontSize: 13, fontWeight: '600', marginTop: 2 },
   creatorActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   viewBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999, borderWidth: 1, borderColor: colors.borderStrong },
-  messageBtn: { backgroundColor: colors.blue, borderColor: colors.blue },
+  messageBtn: { backgroundColor: colors.primary, borderColor: colors.primary },
   viewBtnText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   shortlistBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
-  shortlistBtnActive: { backgroundColor: colors.neon, borderColor: colors.neon },
+  shortlistBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
 
   empty: { alignItems: 'center', paddingVertical: spacing.xxxl, gap: spacing.sm },
   emptyIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },

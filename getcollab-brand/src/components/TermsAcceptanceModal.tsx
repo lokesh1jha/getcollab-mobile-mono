@@ -3,6 +3,7 @@ import { Modal, View, Text, StyleSheet, Pressable, ActivityIndicator } from 'rea
 import { useAuthStore } from '@shared/stores/auth-store'
 import apiService, { handleApiError } from '@shared/services/api'
 import { colors, radius, spacing } from '@/src/theme'
+import * as Haptics from 'expo-haptics'
 
 export function TermsAcceptanceModal() {
   const { user, fetchCurrentUser } = useAuthStore()
@@ -30,19 +31,19 @@ export function TermsAcceptanceModal() {
     <Modal visible transparent animationType="fade">
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <Text style={styles.title}>Accept Terms to Continue</Text>
+          <Text style={styles.title}>Accept terms to continue</Text>
           <Text style={styles.body}>
-            Please review and accept GetCollab&apos;s Terms of Service and Privacy Policy to use your brand workspace.
+            Review and accept GetCollab&apos;s Terms of Service and Privacy Policy to use your brand account.
           </Text>
           <Pressable
             style={({ pressed }) => [styles.button, pressed && !submitting && { opacity: 0.85 }]}
-            onPress={acceptTerms}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); acceptTerms() }}
             disabled={submitting}
           >
             {submitting ? (
               <ActivityIndicator color="#000" />
             ) : (
-              <Text style={styles.buttonText}>I Accept</Text>
+              <Text style={styles.buttonText}>Accept</Text>
             )}
           </Pressable>
         </View>
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: spacing.sm,
-    backgroundColor: colors.neon,
+    backgroundColor: colors.primary,
     borderRadius: radius.pill,
     paddingVertical: 14,
     alignItems: 'center',

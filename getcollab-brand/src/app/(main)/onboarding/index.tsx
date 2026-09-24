@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, FlatList, Pressable } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, Modal, FlatList, Pressable } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing, radius } from '@/src/theme'
@@ -9,6 +10,8 @@ import { useAuthStore } from '@shared/stores/auth-store'
 import { useReferenceDataStore, selectCategories, selectIndustries, selectCampaignTypes, selectObjectives, selectRegions } from '@shared/stores/reference-data-store'
 import apiService, { handleApiError } from '@shared/services/api'
 import { onboardingPathToStep } from '@shared/lib/onboarding-target'
+import { logger } from '@shared/services/logger'
+import * as Haptics from 'expo-haptics'
 
 interface Props {
   navigation?: any
@@ -92,7 +95,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
         }
       } catch (error: any) {
         if (error?.message !== 'UNAUTHORIZED') {
-          console.warn('Failed to load onboarding state:', error)
+          logger.warn('Failed to load onboarding state', { error: error })
         }
         // UNAUTHORIZED: API service already signed out, app will redirect automatically
       } finally {
@@ -106,7 +109,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
   if (loadingState) {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     )
   }
@@ -171,7 +174,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
 
   const handleBrandStep3 = async () => {
     if (!termsAccepted) {
-      Alert.alert('Terms required', 'Please accept the Terms of Service to continue.')
+      Alert.alert('Terms required', 'Accept the Terms of Service to continue.')
       return
     }
     setSubmitting(true)
@@ -205,11 +208,11 @@ export default function OnboardingScreen({ navigation, route }: Props) {
 
   const handleInfStep1 = async () => {
     if (!infStep1.bio.trim() || infStep1.bio.trim().length < 20) {
-      Alert.alert('Bio too short', 'Tell brands about yourself (at least 20 characters).')
+      Alert.alert('Bio too short', 'Write at least 20 characters.')
       return
     }
     if (!infStep1.location.trim()) {
-      Alert.alert('Location', 'Add your city/country.')
+      Alert.alert('Location', 'Add your city and country.')
       return
     }
     if (infStep1.categories.length === 0) {
@@ -289,13 +292,13 @@ export default function OnboardingScreen({ navigation, route }: Props) {
   ) => (
     <View style={styles.chipGrid}>
       {options.map((o) => (
-        <TouchableOpacity
+        <Pressable
           key={o}
-          style={[styles.chip, selected.includes(o) && styles.chipActive]}
-          onPress={() => onToggle(o)}
+          style={({ pressed }) => [styles.chip, selected.includes(o) && styles.chipActive, pressed && { opacity: 0.85 }]}
+          onPress={() => { Haptics.selectionAsync(); onToggle(o) }}
         >
           <Text style={[styles.chipText, selected.includes(o) && styles.chipTextActive]}>{o}</Text>
-        </TouchableOpacity>
+        </Pressable>
       ))}
     </View>
   )
@@ -307,11 +310,11 @@ export default function OnboardingScreen({ navigation, route }: Props) {
         <Text style={styles.heading}>Tell us about your brand</Text>
         <Text style={styles.subheading}>Step 1 of 3 · Company profile</Text>
         {renderProgress()}
-        <Input label="Company Name *" value={brandStep1.companyName} onChangeText={(v) => setBrandStep1({ ...brandStep1, companyName: v })} style={styles.input} />
+        <Input label="Company name *" value={brandStep1.companyName} onChangeText={(v) => setBrandStep1({ ...brandStep1, companyName: v })} style={styles.input} />
         <IndustryPicker value={brandStep1.industry} onChange={(v) => setBrandStep1({ ...brandStep1, industry: v })} />
-        <Input label="Website" value={brandStep1.websiteUrl} onChangeText={(v) => setBrandStep1({ ...brandStep1, websiteUrl: v })} placeholder="https://" style={styles.input} />
+        <Input label="Website" value={brandStep1.websiteUrl} onChangeText={(v) => setBrandStep1({ ...brandStep1, websiteUrl: v })} placeholder="https://yourbrand.com" style={styles.input} />
         <Input label="Phone" value={brandStep1.primaryPhone} onChangeText={(v) => setBrandStep1({ ...brandStep1, primaryPhone: v })} keyboardType="phone-pad" style={styles.input} />
-        <Button title={submitting ? 'Saving...' : 'Continue'} onPress={handleBrandStep1} loading={submitting} disabled={submitting} fullWidth />
+        <Button title={submitting ? 'Saving…' : 'Continue'} onPress={handleBrandStep1} loading={submitting} disabled={submitting} fullWidth />
       </Wrapper>
     )
   }
@@ -320,22 +323,22 @@ export default function OnboardingScreen({ navigation, route }: Props) {
     return (
       <Wrapper>
         <Text style={styles.heading}>Campaign preferences</Text>
-        <Text style={styles.subheading}>Step 2 of 3 · Who & what</Text>
+        <Text style={styles.subheading}>Step 2 of 3 · Audience and goals</Text>
         {renderProgress()}
 
-        <SectionLabel label="Campaign Types *" />
+        <SectionLabel label="Campaign types *" />
         {renderChips(campaignTypes, brandStep2.campaignTypes, (v) => setBrandStep2({ ...brandStep2, campaignTypes: toggle(brandStep2.campaignTypes, v) }))}
 
-        <SectionLabel label="Target Age Ranges *" />
+        <SectionLabel label="Target age *" />
         {renderChips(AGE_RANGES, brandStep2.ageRanges, (v) => setBrandStep2({ ...brandStep2, ageRanges: toggle(brandStep2.ageRanges, v) }))}
 
-        <SectionLabel label="Target Genders *" />
+        <SectionLabel label="Target gender *" />
         {renderChips(GENDERS, brandStep2.genders, (v) => setBrandStep2({ ...brandStep2, genders: toggle(brandStep2.genders, v) }))}
 
-        <SectionLabel label="Target Location" />
+        <SectionLabel label="Target location" />
         <Input value={brandStep2.location} onChangeText={(v) => setBrandStep2({ ...brandStep2, location: v })} placeholder="e.g. All India" />
 
-        <SectionLabel label="Creator Categories *" />
+        <SectionLabel label="Creator categories *" />
         {renderChips(categories, brandStep2.creatorCategories, (v) => setBrandStep2({ ...brandStep2, creatorCategories: toggle(brandStep2.creatorCategories, v) }))}
 
         <SectionLabel label="Objectives *" />
@@ -343,7 +346,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
 
         <View style={styles.actionRow}>
           <Button title="Back" variant="outline" onPress={() => setStep(1)} style={{ flex: 1 }} />
-          <Button title={submitting ? 'Saving...' : 'Continue'} onPress={handleBrandStep2} loading={submitting} disabled={submitting} style={{ flex: 1 }} />
+          <Button title={submitting ? 'Saving…' : 'Continue'} onPress={handleBrandStep2} loading={submitting} disabled={submitting} style={{ flex: 1 }} />
         </View>
       </Wrapper>
     )
@@ -353,28 +356,28 @@ export default function OnboardingScreen({ navigation, route }: Props) {
     return (
       <Wrapper>
         <Text style={styles.heading}>Almost there</Text>
-        <Text style={styles.subheading}>Step 3 of 3 · Scale</Text>
+        <Text style={styles.subheading}>Step 3 of 3 · Budget and size</Text>
         {renderProgress()}
 
-        <SectionLabel label="Budget Range" />
+        <SectionLabel label="Budget" />
         {renderChips(['<₹50k', '₹50k-2L', '₹2L-10L', '₹10L+'], [brandStep3.budgetRange], (v) => setBrandStep3({ ...brandStep3, budgetRange: brandStep3.budgetRange === v ? '' : v }))}
 
-        <SectionLabel label="Company Size" />
+        <SectionLabel label="Company size" />
         {renderChips(['1-10', '11-50', '51-200', '200+'], [brandStep3.companySize], (v) => setBrandStep3({ ...brandStep3, companySize: brandStep3.companySize === v ? '' : v }))}
 
-        <SectionLabel label="Campaign Frequency" />
+        <SectionLabel label="Campaign frequency" />
         {renderChips(['Monthly', 'Quarterly', 'One-time', 'Ongoing'], [brandStep3.frequency], (v) => setBrandStep3({ ...brandStep3, frequency: brandStep3.frequency === v ? '' : v }))}
 
-        <TouchableOpacity style={styles.termsRow} onPress={() => setTermsAccepted((v) => !v)}>
+        <Pressable style={({ pressed }) => [styles.termsRow, pressed && { opacity: 0.85 }]} onPress={() => setTermsAccepted((v) => !v)}>
           <View style={[styles.termsBox, termsAccepted && styles.termsBoxActive]}>
             {termsAccepted ? <Text style={styles.termsCheck}>✓</Text> : null}
           </View>
-          <Text style={styles.termsText}>I accept GetCollab Terms of Service and Privacy Policy</Text>
-        </TouchableOpacity>
+          <Text style={styles.termsText}>I accept the GetCollab Terms of Service and Privacy Policy</Text>
+        </Pressable>
 
         <View style={styles.actionRow}>
           <Button title="Back" variant="outline" onPress={() => setStep(2)} style={{ flex: 1 }} />
-          <Button title={submitting ? 'Finishing...' : 'Finish & Start Trial'} onPress={handleBrandStep3} loading={submitting} disabled={submitting} style={{ flex: 1 }} />
+          <Button title={submitting ? 'Finishing…' : 'Start trial'} onPress={handleBrandStep3} loading={submitting} disabled={submitting} style={{ flex: 1 }} />
         </View>
       </Wrapper>
     )
@@ -395,7 +398,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
         <SectionLabel label="Categories *" />
         {renderChips(categories, infStep1.categories, (v) => setInfStep1({ ...infStep1, categories: toggle(infStep1.categories, v) }))}
 
-        <Button title={submitting ? 'Saving...' : 'Continue'} onPress={handleInfStep1} loading={submitting} disabled={submitting} fullWidth style={{ marginTop: spacing.lg }} />
+        <Button title={submitting ? 'Saving…' : 'Continue'} onPress={handleInfStep1} loading={submitting} disabled={submitting} fullWidth style={{ marginTop: spacing.lg }} />
       </Wrapper>
     )
   }
@@ -421,7 +424,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
 
         <View style={styles.actionRow}>
           <Button title="Back" variant="outline" onPress={() => setStep(1)} style={{ flex: 1 }} />
-          <Button title={submitting ? 'Finishing...' : 'Finish'} onPress={handleInfStep2} loading={submitting} disabled={submitting} style={{ flex: 1 }} />
+          <Button title={submitting ? 'Finishing…' : 'Finish'} onPress={handleInfStep2} loading={submitting} disabled={submitting} style={{ flex: 1 }} />
         </View>
       </Wrapper>
     )
@@ -449,8 +452,8 @@ function IndustryPicker({ value, onChange }: { value: string[]; onChange: (v: st
           {value.map((item) => (
             <View key={item} style={styles.pill}>
               <Text style={styles.pillText}>{item}</Text>
-              <Pressable onPress={() => remove(item)} hitSlop={6}>
-                <Ionicons name="close" size={14} color={colors.neon} />
+              <Pressable accessibilityRole="button" accessibilityLabel="Remove" onPress={() => remove(item)} hitSlop={6} style={({ pressed }) => pressed && { opacity: 0.85 }}>
+                <Ionicons name="close" size={14} color={colors.primary} />
               </Pressable>
             </View>
           ))}
@@ -473,8 +476,8 @@ function IndustryPicker({ value, onChange }: { value: string[]; onChange: (v: st
         <View style={styles.modalSheet}>
           <View style={styles.modalHandle} />
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Industries</Text>
-            <Pressable onPress={() => setOpen(false)}>
+            <Text style={styles.modalTitle}>Industries</Text>
+            <Pressable onPress={() => setOpen(false)} style={({ pressed }) => pressed && { opacity: 0.85 }}>
               <Text style={styles.modalDone}>Done</Text>
             </Pressable>
           </View>
@@ -492,7 +495,7 @@ function IndustryPicker({ value, onChange }: { value: string[]; onChange: (v: st
                     {item}
                   </Text>
                   {selected
-                    ? <Ionicons name="checkmark-circle" size={20} color={colors.neon} />
+                    ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
                     : <View style={styles.modalOptionCircle} />
                   }
                 </Pressable>
@@ -508,7 +511,9 @@ function IndustryPicker({ value, onChange }: { value: string[]; onChange: (v: st
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
   <SafeAreaView style={styles.container}>
-    <ScrollView contentContainerStyle={styles.content}>{children}</ScrollView>
+    <Animated.View entering={FadeInDown.duration(320)} style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.content}>{children}</ScrollView>
+    </Animated.View>
   </SafeAreaView>
 )
 
@@ -521,7 +526,7 @@ const styles = StyleSheet.create({
   subheading: { fontSize: 14, color: colors.textMuted, marginBottom: spacing.md },
   progressBar: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.lg },
   progressDot: { flex: 1, height: 4, backgroundColor: colors.border, borderRadius: 2 },
-  progressDotActive: { backgroundColor: colors.neon },
+  progressDotActive: { backgroundColor: colors.primary },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',
@@ -541,9 +546,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     backgroundColor: colors.card,
   },
-  chipActive: { backgroundColor: colors.neon, borderColor: colors.neon },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 13, color: colors.text },
-  chipTextActive: { color: colors.text },
+  chipTextActive: { color: colors.black },
   actionRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
   termsRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg },
   termsBox: {
@@ -556,7 +561,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.card,
   },
-  termsBoxActive: { backgroundColor: colors.neon, borderColor: colors.neon },
+  termsBoxActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   termsCheck: { color: colors.text, fontSize: 12, fontWeight: '700' },
   termsText: { flex: 1, color: colors.textMuted, fontSize: 13, lineHeight: 18 },
 
@@ -578,11 +583,11 @@ const styles = StyleSheet.create({
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: spacing.sm },
   pill: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: colors.neon + '22',
-    borderWidth: 1, borderColor: colors.neon,
+    backgroundColor: colors.primary + '22',
+    borderWidth: 1, borderColor: colors.primary,
     borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6,
   },
-  pillText: { fontSize: 13, color: colors.neon, fontWeight: '600' },
+  pillText: { fontSize: 13, color: colors.primary, fontWeight: '600' },
 
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
   modalSheet: {
@@ -602,13 +607,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
   },
   modalTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
-  modalDone: { fontSize: 15, fontWeight: '700', color: colors.neon },
+  modalDone: { fontSize: 15, fontWeight: '700', color: colors.primary },
   modalOption: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: spacing.lg, paddingVertical: 15,
   },
   modalOptionText: { fontSize: 15, color: colors.text },
-  modalOptionTextActive: { color: colors.neon, fontWeight: '700' },
+  modalOptionTextActive: { color: colors.primary, fontWeight: '700' },
   modalOptionCircle: {
     width: 20, height: 20, borderRadius: 10,
     borderWidth: 1.5, borderColor: colors.border,

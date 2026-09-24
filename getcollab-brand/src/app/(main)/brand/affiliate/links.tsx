@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, RefreshControl, Clipboard } from 'react-native'
+import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, RefreshControl, Clipboard, Alert } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -7,6 +7,7 @@ import { useRoute, RouteProp } from '@react-navigation/native'
 import { colors, radius, spacing } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { AffiliateLink } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ affiliateLinks: { programId?: string } }, 'affiliateLinks'>
 
@@ -38,17 +39,18 @@ export default function AffiliateLinksScreen() {
 
   const copyToClipboard = (url: string) => {
     Clipboard.setString(url)
-    handleApiError({ message: 'Copied to clipboard' } as any, 'Copied to clipboard')
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    Alert.alert('Link copied')
   }
 
   const renderItem = ({ item, index }: { item: AffiliateLink; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
       <View style={{ flex: 1 }}>
         <Text style={styles.code}>{item.code}</Text>
         <Text style={styles.url} numberOfLines={1}>{item.url}</Text>
         <Text style={styles.meta}>Status: {item.status}</Text>
       </View>
-      <Pressable style={({ pressed }) => [styles.copyBtn, pressed && { opacity: 0.85 }]} onPress={() => copyToClipboard(item.url)}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Copy link" style={({ pressed }) => [styles.copyBtn, pressed && { opacity: 0.85 }]} onPress={() => copyToClipboard(item.url)}>
         <Ionicons name="copy-outline" size={18} color={colors.textMuted} />
       </Pressable>
     </Animated.View>
@@ -57,7 +59,7 @@ export default function AffiliateLinksScreen() {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -73,7 +75,7 @@ export default function AffiliateLinksScreen() {
           ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
           ListHeaderComponent={
             <View style={styles.header}>
-              <Text style={styles.title}>Affiliate Links</Text>
+              <Text style={styles.title}>Affiliate links</Text>
               <Text style={styles.subtitle}>{links.length} active link{links.length !== 1 ? 's' : ''}</Text>
             </View>
           }
@@ -81,10 +83,10 @@ export default function AffiliateLinksScreen() {
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="link-outline" size={26} color={colors.textMuted} /></View>
               <Text style={styles.emptyTitle}>No links yet</Text>
-              <Text style={styles.emptySub}>Links are generated when creators join your programs.</Text>
+              <Text style={styles.emptySub}>Links appear when creators join your programs.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadLinks() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadLinks() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
     </View>

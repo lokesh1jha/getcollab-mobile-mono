@@ -4,18 +4,14 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, STATUS_COLORS } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 type RouteParams = RouteProp<{ campaignResponses: { id: string; title?: string } }, 'campaignResponses'>
 
 interface Bid { id: string; pitch?: string; proposedAmount?: number; amount?: number; status: 'pending' | 'accepted' | 'rejected'; createdAt: string; influencer?: { id: string; name: string; instagramHandle?: string } }
 
-const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  pending: { fg: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
-  accepted: { fg: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-  rejected: { fg: '#EF4444', bg: 'rgba(239,68,68,0.14)' },
-}
 
 export default function CampaignResponsesScreen() {
   const route = useRoute<RouteParams>()
@@ -34,7 +30,7 @@ export default function CampaignResponsesScreen() {
       const list = res?.data || res?.bids || (Array.isArray(res) ? res : [])
       setBids(Array.isArray(list) ? list : [])
     } catch (err) {
-      handleApiError(err, 'Failed to load responses')
+      handleApiError(err, "Couldn't load applications")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -51,9 +47,10 @@ export default function CampaignResponsesScreen() {
     try {
       await apiService.updateBidStatus(bid.id, newStatus)
       setBids((prev) => prev.map((b) => (b.id === bid.id ? { ...b, status: newStatus } : b)))
-      Alert.alert('Success', `Bid ${newStatus} successfully.`)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      Alert.alert('Done', `Application ${newStatus}.`)
     } catch (err) {
-      handleApiError(err, `Failed to ${action} bid`)
+      handleApiError(err, `Couldn't ${action} application`)
     } finally {
       setActioningId(null)
       setConfirmModal(null)
@@ -62,13 +59,13 @@ export default function CampaignResponsesScreen() {
 
   const messageCreator = async (bid: Bid) => {
     const influencerId = bid.influencer?.id
-    if (!influencerId) { Alert.alert('Unavailable', 'Creator info missing'); return }
+    if (!influencerId) { Alert.alert("Can't message", 'Creator details are missing.'); return }
     try {
       const room = await apiService.createDirectChat(influencerId, campaignId)
       const roomId = room?.id || room?.data?.id
       if (roomId) (navigation as any).navigate('ChatDetail', { roomId, id: roomId })
     } catch (err) {
-      handleApiError(err, 'Failed to open chat')
+      handleApiError(err, "Couldn't open chat")
     }
   }
 
@@ -76,7 +73,7 @@ export default function CampaignResponsesScreen() {
     const s = STATUS_COLORS[item.status] || STATUS_COLORS.pending
     const isActing = actioningId === item.id
     return (
-      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)} style={styles.card}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.card}>
         <View style={styles.cardTop}>
           <View style={{ flex: 1 }}>
             <Text style={styles.name}>{item.influencer?.name || 'Creator'}</Text>
@@ -91,7 +88,7 @@ export default function CampaignResponsesScreen() {
         <Text style={styles.date}>Submitted: {new Date(item.createdAt).toLocaleDateString()}</Text>
         {item.status === 'pending' && (
           <View style={styles.actionsRow}>
-            <Pressable style={({ pressed }) => [styles.acceptBtn, pressed && { opacity: 0.85 }]} disabled={isActing} onPress={() => setConfirmModal({ bid: item, action: 'accept' })}>
+            <Pressable style={({ pressed }) => [styles.acceptBtn, pressed && { opacity: 0.85 }]} disabled={isActing} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setConfirmModal({ bid: item, action: 'accept' }) }}>
               <Text style={styles.acceptBtnText}>{isActing ? '…' : 'Accept'}</Text>
             </Pressable>
             <Pressable style={({ pressed }) => [styles.rejectBtn, pressed && { opacity: 0.8 }]} disabled={isActing} onPress={() => setConfirmModal({ bid: item, action: 'reject' })}>
@@ -101,7 +98,7 @@ export default function CampaignResponsesScreen() {
         )}
         {item.status === 'accepted' && (
           <Pressable style={({ pressed }) => [styles.outlinedBtn, pressed && { opacity: 0.8 }]} onPress={() => messageCreator(item)}>
-            <Text style={styles.outlinedBtnText}>Message Creator</Text>
+            <Text style={styles.outlinedBtnText}>Message</Text>
           </Pressable>
         )}
       </Animated.View>
@@ -111,7 +108,7 @@ export default function CampaignResponsesScreen() {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -127,31 +124,31 @@ export default function CampaignResponsesScreen() {
           ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
           ListHeaderComponent={
             <View style={styles.header}>
-              <Text style={styles.title}>Responses</Text>
+              <Text style={styles.title}>Applications</Text>
               <Text style={styles.subtitle}>{bids.length} applications for {title || 'this campaign'}</Text>
             </View>
           }
           ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyIcon}><Ionicons name="document-text-outline" size={26} color={colors.textMuted} /></View>
-              <Text style={styles.emptyTitle}>No responses yet</Text>
-              <Text style={styles.emptySub}>Applications will appear here when creators apply.</Text>
+              <Text style={styles.emptyTitle}>No applications yet</Text>
+              <Text style={styles.emptySub}>Creators who apply will show up here.</Text>
             </View>
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadBids() }} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRefreshing(true); loadBids() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
 
       <Modal visible={!!confirmModal} transparent animationType="fade" onRequestClose={() => setConfirmModal(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{confirmModal?.action === 'accept' ? 'Accept Bid' : 'Reject Bid'}</Text>
-            <Text style={styles.modalBody}>{confirmModal?.action === 'accept' ? `Accept ${confirmModal?.bid.influencer?.name || 'this creator'}'s bid?` : 'Reject this bid? The creator will be notified.'}</Text>
+            <Text style={styles.modalTitle}>{confirmModal?.action === 'accept' ? 'Accept application?' : 'Reject application?'}</Text>
+            <Text style={styles.modalBody}>{confirmModal?.action === 'accept' ? `Accept ${confirmModal?.bid.influencer?.name || 'this creator'}'s application?` : 'The creator will be notified.'}</Text>
             <View style={styles.modalActions}>
               <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setConfirmModal(null)}>
                 <Text style={styles.outlinedBtnText}>Cancel</Text>
               </Pressable>
-              <Pressable style={({ pressed }) => [confirmModal?.action === 'accept' ? styles.acceptBtn : styles.rejectBtn, { flex: 1 }, pressed && { opacity: 0.85 }]} onPress={() => confirmModal && performAction(confirmModal.bid, confirmModal.action)}>
+              <Pressable style={({ pressed }) => [confirmModal?.action === 'accept' ? styles.acceptBtn : styles.rejectBtn, { flex: 1 }, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); confirmModal && performAction(confirmModal.bid, confirmModal.action) }}>
                 <Text style={confirmModal?.action === 'accept' ? styles.acceptBtnText : styles.rejectBtnText}>{confirmModal?.action === 'accept' ? 'Accept' : 'Reject'}</Text>
               </Pressable>
             </View>

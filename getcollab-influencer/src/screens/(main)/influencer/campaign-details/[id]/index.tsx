@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import {
-  View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, TextInput,
-  KeyboardAvoidingView, Platform, Alert, Dimensions,
-} from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, TextInput, KeyboardAvoidingView, Platform, Alert, Dimensions, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
@@ -10,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { colors, spacing, radius, statusColor } from '@/src/theme'
 import { useCampaignStore } from '@shared/stores/campaign-store'
 import { apiService, handleApiError } from '@shared/services/api'
+import * as Haptics from 'expo-haptics'
 
 const { width } = Dimensions.get('window')
 
@@ -75,6 +73,11 @@ function formatDate(d?: string): string {
 }
 
 export default function InfluencerCampaignDetailsScreen() {
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    setRefreshing(true)
+    try { await load() } finally { setRefreshing(false) }
+  }
   const route = useRoute<CampaignDetailsRouteProp>()
   const navigation = useNavigation<any>()
   const { id } = route.params || {}
@@ -88,7 +91,6 @@ export default function InfluencerCampaignDetailsScreen() {
 
   const load = useCallback(async () => {
     if (!id) { setLoading(false); return }
-    setLoading(true)
     try {
       await fetchCampaign(id)
       const state = useCampaignStore.getState()
@@ -123,7 +125,7 @@ export default function InfluencerCampaignDetailsScreen() {
         })
       }
     } catch (err: any) {
-      handleApiError(err, 'Failed to load campaign')
+      handleApiError(err, "Couldn't load this campaign")
     } finally {
       setLoading(false)
     }
@@ -133,7 +135,7 @@ export default function InfluencerCampaignDetailsScreen() {
 
   const handleBid = async () => {
     if (!bidAmount.trim() || !bidPitch.trim()) {
-      Alert.alert('Complete your pitch', 'Enter your rate and a short pitch.')
+      Alert.alert('Add your price and pitch', 'Both are needed to apply.')
       return
     }
     setBidding(true)
@@ -143,11 +145,12 @@ export default function InfluencerCampaignDetailsScreen() {
         amount: Number(bidAmount),
         message: bidPitch,
       })
-      Alert.alert('Applied!', 'Your application was submitted.', [
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      Alert.alert('Application sent', 'The brand will review it.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ])
     } catch (err: any) {
-      handleApiError(err, 'Failed to submit application')
+      handleApiError(err, "Couldn't send your application. Try again.")
     } finally {
       setBidding(false)
     }
@@ -159,7 +162,7 @@ export default function InfluencerCampaignDetailsScreen() {
   if (loading || storeLoading) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -170,8 +173,8 @@ export default function InfluencerCampaignDetailsScreen() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg }}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.textMuted} />
           <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginTop: spacing.md }}>Campaign not found</Text>
-          <Pressable onPress={() => navigation.goBack()} style={styles.primaryBtn}>
-            <Text style={styles.primaryBtnText}>Go Back</Text>
+          <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack() }} style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}>
+            <Text style={styles.primaryBtnText}>Go back</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -190,14 +193,14 @@ export default function InfluencerCampaignDetailsScreen() {
       <SafeAreaView style={styles.root} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.iconBtn}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => navigation.goBack()} style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.85 }]}>
             <Ionicons name="chevron-back" size={22} color={colors.text} />
           </Pressable>
           <Text style={styles.headerTitle} numberOfLines={1}>Campaign</Text>
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onRefresh() }} tintColor={colors.primary} />}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: spacing.xxxl }}
         >
@@ -250,7 +253,7 @@ export default function InfluencerCampaignDetailsScreen() {
               <Text style={styles.sectionTitle}>Deliverables</Text>
               {campaign.deliverables.map((d, i) => (
                 <View key={i} style={styles.listRow}>
-                  <Ionicons name="checkmark-circle-outline" size={16} color={colors.neon} />
+                  <Ionicons name="checkmark-circle-outline" size={16} color={colors.primary} />
                   <Text style={styles.listText}>{d}</Text>
                 </View>
               ))}
@@ -291,7 +294,7 @@ export default function InfluencerCampaignDetailsScreen() {
             <Animated.View entering={FadeInDown.delay(220).duration(350)} style={[styles.applyCard, { borderColor: colors.success }]}>
               <Ionicons name="checkmark-circle" size={22} color={colors.success} />
               <View style={{ flex: 1, marginLeft: spacing.md }}>
-                <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>Application submitted</Text>
+                <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>Application sent</Text>
                 <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>
                   Status: <Text style={{ color: colors.success, fontWeight: '700' }}>{campaign.myBid?.status || 'Pending'}</Text>
                   {campaign.myBid?.amount ? ` · ₹${campaign.myBid.amount.toLocaleString()}` : ''}
@@ -303,14 +306,14 @@ export default function InfluencerCampaignDetailsScreen() {
               <Ionicons name="lock-closed" size={22} color={colors.error} />
               <View style={{ flex: 1, marginLeft: spacing.md }}>
                 <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>Applications closed</Text>
-                <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>This campaign is no longer accepting applications.</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 2 }}>This campaign isn't taking applications.</Text>
               </View>
             </Animated.View>
           ) : (
             <Animated.View entering={FadeInDown.delay(220).duration(350)} style={styles.applySection}>
-              <Text style={styles.sectionTitle}>Apply now</Text>
+              <Text style={styles.sectionTitle}>Your application</Text>
               <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: spacing.md }}>
-                Pitch the brand with your rate and a short note.
+                Add your price and a short pitch.
               </Text>
 
               <View style={styles.inputWrap}>
@@ -318,7 +321,7 @@ export default function InfluencerCampaignDetailsScreen() {
                 <TextInput
                   value={bidAmount}
                   onChangeText={setBidAmount}
-                  placeholder="Your rate (₹)"
+                  placeholder="Your price (₹)"
                   placeholderTextColor={colors.textSubtle}
                   keyboardType="numeric"
                   style={styles.input}
@@ -329,7 +332,7 @@ export default function InfluencerCampaignDetailsScreen() {
                 <TextInput
                   value={bidPitch}
                   onChangeText={setBidPitch}
-                  placeholder="Why you're the right fit…"
+                  placeholder="Why you're a good fit"
                   placeholderTextColor={colors.textSubtle}
                   multiline
                   style={[styles.input, { textAlignVertical: 'top' }]}
@@ -337,7 +340,7 @@ export default function InfluencerCampaignDetailsScreen() {
               </View>
 
               <Pressable
-                onPress={handleBid}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleBid() }}
                 disabled={bidding || !bidAmount.trim() || !bidPitch.trim()}
                 style={({ pressed }) => [
                   styles.primaryBtn,
@@ -346,7 +349,7 @@ export default function InfluencerCampaignDetailsScreen() {
                 ]}
               >
                 <Ionicons name="flash" size={18} color="#000" />
-                <Text style={styles.primaryBtnText}>{bidding ? 'Submitting…' : 'Submit Application'}</Text>
+                <Text style={styles.primaryBtnText}>{bidding ? 'Sending…' : 'Apply'}</Text>
               </Pressable>
             </Animated.View>
           )}
@@ -446,7 +449,7 @@ const styles = StyleSheet.create({
   input: { flex: 1, color: colors.text, fontSize: 15, padding: 0 },
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: colors.neon, borderRadius: radius.pill, paddingVertical: 16, marginTop: spacing.sm,
+    backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 16, marginTop: spacing.sm,
   },
   primaryBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
 })

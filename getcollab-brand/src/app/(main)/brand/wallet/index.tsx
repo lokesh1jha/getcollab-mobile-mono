@@ -1,27 +1,16 @@
 import React, { useState, useCallback } from 'react'
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  ActivityIndicator,
-  Modal,
-  TextInput,
-  Alert,
-  ScrollView,
-} from 'react-native'
+import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl, ActivityIndicator, Modal, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useFocusEffect } from '@react-navigation/native'
-import { colors, radius, spacing } from '@/src/theme'
+import { colors, radius, spacing, overline } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import type { WalletTransaction } from '@shared/types'
+import * as Haptics from 'expo-haptics'
 
 const ENTRY_LABELS: Record<string, string> = {
-  fund: 'Top-up / Fund',
+  fund: 'Top-up',
   hold: 'Held in escrow',
   reserve: 'Reserved',
   release: 'Reservation released',
@@ -98,7 +87,7 @@ export default function WalletScreen({ navigation }: Props) {
   const handleTopUp = async () => {
     const amt = parseInt(amount, 10)
     if (Number.isNaN(amt) || amt <= 0) {
-      Alert.alert('Error', 'Enter a valid amount')
+      Alert.alert('Invalid amount', 'Enter an amount above zero.')
       return
     }
     setSubmitting(true)
@@ -109,7 +98,7 @@ export default function WalletScreen({ navigation }: Props) {
         memo: 'wallet top-up',
       })
       if (res?.error) throw new Error(res.error)
-      Alert.alert('Success', 'Payment initiated. Balance updates after confirmation.')
+      Alert.alert('Payment started', 'Your balance updates once payment is confirmed.')
       setTopUpOpen(false)
       setAmount('')
       loadWallet(1)
@@ -123,11 +112,11 @@ export default function WalletScreen({ navigation }: Props) {
   const handleRefund = async () => {
     const amt = parseInt(amount, 10)
     if (Number.isNaN(amt) || amt <= 0) {
-      Alert.alert('Error', 'Enter a valid amount')
+      Alert.alert('Invalid amount', 'Enter an amount above zero.')
       return
     }
     if (!refundReason.trim()) {
-      Alert.alert('Error', 'Reason required')
+      Alert.alert('Reason needed', 'Tell us why you want a refund.')
       return
     }
     setSubmitting(true)
@@ -137,7 +126,7 @@ export default function WalletScreen({ navigation }: Props) {
         reason: refundReason.trim(),
       })
       if (res?.error) throw new Error(res.error)
-      Alert.alert('Success', 'Refund request submitted for review')
+      Alert.alert('Refund requested', "We'll review it shortly.")
       setRefundOpen(false)
       setAmount('')
       setRefundReason('')
@@ -155,13 +144,13 @@ export default function WalletScreen({ navigation }: Props) {
   const metrics = [
     { label: 'Available', value: fmtMinor(available), icon: 'wallet-outline' as const, hint: 'Ready to fund campaigns' },
     { label: 'Reserved', value: fmtMinor(reserved), icon: 'lock-closed-outline' as const, hint: 'Earmarked for campaigns' },
-    { label: 'Total', value: fmtMinor(total), icon: 'cash-outline' as const, hint: 'Cumulative funded' },
+    { label: 'Total', value: fmtMinor(total), icon: 'cash-outline' as const, hint: 'Total funded' },
   ]
 
   const renderTransaction = ({ item, index }: { item: WalletTransaction; index: number }) => {
     const isPositive = item.amount_minor >= 0
     return (
-      <Animated.View entering={FadeInDown.delay(index * 30).duration(320)} style={styles.txRow}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 80).duration(320)} style={styles.txRow}>
         <View style={styles.txLeft}>
           <Text style={styles.txType}>{ENTRY_LABELS[item.entry_type] || item.entry_type}</Text>
           <Text style={styles.txMemo} numberOfLines={1}>
@@ -180,7 +169,7 @@ export default function WalletScreen({ navigation }: Props) {
   if (loading && !refreshing) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.neon} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -198,11 +187,11 @@ export default function WalletScreen({ navigation }: Props) {
             <View>
               <View style={styles.header}>
                 <Text style={styles.title}>Wallet</Text>
-                <Text style={styles.subtitle}>One wallet for campaigns and affiliate</Text>
+                <Text style={styles.subtitle}>Funds for campaigns and affiliate</Text>
               </View>
 
               <View style={styles.actionsRow}>
-                <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={() => setTopUpOpen(true)}>
+                <Pressable style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.85 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setTopUpOpen(true) }}>
                   <Ionicons name="add-circle-outline" size={16} color="#000" />
                   <Text style={styles.actionBtnText}>Top up</Text>
                 </Pressable>
@@ -214,7 +203,7 @@ export default function WalletScreen({ navigation }: Props) {
 
               <View style={styles.metricsGrid}>
                 {metrics.map((m, i) => (
-                  <Animated.View entering={FadeInDown.delay(80 * i).duration(320)} key={m.label} style={styles.metricCard}>
+                  <Animated.View entering={FadeInDown.delay(Math.min(i, 5) * 80).duration(320)} key={m.label} style={styles.metricCard}>
                     <View style={styles.metricTop}>
                       <Ionicons name={m.icon} size={16} color={colors.textMuted} />
                       <Text style={styles.metricLabel}>{m.label}</Text>
@@ -251,72 +240,76 @@ export default function WalletScreen({ navigation }: Props) {
               </Pressable>
             ) : null
           }
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.neon} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleRefresh() }} tintColor={colors.primary} />}
         />
       </SafeAreaView>
 
       {/* Top-up Modal */}
       <Modal visible={topUpOpen} transparent animationType="fade" onRequestClose={() => setTopUpOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Top up wallet</Text>
-            <Text style={styles.modalBody}>Add funds. Balance is credited after payment verification.</Text>
-            <Text style={styles.inputLabel}>Amount (₹)</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="number-pad"
-              value={amount}
-              onChangeText={setAmount}
-              placeholder="e.g. 10000"
-              placeholderTextColor={colors.textSubtle}
-            />
-            <View style={styles.modalActions}>
-              <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setTopUpOpen(false)}>
-                <Text style={styles.outlinedBtnText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]}
-                onPress={handleTopUp}
-                disabled={submitting}
-              >
-                <Text style={styles.primaryBtnText}>{submitting ? 'Processing…' : 'Top up'}</Text>
-              </Pressable>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Top up wallet</Text>
+              <Text style={styles.modalBody}>Funds arrive once payment is verified.</Text>
+              <Text style={styles.inputLabel}>Amount (₹)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="number-pad"
+                value={amount}
+                onChangeText={setAmount}
+                placeholder="e.g. 10000"
+                placeholderTextColor={colors.textSubtle}
+              />
+              <View style={styles.modalActions}>
+                <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setTopUpOpen(false)}>
+                  <Text style={styles.outlinedBtnText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleTopUp() }}
+                  disabled={submitting}
+                >
+                  <Text style={styles.primaryBtnText}>{submitting ? 'Processing…' : 'Top up'}</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Refund Modal */}
       <Modal visible={refundOpen} transparent animationType="fade" onRequestClose={() => setRefundOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Request refund</Text>
-            <Text style={styles.modalBody}>Available balance only. Admin reviews before funds leave the wallet.</Text>
-            <Text style={styles.inputLabel}>Amount (₹)</Text>
-            <TextInput style={styles.input} keyboardType="number-pad" value={amount} onChangeText={setAmount} placeholderTextColor={colors.textSubtle} />
-            <Text style={styles.inputLabel}>Reason</Text>
-            <TextInput
-              style={[styles.input, { minHeight: 80 }]}
-              multiline
-              value={refundReason}
-              onChangeText={setRefundReason}
-              placeholder="Why refund?"
-              placeholderTextColor={colors.textSubtle}
-            />
-            <View style={styles.modalActions}>
-              <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setRefundOpen(false)}>
-                <Text style={styles.outlinedBtnText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]}
-                onPress={handleRefund}
-                disabled={submitting}
-              >
-                <Text style={styles.primaryBtnText}>{submitting ? 'Submitting…' : 'Submit'}</Text>
-              </Pressable>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Request refund</Text>
+              <Text style={styles.modalBody}>From your available balance. We review every request.</Text>
+              <Text style={styles.inputLabel}>Amount (₹)</Text>
+              <TextInput style={styles.input} keyboardType="number-pad" value={amount} onChangeText={setAmount} placeholderTextColor={colors.textSubtle} />
+              <Text style={styles.inputLabel}>Reason</Text>
+              <TextInput
+                style={[styles.input, { minHeight: 80 }]}
+                multiline
+                value={refundReason}
+                onChangeText={setRefundReason}
+                placeholder="Reason for refund"
+                placeholderTextColor={colors.textSubtle}
+              />
+              <View style={styles.modalActions}>
+                <Pressable style={({ pressed }) => [styles.outlinedBtn, { flex: 1 }, pressed && { opacity: 0.8 }]} onPress={() => setRefundOpen(false)}>
+                  <Text style={styles.outlinedBtnText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.primaryBtn, { flex: 1 }, pressed && { opacity: 0.85 }]}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleRefund() }}
+                  disabled={submitting}
+                >
+                  <Text style={styles.primaryBtnText}>{submitting ? 'Submitting…' : 'Request refund'}</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   )
@@ -329,7 +322,7 @@ const styles = StyleSheet.create({
   subtitle: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
 
   actionsRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.neon, paddingHorizontal: 16, paddingVertical: 10, borderRadius: radius.pill },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: radius.pill },
   actionBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
   actionBtnSecondary: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: colors.borderStrong, paddingHorizontal: 16, paddingVertical: 10, borderRadius: radius.pill },
   actionBtnSecondaryText: { color: '#fff', fontSize: 13, fontWeight: '600' },
@@ -341,7 +334,7 @@ const styles = StyleSheet.create({
   metricValue: { color: '#fff', fontSize: 18, fontWeight: '700', marginTop: 6 },
   metricHint: { color: colors.textSubtle, fontSize: 10, marginTop: 4 },
 
-  sectionTitle: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginTop: spacing.md, marginBottom: spacing.sm },
+  sectionTitle: { ...overline, marginTop: spacing.md, marginBottom: spacing.sm },
 
   txRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md },
   txLeft: { flex: 1 },
@@ -371,6 +364,6 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
   outlinedBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong },
   outlinedBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, backgroundColor: colors.neon },
+  primaryBtn: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: radius.pill, backgroundColor: colors.primary },
   primaryBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
 })
