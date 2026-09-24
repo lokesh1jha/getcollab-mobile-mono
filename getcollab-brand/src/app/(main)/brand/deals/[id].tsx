@@ -62,10 +62,25 @@ export default function DealReviewScreen() {
     finally { setBusy(false) }
   }
 
-  if (loading || !detail) {
+  if (loading) {
     return (
       <View style={[styles.root, styles.center]}>
         <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
+  }
+
+  if (!detail) {
+    return (
+      <View style={[styles.root, styles.center, { padding: spacing.xl, gap: spacing.sm }]}>
+        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>Couldn't load this collaboration</Text>
+        <Text style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center' }}>It may have been removed, or your connection dropped.</Text>
+        <Pressable
+          onPress={() => { setLoading(true); load() }}
+          style={({ pressed }) => [{ marginTop: spacing.md, backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: spacing.xl, paddingVertical: spacing.md }, pressed && { opacity: 0.85 }]}
+        >
+          <Text style={{ color: colors.black, fontWeight: '700' }}>Try again</Text>
+        </Pressable>
       </View>
     )
   }

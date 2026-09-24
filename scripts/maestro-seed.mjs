@@ -11,7 +11,8 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 
-const API = process.env.MAESTRO_API ?? 'http://localhost:4000/v1'
+// Same base URL the apps use in dev (EXPO_PUBLIC_API_URL).
+const API = process.env.MAESTRO_API ?? 'http://localhost:4000/api/v1'
 const PG_CONTAINER = process.env.E2E_PG_CONTAINER ?? 'getcollab-postgres-1'
 export const PASSWORD = 'Passw0rd!23'
 export const BRAND = { email: 'maestro.brand@test.local', name: 'Maestro Brand', role: 'brand' }

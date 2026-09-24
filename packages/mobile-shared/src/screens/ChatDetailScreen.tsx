@@ -50,8 +50,9 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     presence,
     socket,
     initializeSocket,
+    leaveRoom,
   } = useChatStore(
-    useShallow((s) => ({ messages: s.messages, fetchMessages: s.fetchMessages, sendMessage: s.sendMessage, sendImage: s.sendImage, sendAttachments: s.sendAttachments, isLoading: s.isLoading, isSending: s.isSending, hasMoreMessages: s.hasMoreMessages, markRoomRead: s.markRoomRead, setTyping: s.setTyping, typingUsers: s.typingUsers, readByUser: s.readByUser, presence: s.presence, socket: s.socket, initializeSocket: s.initializeSocket })),
+    useShallow((s) => ({ messages: s.messages, fetchMessages: s.fetchMessages, sendMessage: s.sendMessage, sendImage: s.sendImage, sendAttachments: s.sendAttachments, isLoading: s.isLoading, isSending: s.isSending, hasMoreMessages: s.hasMoreMessages, markRoomRead: s.markRoomRead, setTyping: s.setTyping, typingUsers: s.typingUsers, readByUser: s.readByUser, presence: s.presence, socket: s.socket, initializeSocket: s.initializeSocket, leaveRoom: s.leaveRoom })),
   )
   const { user } = useAuthStore()
   const [input, setInput] = useState('')
@@ -72,6 +73,7 @@ export default function ChatDetailScreen({ navigation, route }: ChatDetailScreen
     }
     return () => {
       if (typingTimer.current) clearTimeout(typingTimer.current)
+      if (roomId) leaveRoom(roomId)
     }
   }, [roomId])
 

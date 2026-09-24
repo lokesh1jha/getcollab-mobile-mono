@@ -50,17 +50,14 @@ export default function CampaignExecuteScreen() {
 
   const loadDeliverables = useCallback(async () => {
     try {
-      // GET /collabs ignores campaignId, so filter here; names come from the
-      // campaign's bids.
-      const [res, bidsRes] = await Promise.all([
-        apiService.getDeals({ limit: '100' }),
+      // Names come from the campaign's bids.
+      const [deals, bidsRes] = await Promise.all([
+        apiService.getAllDeals({ campaignId }),
         apiService.getBidsForCampaign(campaignId).catch(() => null),
       ])
-      const deals = res?.deals || res?.data || res?.collabs || []
       const bids: any[] = bidsRes?.bids || bidsRes?.data || []
       const nameByBid = new Map(bids.map((b) => [b.id, b.influencer?.name || b.influencer_name || b.influencerName]))
-      const mapped: Deliverable[] = (Array.isArray(deals) ? deals : [])
-        .filter((d: any) => d.campaign_id === campaignId)
+      const mapped: Deliverable[] = deals
         .map((d: any) => ({
           id: d.id,
           title: nameByBid.get(d.bid_id) || 'Creator',

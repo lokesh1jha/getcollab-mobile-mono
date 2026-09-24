@@ -43,8 +43,7 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
 
   const load = useCallback(async () => {
     try {
-      const r = await apiService.getDeals()
-      const list = r?.deals || r?.collabs || r?.data || []
+      const list = await apiService.getAllDeals()
       setDeals(list)
       const target = deepLinkId && list.find((d: any) => String(d.id) === deepLinkId)
       if (target) open(target)

@@ -49,6 +49,7 @@ export default function SettingsScreen({ navigation }: { navigation: InfluencerN
     },
   })
   const [loading, setLoading] = useState(true)
+  const [prefsFailed, setPrefsFailed] = useState(false)
   const [saving, setSaving] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -58,6 +59,8 @@ export default function SettingsScreen({ navigation }: { navigation: InfluencerN
         apiService.getNotifications().catch(() => null),
       ])
       const s = settingsRes?.data || settingsRes || {}
+      // Unread preferences must not show as all-on defaults.
+      setPrefsFailed(!s.notifications && !s.notificationSettings)
       const n = s.notifications || s.notificationSettings || {}
       setSettings(prev => ({
         twoFactorEnabled: s.twoFactorEnabled ?? s.two_factor_enabled ?? prev.twoFactorEnabled,
@@ -129,11 +132,20 @@ export default function SettingsScreen({ navigation }: { navigation: InfluencerN
             {/* Notifications */}
             <SectionHeader title="Notifications" />
             <View style={styles.listCard}>
-              <ToggleRow icon="mail-outline" label="Email" value={settings.notifications.emailNotifications ?? false} onToggle={() => toggleNotif('emailNotifications')} loading={saving === 'emailNotifications'} divider />
-              <ToggleRow icon="phone-portrait-outline" label="Push" value={settings.notifications.pushNotifications ?? false} onToggle={() => toggleNotif('pushNotifications')} loading={saving === 'pushNotifications'} divider />
-              <ToggleRow icon="megaphone-outline" label="Campaign updates" value={settings.notifications.campaignUpdates ?? false} onToggle={() => toggleNotif('campaignUpdates')} loading={saving === 'campaignUpdates'} divider />
-              <ToggleRow icon="chatbubble-outline" label="Messages" value={settings.notifications.messageNotifications ?? false} onToggle={() => toggleNotif('messageNotifications')} loading={saving === 'messageNotifications'} divider />
-              <ToggleRow icon="cash-outline" label="Payments" value={settings.notifications.paymentNotifications ?? false} onToggle={() => toggleNotif('paymentNotifications')} loading={saving === 'paymentNotifications'} />
+              {prefsFailed ? (
+                <Pressable onPress={() => load()} style={({ pressed }) => [{ padding: spacing.lg, gap: 4 }, pressed && { opacity: 0.85 }]}>
+                  <Text style={{ color: colors.text, fontWeight: '600' }}>Couldn't load notification settings</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>Tap to try again</Text>
+                </Pressable>
+              ) : (
+                <>
+                <ToggleRow icon="mail-outline" label="Email" value={settings.notifications.emailNotifications ?? false} onToggle={() => toggleNotif('emailNotifications')} loading={saving === 'emailNotifications'} divider />
+                <ToggleRow icon="phone-portrait-outline" label="Push" value={settings.notifications.pushNotifications ?? false} onToggle={() => toggleNotif('pushNotifications')} loading={saving === 'pushNotifications'} divider />
+                <ToggleRow icon="megaphone-outline" label="Campaign updates" value={settings.notifications.campaignUpdates ?? false} onToggle={() => toggleNotif('campaignUpdates')} loading={saving === 'campaignUpdates'} divider />
+                <ToggleRow icon="chatbubble-outline" label="Messages" value={settings.notifications.messageNotifications ?? false} onToggle={() => toggleNotif('messageNotifications')} loading={saving === 'messageNotifications'} divider />
+                <ToggleRow icon="cash-outline" label="Payments" value={settings.notifications.paymentNotifications ?? false} onToggle={() => toggleNotif('paymentNotifications')} loading={saving === 'paymentNotifications'} />
+                  </>
+              )}
             </View>
   
             {/* Account */}

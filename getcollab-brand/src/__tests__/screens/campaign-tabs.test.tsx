@@ -32,6 +32,7 @@ jest.mock('@shared/services/api', () => {
     updateBidStatus: jest.fn(),
     createDirectChat: jest.fn(),
     getDeals: jest.fn(),
+    getAllDeals: jest.fn(),
     getBrandInvites: jest.fn(),
     fetchWalletSummary: jest.fn(),
     getCampaignPool: jest.fn(),
@@ -58,6 +59,7 @@ beforeEach(() => {
   api.discoverCreators.mockResolvedValue({ influencers: [] })
   api.getBidsForCampaign.mockResolvedValue({ data: [] })
   api.getDeals.mockResolvedValue({ deals: [] })
+  api.getAllDeals.mockResolvedValue([])
   api.getBrandInvites.mockResolvedValue({ invites: [] })
   api.fetchWalletSummary.mockResolvedValue({})
   jest.spyOn(Alert, 'alert').mockImplementation(() => undefined)
@@ -168,17 +170,15 @@ describe('CampaignExecuteScreen', () => {
   })
 
   it('lists this campaign\'s collaborations by creator and opens the review screen', async () => {
-    // /collabs ignores campaignId, so the screen filters; names come from bids.
-    api.getDeals.mockResolvedValue({
-      deals: [
-        { id: 'd1', campaign_id: 'c1', bid_id: 'b1', status: 'in_progress', stage: 'PRODUCTION', payment_status: 'held' },
-        { id: 'd2', campaign_id: 'other', bid_id: 'b2', status: 'pending', stage: 'CONTRACT', payment_status: 'unpaid' },
-      ],
-    })
+    // getAllDeals does the paging and campaign filter (tested in api-service-reads); names come from bids.
+    api.getAllDeals.mockResolvedValue([
+      { id: 'd1', campaign_id: 'c1', bid_id: 'b1', status: 'in_progress', stage: 'PRODUCTION', payment_status: 'held' },
+    ])
     api.getBidsForCampaign.mockResolvedValue({ bids: [{ id: 'b1', influencer: { name: 'Riya' } }] })
     renderScreen(CampaignExecuteScreen)
 
     expect(await screen.findByText('Riya')).toBeOnTheScreen()
+    expect(api.getAllDeals).toHaveBeenCalledWith({ campaignId: 'c1' })
     expect(screen.getByText('In production')).toBeOnTheScreen()
     expect(screen.queryAllByText('Creator')).toHaveLength(0)
 
@@ -232,13 +232,12 @@ describe('CampaignEscrowScreen', () => {
 
 describe('CampaignCircleScreen', () => {
   it('maps deals into the creator circle', async () => {
-    api.getDeals.mockResolvedValue({
-      deals: [{ id: 'd1', status: 'active', influencer: { name: 'Riya', instagramHandle: '@riya' } }],
-    })
+    api.getAllDeals.mockResolvedValue([{ id: 'd1', campaign_id: 'c1', status: 'active', influencer: { name: 'Riya', instagramHandle: '@riya' } }])
     renderScreen(CampaignCircleScreen)
 
     expect(await screen.findByText('Creator circle')).toBeOnTheScreen()
     expect(screen.getByText('Riya')).toBeOnTheScreen()
+    expect(api.getAllDeals).toHaveBeenCalledWith({ campaignId: 'c1' })
   })
 
   it('shows an empty state with no creators', async () => {

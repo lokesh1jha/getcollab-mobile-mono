@@ -38,7 +38,9 @@ export default function NotificationsSettingsScreen() {
     try {
       const res = await apiService.getSettings()
       const s = res?.settings || res?.data || res || {}
-      const notifications = s.notifications || s.notificationSettings || {}
+      // getSettings returns notifications: null when preferences couldn't be read.
+      if (!s.notifications && !s.notificationSettings) { setLoadFailed(true); return }
+      const notifications = s.notifications || s.notificationSettings
       setPrefs({
         emailCampaignUpdates: notifications.emailCampaignUpdates ?? DEFAULT_PREFS.emailCampaignUpdates,
         emailBidAlerts: notifications.emailBidAlerts ?? DEFAULT_PREFS.emailBidAlerts,

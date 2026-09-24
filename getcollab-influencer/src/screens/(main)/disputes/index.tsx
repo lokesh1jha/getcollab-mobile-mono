@@ -41,9 +41,9 @@ export default function DisputesScreen({ navigation }: DisputesScreenProps) {
     try {
       const [response, dealsRes] = await Promise.all([
         apiService.getDisputes(),
-        apiService.getDeals({ limit: '100' }).catch(() => null),
+        apiService.getAllDeals().catch(() => [] as any[]),
       ])
-      setDeals(dealsRes?.deals || dealsRes?.data || [])
+      setDeals(dealsRes)
       const list = response?.data || response?.disputes || (Array.isArray(response) ? response : [])
       setDisputes(Array.isArray(list) ? list : [])
     } catch (err) {

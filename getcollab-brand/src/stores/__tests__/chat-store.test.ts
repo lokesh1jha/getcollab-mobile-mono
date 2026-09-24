@@ -84,4 +84,25 @@ describe('chat-store', () => {
     expect(apiService.getChatMessages).not.toHaveBeenCalled()
     jest.useRealTimers()
   })
+
+  it('stops polling a room once its chat screen leaves it', async () => {
+    jest.useFakeTimers()
+    apiService.getChatMessages.mockResolvedValue({ data: [] })
+    useChatStore.setState({ activeRoomId: 'r1' })
+    await useChatStore.getState().initializeSocket()
+
+    await jest.advanceTimersByTimeAsync(5000)
+    expect(apiService.getChatMessages).toHaveBeenCalledTimes(1)
+
+    useChatStore.getState().leaveRoom('r1')
+    await jest.advanceTimersByTimeAsync(15000)
+    expect(apiService.getChatMessages).toHaveBeenCalledTimes(1)
+
+    // A screen closing for an older room must not stop the newer one's poll.
+    useChatStore.setState({ activeRoomId: 'r2' })
+    useChatStore.getState().leaveRoom('r1')
+    expect(useChatStore.getState().activeRoomId).toBe('r2')
+    useChatStore.getState().disconnectSocket()
+    jest.useRealTimers()
+  })
 })

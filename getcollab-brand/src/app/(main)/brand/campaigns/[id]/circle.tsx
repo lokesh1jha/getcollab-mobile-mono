@@ -24,8 +24,7 @@ export default function CampaignCircleScreen() {
 
   const loadCircle = useCallback(async () => {
     try {
-      const res = await apiService.getDeals({ campaignId })
-      const list = res?.deals || res?.data || res?.collabs || []
+      const list = await apiService.getAllDeals({ campaignId })
       const mapped = (Array.isArray(list) ? list : []).map((d: any) => ({
         id: d.id,
         name: d.influencer?.name || d.influencerName || 'Creator',

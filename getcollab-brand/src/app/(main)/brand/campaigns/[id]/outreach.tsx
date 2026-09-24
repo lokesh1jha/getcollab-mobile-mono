@@ -26,7 +26,7 @@ export default function CampaignOutreachScreen() {
     try {
       const [invitesRes, dealsRes] = await Promise.all([
         apiService.getBrandInvites({ campaignId }).catch(() => null),
-        apiService.getDeals({ campaignId }).catch(() => null),
+        apiService.getAllDeals({ campaignId }).catch(() => null),
       ])
       const mapped: OutreachItem[] = []
       const invites = invitesRes?.invites || invitesRes?.data || []
@@ -39,7 +39,7 @@ export default function CampaignOutreachScreen() {
           sentAt: i.createdAt,
         })
       })
-      const deals = dealsRes?.deals || dealsRes?.data || dealsRes?.collabs || []
+      const deals = dealsRes || []
       ;(Array.isArray(deals) ? deals : []).forEach((d: any) => {
         mapped.push({
           id: `deal-${d.id}`,

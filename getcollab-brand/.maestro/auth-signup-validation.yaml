@@ -10,9 +10,16 @@ name: Sign up stays on the form when it is empty
     timeout: 30000
 - waitForAnimationToEnd:
     timeout: 3000
-- tapOn:
-    id: "landing-get-started-btn"
-    retryTapIfNoChange: true
+# The landing screen can swallow a tap while it animates in; retry until the next screen shows.
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: "landing-get-started-btn"
+      - extendedWaitUntil:
+          visible:
+            id: "sign-up-screen"
+          timeout: 5000
 - assertVisible:
     id: "sign-up-screen"
 - assertVisible: "Free 7-day trial. No card needed."

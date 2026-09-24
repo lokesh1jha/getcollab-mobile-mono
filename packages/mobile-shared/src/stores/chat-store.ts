@@ -45,6 +45,8 @@ interface ChatState {
   sendAttachments: (roomId: string, files: PendingAttachmentFile[], caption?: string) => Promise<void>
   addMessage: (message: Message) => void
   markRoomRead: (roomId: string) => void
+  /** Stops the message poll for a room once its screen closes. */
+  leaveRoom: (roomId: string) => void
   setTyping: (roomId: string, isTyping: boolean) => void
   initializeSocket: () => Promise<void>
   disconnectSocket: () => void
@@ -224,6 +226,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setTyping: () => {},
 
   clearError: () => set({ error: null }),
+
+  leaveRoom: (roomId) => {
+    // Only clear if no newer room took over while this screen was closing.
+    if (get().activeRoomId === roomId) set({ activeRoomId: null })
+  },
 
   reset: () => {
     const socket = get().socket

@@ -629,11 +629,12 @@ class ApiService {
   }
 
   async getSettings(): Promise<any> {
-    const [me, profile, rows] = await Promise.all([
+    const [meRes, profile, rows] = await Promise.all([
       this.request('/auth/me') as Promise<any>,
       (this.request('/profile') as Promise<any>).catch(() => null),
-      this.getPreferenceRows().catch(() => [] as PrefRow[]),
+      this.getPreferenceRows().catch(() => null),
     ])
+    const me = meRes?.user ?? meRes
     const prof = profile?.profile ?? profile ?? {}
     return {
       name: me?.name ?? '',
@@ -644,7 +645,11 @@ class ApiService {
       location: [prof.city, prof.state].filter(Boolean).join(', '),
       websiteUrl: prof.website ?? '',
       industry: prof.industries?.[0] ?? '',
-      notifications: toggleStates(rows),
+      // Flags a failed read, so callers never treat fallbacks as saved values.
+      profileLoaded: profile != null,
+      isBrand: Array.isArray(me?.memberships) && me.memberships.length > 0,
+      // null (not all-on defaults) when preferences couldn't be read.
+      notifications: rows ? toggleStates(rows) : null,
     }
   }
 
@@ -652,6 +657,10 @@ class ApiService {
    *  together, so unchanged fields are read back first rather than cleared. */
   async updateAccount(changes: { name?: string; phoneNumbers?: string[]; websiteUrl?: string; industry?: string }): Promise<any> {
     const cur = await this.getSettings()
+    // A brand's website/industry would be sent blank and overwrite the saved ones.
+    if (cur.isBrand && !cur.profileLoaded && (changes.websiteUrl === undefined || changes.industry === undefined)) {
+      throw new Error("Couldn't load your current profile. Try again.")
+    }
     return this.request('/auth/account', {
       method: 'PATCH',
       body: JSON.stringify({
@@ -766,6 +775,25 @@ class ApiService {
   async getDeals(params?: Record<string, any>): Promise<any> {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
     return this.request(`/collabs${queryString}`)
+  }
+
+  /** Every collaboration visible to the caller, following cursor pages.
+   *  GET /collabs caps a page at 100 and ignores campaignId, so a single call
+   *  both truncates and mixes in other campaigns — filter here instead. */
+  async getAllDeals(filter: { campaignId?: string } = {}): Promise<any[]> {
+    const all: any[] = []
+    let cursor: string | undefined
+    // ponytail: 50-page safety cap (5,000 deals); a server-side campaign filter is the real fix
+    for (let page = 0; page < 50; page++) {
+      const res: any = await this.getDeals({ limit: '100', ...(cursor ? { cursor } : {}) })
+      const list = res?.deals || res?.collabs || res?.data || []
+      if (Array.isArray(list)) all.push(...list)
+      cursor = res?.pagination?.hasNext ? res.pagination.nextCursor ?? undefined : undefined
+      if (!cursor) break
+    }
+    return filter.campaignId
+      ? all.filter((d) => (d.campaign_id ?? d.campaignId ?? d.campaign?.id) === filter.campaignId)
+      : all
   }
 
   async getDeal(id: string): Promise<any> {

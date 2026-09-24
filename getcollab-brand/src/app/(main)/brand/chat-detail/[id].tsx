@@ -20,8 +20,8 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
   const chatMeta = route?.params?.chat
   const otherUserId = chatMeta?.influencerId || chatMeta?.userId || chatMeta?.brandId
 
-  const { messages, fetchMessages, sendMessage, sendImage, isLoading, isSending, markRoomRead, setTyping, typingUsers, presence, socket, initializeSocket } = useChatStore(
-    useShallow((s) => ({ messages: s.messages, fetchMessages: s.fetchMessages, sendMessage: s.sendMessage, sendImage: s.sendImage, isLoading: s.isLoading, isSending: s.isSending, markRoomRead: s.markRoomRead, setTyping: s.setTyping, typingUsers: s.typingUsers, presence: s.presence, socket: s.socket, initializeSocket: s.initializeSocket })),
+  const { messages, fetchMessages, sendMessage, sendImage, isLoading, isSending, markRoomRead, setTyping, typingUsers, presence, socket, initializeSocket, leaveRoom } = useChatStore(
+    useShallow((s) => ({ messages: s.messages, fetchMessages: s.fetchMessages, sendMessage: s.sendMessage, sendImage: s.sendImage, isLoading: s.isLoading, isSending: s.isSending, markRoomRead: s.markRoomRead, setTyping: s.setTyping, typingUsers: s.typingUsers, presence: s.presence, socket: s.socket, initializeSocket: s.initializeSocket, leaveRoom: s.leaveRoom })),
   )
   const { user } = useAuthStore()
   const [input, setInput] = useState('')
@@ -33,7 +33,10 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
   useEffect(() => {
     if (roomId) { fetchMessages(roomId); markRoomRead(roomId) }
     if (!socket) initializeSocket()
-    return () => { if (typingTimer.current) clearTimeout(typingTimer.current) }
+    return () => {
+      if (typingTimer.current) clearTimeout(typingTimer.current)
+      if (roomId) leaveRoom(roomId)
+    }
   }, [roomId])
 
   const handleSend = async () => {
