@@ -6,16 +6,23 @@ const request = jest.spyOn(apiService as any, 'request')
 afterEach(() => request.mockReset())
 
 describe('getAllDeals', () => {
-  it('follows cursors past the first page and keeps only the requested campaign', async () => {
+  it('asks the server for one campaign and follows cursors past the first page', async () => {
     request
-      .mockResolvedValueOnce({ deals: [{ id: 'd1', campaign_id: 'c1' }, { id: 'd2', campaign_id: 'other' }], pagination: { hasNext: true, nextCursor: 'CUR1' } })
-      .mockResolvedValueOnce({ deals: [{ id: 'd3', campaign_id: 'c1' }], pagination: { hasNext: false, nextCursor: null } })
+      .mockResolvedValueOnce({ deals: [{ id: 'd1' }, { id: 'd2' }], pagination: { hasNext: true, nextCursor: 'CUR1' } })
+      .mockResolvedValueOnce({ deals: [{ id: 'd3' }], pagination: { hasNext: false, nextCursor: null } })
 
     const deals = await apiService.getAllDeals({ campaignId: 'c1' })
 
-    expect(deals.map((d) => d.id)).toEqual(['d1', 'd3'])
-    expect(request).toHaveBeenNthCalledWith(1, '/collabs?limit=100')
-    expect(request).toHaveBeenNthCalledWith(2, '/collabs?limit=100&cursor=CUR1')
+    expect(deals.map((d) => d.id)).toEqual(['d1', 'd2', 'd3'])
+    expect(request).toHaveBeenNthCalledWith(1, '/collabs?limit=100&campaign_id=c1')
+    expect(request).toHaveBeenNthCalledWith(2, '/collabs?limit=100&campaign_id=c1&cursor=CUR1')
+  })
+
+  it('stops instead of looping when the server repeats a cursor', async () => {
+    request.mockResolvedValue({ deals: [{ id: 'dx' }], pagination: { hasNext: true, nextCursor: 'SAME' } })
+    const deals = await apiService.getAllDeals()
+    expect(request).toHaveBeenCalledTimes(2)
+    expect(deals).toHaveLength(2)
   })
 })
 

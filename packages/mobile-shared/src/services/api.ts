@@ -777,23 +777,26 @@ class ApiService {
     return this.request(`/collabs${queryString}`)
   }
 
-  /** Every collaboration visible to the caller, following cursor pages.
-   *  GET /collabs caps a page at 100 and ignores campaignId, so a single call
-   *  both truncates and mixes in other campaigns — filter here instead. */
+  /** Every collaboration visible to the caller, following cursor pages
+   *  (GET /collabs caps a page at 100). campaignId is filtered server-side. */
   async getAllDeals(filter: { campaignId?: string } = {}): Promise<any[]> {
     const all: any[] = []
+    const seen = new Set<string>()
     let cursor: string | undefined
-    // ponytail: 50-page safety cap (5,000 deals); a server-side campaign filter is the real fix
-    for (let page = 0; page < 50; page++) {
-      const res: any = await this.getDeals({ limit: '100', ...(cursor ? { cursor } : {}) })
+    do {
+      const res: any = await this.getDeals({
+        limit: '100',
+        ...(filter.campaignId ? { campaign_id: filter.campaignId } : {}),
+        ...(cursor ? { cursor } : {}),
+      })
       const list = res?.deals || res?.collabs || res?.data || []
       if (Array.isArray(list)) all.push(...list)
       cursor = res?.pagination?.hasNext ? res.pagination.nextCursor ?? undefined : undefined
-      if (!cursor) break
-    }
-    return filter.campaignId
-      ? all.filter((d) => (d.campaign_id ?? d.campaignId ?? d.campaign?.id) === filter.campaignId)
-      : all
+      // A repeated cursor would loop forever; stop instead.
+      if (cursor && seen.has(cursor)) break
+      if (cursor) seen.add(cursor)
+    } while (cursor)
+    return all
   }
 
   async getDeal(id: string): Promise<any> {
