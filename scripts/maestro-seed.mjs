@@ -51,17 +51,11 @@ async function must(res, what) {
   if (!res.ok) throw new Error(`${what} → ${res.status}: ${await res.text()}`)
 }
 
-// Known backend bug (Sep 2026): brand.profile fails with a brand_profile FK error even
-// though the org exists. Sign-in flows don't need the profile, so report it loudly and go on.
-async function warnIfFailed(res, what) {
-  if (!res.ok) console.warn(`⚠ ${what} → ${res.status}: ${(await res.text()).slice(0, 200)}`)
-}
-
 async function onboard(u, cookie) {
   const patch = (step, body) => call('/onboarding', { method: 'PATCH', body: JSON.stringify({ role: u.role, step, patch: body }) }, cookie)
   await must(await call('/auth/accept-terms', { method: 'POST', body: JSON.stringify({ version: 'v1' }) }, cookie), 'accept terms')
   if (u.role === 'brand') {
-    await warnIfFailed(await patch('brand.profile', { profile: { companyName: u.name, website: 'https://example.com' } }), 'brand profile')
+    await must(await patch('brand.profile', { profile: { companyName: u.name, website: 'https://example.com' } }), 'brand profile')
     await must(await patch('brand.scale', { scale: { termsAccepted: true } }), 'brand scale')
   } else {
     // categories and languages are required, or the creator profile is silently not created.
