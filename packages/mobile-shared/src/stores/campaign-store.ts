@@ -22,7 +22,7 @@ interface CampaignState {
   updateCampaign: (id: string, data: any) => Promise<void>
   deleteCampaign: (id: string) => Promise<void>
   fetchMyBids: (params?: { status?: string }) => Promise<void>
-  submitBid: (campaignId: string, pitch: string) => Promise<Bid>
+  submitBid: (campaignId: string, pitch: string, amountRupees: number) => Promise<Bid>
   updateBidStatus: (bidId: string, status: 'accepted' | 'rejected') => Promise<void>
   clearError: () => void
   reset: () => void
@@ -159,10 +159,10 @@ export const useCampaignStore = create<CampaignState>((set, get) => ({
     }
   },
 
-  submitBid: async (campaignId: string, pitch: string) => {
+  submitBid: async (campaignId: string, pitch: string, amountRupees: number) => {
     set({ isLoading: true, error: null })
     try {
-      const bid = await apiService.submitBid({ campaignId, pitch })
+      const bid = await apiService.submitBid({ campaignId, message: pitch, amount: amountRupees })
       set((state) => ({
         myBids: [bid, ...state.myBids],
         isLoading: false,

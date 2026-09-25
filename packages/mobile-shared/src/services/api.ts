@@ -410,10 +410,20 @@ class ApiService {
     return this.request(`/bids?campaignId=${encodeURIComponent(campaignId)}`)
   }
 
-  async submitBid(data: any): Promise<any> {
+  /**
+   * Apply to a campaign. Screens pass `amount` in rupees and `message`; the
+   * Go API reads `amount_minor` (paise) and `pitch`. Sent as-is, both were
+   * dropped, so every mobile bid arrived with no price and no pitch.
+   */
+  async submitBid(data: { campaignId: string; amount: number; message: string; moduleId?: string }): Promise<any> {
     return this.request('/bids', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        campaignId: data.campaignId,
+        pitch: data.message,
+        amount_minor: Math.round(data.amount * 100),
+        ...(data.moduleId ? { moduleId: data.moduleId } : {}),
+      }),
     })
   }
 

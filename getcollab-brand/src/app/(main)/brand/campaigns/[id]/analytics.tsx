@@ -12,6 +12,9 @@ import * as Haptics from 'expo-haptics'
 type RoutePropType = RouteProp<{ analytics: { id: string; title?: string } }, 'analytics'>
 const CHART_HEIGHT = 120
 
+// The analytics API sends money in paise; shown here in rupees.
+const rupees = (minor: number) => (minor / 100).toLocaleString('en-IN')
+
 interface Metrics { totalBudget: number; totalSpent: number; remainingBudget: number; totalBids: number; acceptedBids: number; totalMessages: number; campaignStatus: string; startDate?: string; endDate?: string }
 interface TimePoint { date: string; bids: number; messages: number; spending: number }
 interface InfluencerPerf { influencerId: string; influencerName?: string; bidsCount?: number; acceptedBids?: number; totalSpent?: number }
@@ -87,9 +90,9 @@ export default function CampaignAnalyticsScreen() {
             {metrics && (
               <>
                 <View style={styles.statsGrid}>
-                  <StatCard label="Budget" value={`₹${metrics.totalBudget.toLocaleString()}`} />
-                  <StatCard label="Spent" value={`₹${metrics.totalSpent.toLocaleString()}`} accent />
-                  <StatCard label="Remaining" value={`₹${metrics.remainingBudget.toLocaleString()}`} />
+                  <StatCard label="Budget" value={`₹${rupees(metrics.totalBudget)}`} />
+                  <StatCard label="Spent" value={`₹${rupees(metrics.totalSpent)}`} accent />
+                  <StatCard label="Remaining" value={`₹${rupees(metrics.remainingBudget)}`} />
                   <StatCard label="Applications" value={String(metrics.totalBids)} />
                   <StatCard label="Accepted" value={String(metrics.acceptedBids)} />
                   <StatCard label="Messages" value={String(metrics.totalMessages)} />
