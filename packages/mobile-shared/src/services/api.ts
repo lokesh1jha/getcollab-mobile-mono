@@ -813,6 +813,20 @@ class ApiService {
     return this.request(`/collabs/${encodeURIComponent(id)}`)
   }
 
+  /** The caller's signing identity (legal name and address on deal agreements). */
+  async getLegalDetails(): Promise<any> {
+    return this.request('/profile/legal')
+  }
+
+  async saveLegalDetails(data: Record<string, string>): Promise<any> {
+    return this.request('/profile/legal', { method: 'PUT', body: JSON.stringify(data) })
+  }
+
+  /** Regenerates an unsigned agreement after a party saves their details. */
+  async refreshDealContract(id: string): Promise<any> {
+    return this.request(`/collabs/${encodeURIComponent(id)}/contract/refresh`, { method: 'POST', body: JSON.stringify({}) })
+  }
+
   async acceptDealContract(id: string): Promise<any> {
     return this.request(`/collabs/${encodeURIComponent(id)}/contract/accept`, { method: 'POST', body: JSON.stringify({}) })
   }

@@ -11,6 +11,7 @@ import { colors, radius, spacing, statusColor } from '@/src/theme'
 import { apiService, handleApiError } from '@shared/services/api'
 import { InfluencerNavigationProp } from '@/src/types/navigation'
 import { DeliverablesPanel } from '@shared/components/deal/DeliverablesPanel'
+import { LegalDetailsForm } from '@shared/components/deal/LegalDetailsForm'
 import { deliverableProgress } from '@shared/lib/deal-deliverables'
 import * as Haptics from 'expo-haptics'
 
@@ -138,8 +139,19 @@ export default function CollaborationsScreen({ navigation }: { navigation: Influ
                 ? 'You signed. Waiting for the brand.'
                 : 'Review and sign the agreement to start.'}
           </Text>
+          {detail?.agreementMissing?.creator?.length > 0 && (
+            <LegalDetailsForm
+              dealId={selected.id}
+              missing={detail.agreementMissing.creator}
+              theme={colors}
+              onSaved={() => { Alert.alert('Agreement updated', 'Your details are on it now. Review it, then accept.'); open(selected) }}
+            />
+          )}
+          {!detail?.agreementMissing?.creator?.length && detail?.agreementMissing?.brand?.length > 0 && (
+            <Text style={styles.meta}>Waiting for the brand to add their legal name and address. You can sign once they&apos;re on the agreement.</Text>
+          )}
           <View style={styles.row}>
-            {detail?.contract && detail.contract.status !== 'active' && !detail.contract.creator_accepted_at && (
+            {detail?.contract && detail.contract.status !== 'active' && !detail.contract.creator_accepted_at && !detail?.agreementMissing && (
               <Action label={busy === 'contract' ? 'Saving…' : 'Accept agreement'} busy={!!busy} onPress={acceptContract} />
             )}
             {detail?.contract?.status === 'active' && detail?.deal?.stage === 'CONTRACT' && (
